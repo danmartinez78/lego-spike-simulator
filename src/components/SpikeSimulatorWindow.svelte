@@ -5,8 +5,10 @@
         DatabaseOutline,
         QuestionCircleOutline,
         ChartLineUpOutline,
-        RulerCombinedOutline
+        RulerCombinedOutline,
+        MapPinAltOutline
     } from 'flowbite-svelte-icons';
+    import PlaceDialog from '$components/PlaceDialog.svelte';
     import { graphOpen } from '$lib/spike/telemetry';
     import MeasureDialog from '$components/MeasureDialog.svelte';
     import { openGuide } from '$lib/help';
@@ -47,6 +49,7 @@
     let settingsOpen = false;
     let libraryOpen = false;
     let measureOpen = false;
+    let placeOpen = false;
     let robotButtonColour: 'light' | 'red' | 'green' = 'light';
     let libraryClass = '!p-2';
     let runSimulation = false;
@@ -230,6 +233,7 @@
 <LibraryDialog bind:modalOpen={libraryOpen} />
 <RunOverlay />
 <MeasureDialog bind:modalOpen={measureOpen} />
+<PlaceDialog bind:modalOpen={placeOpen} />
 {#if modalOpen}
     <div class="{split == 1 ? 'flex-1' : 'flex-[2]'} h-full overflow-hidden">
         <div class="relative flex-1 h-full flex flex-col overflow-hidden">
@@ -263,6 +267,10 @@
                     </div>
                 </Button>
                 <Tooltip>Setup or load a scene based on a WRO or FLL mat</Tooltip>
+                <Button color="light" class="!p-2" on:click={() => (placeOpen = true)}>
+                    <MapPinAltOutline class="w-8 h-8" />
+                </Button>
+                <Tooltip>Place the robot and objects on the mat by dragging</Tooltip>
                 {#if $libraryStore.available}
                     <Button color="light" class="!p-2" on:click={openSharedLibrary}>
                         <DatabaseOutline class="w-8 h-8" />

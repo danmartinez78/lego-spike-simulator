@@ -17,7 +17,7 @@
         saveEntry,
         type LibraryKind
     } from '$lib/library';
-    import JSZip from 'jszip';
+    import { sceneToBlob } from '$lib/spike/scenefile';
 
     export let modalOpen = false;
     export let hub: Hub;
@@ -47,36 +47,7 @@
     }
 
     async function sceneBlob(): Promise<Blob> {
-        const scene = $sceneStore;
-        const zip = new JSZip();
-        if (scene.map) {
-            zip.file('mat.jpg', scene.map);
-        }
-        for (const obj of scene.objects) {
-            if (obj.bricks) {
-                const content = saveMPD(obj.bricks);
-                zip.file(`bricks-${obj.name}`, content);
-            }
-        }
-        const json = {
-            version: 1,
-            robot: {
-                anchored: scene.robot.anchored,
-                position: scene.robot.position,
-                rotation: scene.robot.rotation,
-                name: '#robot'
-            },
-            matWidth: scene.mapWidth,
-            matHeight: scene.mapHeight,
-            objects: scene.objects.map((o) => ({
-                anchored: o.anchored,
-                position: o.position,
-                rotation: o.rotation,
-                name: o.name
-            }))
-        };
-        zip.file('scene.json', JSON.stringify(json));
-        return await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+        return await sceneToBlob($sceneStore);
     }
 
     function saveRobot() {

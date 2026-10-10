@@ -172,8 +172,12 @@ export async function loadRobotFromLibrary(name: string) {
     robotRequest.set({ name, blob });
 }
 
+// Name of the library scene loaded last, so it can be saved back.
+export const currentSceneName = writable<string | undefined>(undefined);
+
 export async function loadSceneFromLibrary(name: string) {
     await loadSceneFromBlob(await fetchEntry('scenes', name));
+    currentSceneName.set(name);
 }
 
 // Load a scene (.spk zip of scene.json, mat.jpg and object models) into the scene store.

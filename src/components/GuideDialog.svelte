@@ -4,7 +4,8 @@
         CogOutline,
         DatabaseOutline,
         ChartLineUpOutline,
-        RulerCombinedOutline
+        RulerCombinedOutline,
+        MapPinAltOutline
     } from 'flowbite-svelte-icons';
     import { helpStore, openBlockHelp } from '$lib/help';
     import { blockHelp, helpCategories } from '$lib/blockly/blockhelp';
@@ -49,6 +50,10 @@
         {
             icon: 'icons/Scene.svg',
             text: 'Scene editor: choose the mat, place the robot and obstacles, load a saved scene.'
+        },
+        {
+            component: MapPinAltOutline,
+            text: 'Place: drag the robot and objects on a top-down view of the mat, turn them, and save the start position.'
         },
         {
             component: DatabaseOutline,
@@ -253,6 +258,18 @@
                     scene editor to pick the mat size (FIRST LEGO League or WRO), load a mat image, add
                     obstacle models, and drag the robot to its start. Arrow keys nudge the selected object,
                     and r / R rotate it.
+                </p>
+                <p class="mt-2">
+                    The <b>Place</b> button (map pin) shows the mat from above: drag the robot or an
+                    obstacle to move it, drag the round handle to turn it, or type exact numbers. Coaches
+                    can save the new position as the field's start.
+                </p>
+                <p class="mt-2">
+                    The library has <b>practice fields</b> for building skills: a line course,
+                    colour stops, accuracy targets, a turn rose, a wall course and mini missions.
+                    For the wall course, load the robot <i>Driving Base 3 with distance sensor</i>
+                    (sensor on port F). Sensors can see obstacles, but the robot drives through them
+                    rather than pushing them.
                 </p>
                 <p class="mt-2">
                     The <b>shared library</b> holds robots and scenes saved on this site. Anyone can
