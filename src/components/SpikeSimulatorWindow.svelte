@@ -15,7 +15,8 @@
     import { graphOpen } from '$lib/spike/telemetry';
     import MeasureDialog from '$components/MeasureDialog.svelte';
     import { openGuide } from '$lib/help';
-    import { Button, CloseButton, Tooltip } from 'flowbite-svelte';
+    import { CloseButton, Tooltip } from 'flowbite-svelte';
+    import ToolButton from '$components/ToolButton.svelte';
     import MenuDropdown from '$components/MenuDropdown.svelte';
     import { type MenuAction } from '$components/Menu.svelte';
     import HubIcon from '$components/HubIcon.svelte';
@@ -67,7 +68,7 @@
 
     $: handleRerun($rerunRequest);
     let robotButtonColour: 'light' | 'red' | 'green' = 'light';
-    let libraryClass = '!p-2';
+    let libraryClass = '';
     let runSimulation = false;
     // cameraOpen is used as a bind variable, but reported as unused by es-lint
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -188,9 +189,9 @@
             }
         }
         if (store.unresolved.length > 0) {
-            libraryClass = '!p-2 animate-bounce';
+            libraryClass = 'animate-bounce';
         } else {
-            libraryClass = '!p-2';
+            libraryClass = '';
         }
     }
 
@@ -260,79 +261,65 @@
                 <div class="w-8 h-8 flex flex-col justify-center items-center">
                     <img alt="code" width="32" height="32" src="icons/Brick.svg" />
                 </div>
-                <Button color={robotButtonColour} class="!p-2" on:click={askForRobot}>
-                    <div class="w-8 h-8 flex flex-col justify-center items-center">
-                        <img alt="robot" width="32" height="32" src="icons/Robot.svg" />
-                    </div>
-                </Button>
+                <ToolButton label="Robot" color={robotButtonColour} on:click={askForRobot}>
+                    <img alt="" width="28" height="28" src="icons/Robot.svg" />
+                </ToolButton>
                 <Tooltip>Load a robot model for use in the simulator</Tooltip>
-                <Button color="light" class="!p-2" on:click={connectPorts}>
-                    <div class="w-8 h-8 flex flex-col justify-center items-center">
-                        <HubIcon />
-                    </div>
-                </Button>
+                <ToolButton label="Ports" on:click={connectPorts}>
+                    <div class="scale-[0.875]"><HubIcon /></div>
+                </ToolButton>
                 <Tooltip>Connect ports on the spike hub of the robot</Tooltip>
-                <Button color="light" class="!p-2" on:click={connectWheels}>
-                    <div class="w-8 h-8 flex flex-col justify-center items-center">
-                        <img alt="scene" width="32" height="32" src="icons/wheel.svg" />
-                    </div>
-                </Button>
+                <ToolButton label="Wheels" on:click={connectWheels}>
+                    <img alt="" width="28" height="28" src="icons/wheel.svg" />
+                </ToolButton>
                 <Tooltip>Connect wheels to motors of the robot</Tooltip>
-                <Button color="light" class="!p-2" on:click={loadScene}>
-                    <div class="w-8 h-8 flex flex-col justify-center items-center">
-                        <img alt="scene" width="32" height="32" src="icons/Scene.svg" />
-                    </div>
-                </Button>
+                <ToolButton label="Scene" on:click={loadScene}>
+                    <img alt="" width="28" height="28" src="icons/Scene.svg" />
+                </ToolButton>
                 <Tooltip>Setup or load a scene based on a WRO or FLL mat</Tooltip>
-                <Button color="light" class="!p-2" on:click={() => (placeOpen = true)}>
-                    <MapPinAltOutline class="w-8 h-8" />
-                </Button>
+                <ToolButton label="Place" on:click={() => (placeOpen = true)}>
+                    <MapPinAltOutline class="w-7 h-7" />
+                </ToolButton>
                 <Tooltip>Place the robot and objects on the mat by dragging</Tooltip>
                 {#if $libraryStore.available}
-                    <Button color="light" class="!p-2" on:click={openSharedLibrary}>
-                        <DatabaseOutline class="w-8 h-8" />
-                    </Button>
+                    <ToolButton label="Library" on:click={openSharedLibrary}>
+                        <DatabaseOutline class="w-7 h-7" />
+                    </ToolButton>
                     <Tooltip>Open a robot or scene from the shared library</Tooltip>
                 {/if}
-                <Button color="light" class={libraryClass} on:click={askForLibrary}>
-                    <div class="w-8 h-8 flex flex-col justify-center items-center">
-                        <img alt="scene" width="32" height="32" src="icons/Library.svg" />
-                    </div>
-                </Button>
+                <ToolButton label="Parts" class={libraryClass} on:click={askForLibrary}>
+                    <img alt="" width="28" height="28" src="icons/Library.svg" />
+                </ToolButton>
                 <Tooltip>Load any missing components from the ldraw library (complete.zip)</Tooltip>
-                <Button color="light" class="!p-2" on:click={saveRobotOrScene}>
-                    <div class="w-8 h-8 flex flex-col justify-center items-center">
-                        <img alt="save" width="32" height="32" src="icons/SaveMedium.svg" />
-                    </div>
-                </Button>
+                <ToolButton label="Save" on:click={saveRobotOrScene}>
+                    <img alt="" width="28" height="28" src="icons/SaveMedium.svg" />
+                </ToolButton>
                 <Tooltip
                     >Save the robot with ports and wheels, or the scene (without the robot)</Tooltip
                 >
-                <Button color="light" class="!p-2" on:click={openSettings}>
-                    <CogOutline class="w-8 h-8" />
-                </Button>
+                <ToolButton label="Settings" on:click={openSettings}>
+                    <CogOutline class="w-7 h-7" />
+                </ToolButton>
                 <Tooltip>Adjust simulator speed settings</Tooltip>
-                <Button color="light" class="!p-2" on:click={() => (challengesOpen = true)}>
-                    <AwardOutline class="w-8 h-8" />
-                </Button>
+                <ToolButton label="Challenges" on:click={() => (challengesOpen = true)}>
+                    <AwardOutline class="w-7 h-7" />
+                </ToolButton>
                 <Tooltip>Challenges: goals the simulator checks for you</Tooltip>
-                <Button
+                <ToolButton
+                    label="Graph"
                     color={$graphOpen ? 'blue' : 'light'}
-                    class="!p-2"
                     on:click={() => graphOpen.update((v) => !v)}
                 >
-                    <ChartLineUpOutline class="w-8 h-8" />
-                </Button>
+                    <ChartLineUpOutline class="w-7 h-7" />
+                </ToolButton>
                 <Tooltip>Show a live graph of the sensors and motors</Tooltip>
-                <Button color="light" class="!p-2" on:click={() => (measureOpen = true)}>
-                    <RulerCombinedOutline class="w-8 h-8" />
-                </Button>
+                <ToolButton label="Measure" on:click={() => (measureOpen = true)}>
+                    <RulerCombinedOutline class="w-7 h-7" />
+                </ToolButton>
                 <Tooltip>Measure distances and angles on the mat to plan a route</Tooltip>
-                <Button id="camera_config_button" color="light" class="!p-2">
-                    <div class="w-8 h-8 flex flex-col justify-center items-center">
-                        <img alt="eye" width="32" height="32" src="icons/Eye.svg" />
-                    </div>
-                </Button>
+                <ToolButton label="Camera" id="camera_config_button">
+                    <img alt="" width="28" height="28" src="icons/Eye.svg" />
+                </ToolButton>
                 <MenuDropdown
                     name="camera"
                     actions={cameraMenu}
@@ -341,40 +328,21 @@
                 />
                 <Tooltip triggeredBy="#camera_config_button">Set camera for simulator</Tooltip>
                 {#if runSimulation}
-                    <Button color="light" class="!p-2" on:click={stopRobot}>
-                        <div class="w-8 h-8 flex flex-col justify-center items-center">
-                            <img
-                                alt="stop"
-                                width="32"
-                                height="32"
-                                src="icons/GenericStopIcon.svg"
-                            />
-                        </div>
-                    </Button>
+                    <ToolButton label="Stop" on:click={stopRobot}>
+                        <img alt="" width="28" height="28" src="icons/GenericStopIcon.svg" />
+                    </ToolButton>
                     <Tooltip>Stop the simulation</Tooltip>
                 {:else}
-                    <Button color="light" class="!p-2" on:click={startRobot}>
-                        <div class="w-8 h-8 flex flex-col justify-center items-center">
-                            <img
-                                alt="play"
-                                width="32"
-                                height="32"
-                                src="icons/GenericPlayIcon.svg"
-                            />
-                        </div>
-                    </Button>
+                    <ToolButton label="Run" on:click={startRobot}>
+                        <img alt="" width="28" height="28" src="icons/GenericPlayIcon.svg" />
+                    </ToolButton>
                     <Tooltip>Start the simulation, running the code in the code panel</Tooltip>
-                    <Button color="light" class="!p-2" on:click={startRepeatedRuns}>
-                        <div class="w-8 h-8 flex flex-row justify-center items-center text-sm">
-                            <img
-                                alt="play"
-                                width="20"
-                                height="20"
-                                src="icons/GenericPlayIcon.svg"
-                            />
+                    <ToolButton label="Run ×5" on:click={startRepeatedRuns}>
+                        <span class="flex flex-row items-center text-sm">
+                            <img alt="" width="18" height="18" src="icons/GenericPlayIcon.svg" />
                             ×5
-                        </div>
-                    </Button>
+                        </span>
+                    </ToolButton>
                     <Tooltip
                         >Run the program 5 times and draw every path on the mat, to see how much the
                         runs differ</Tooltip
@@ -412,18 +380,16 @@
                     <Tooltip>Real-world errors are on. Change them in the settings.</Tooltip>
                 {/if}
                 {#if !blocklyOpen}
-                    <Button color="light" class="!p-2" on:click={openBlockly}>
-                        <div class="w-8 h-8 flex flex-col justify-center items-center">
-                            <img alt="blockly" width="32" height="32" src="icons/BlocklyIcon.svg" />
-                        </div>
-                    </Button>
+                    <ToolButton label="Code" on:click={openBlockly}>
+                        <img alt="" width="28" height="28" src="icons/BlocklyIcon.svg" />
+                    </ToolButton>
                     <Tooltip>Open the code panel</Tooltip>
                 {/if}
                 <div class="flex-1" />
                 {#if !blocklyOpen}
-                    <Button color="light" class="!p-2" on:click={() => openGuide('toolbar')}>
-                        <QuestionCircleOutline class="w-8 h-8" />
-                    </Button>
+                    <ToolButton label="Help" on:click={() => openGuide('toolbar')}>
+                        <QuestionCircleOutline class="w-7 h-7" />
+                    </ToolButton>
                     <Tooltip>How to use the simulator</Tooltip>
                 {/if}
                 {#if blocklyOpen}

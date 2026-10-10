@@ -51,9 +51,11 @@
 
 ## Open items
 
--   Feedback from Pete's assistant: "Open" on examples froze in automated
-    testing (likely the native `confirm()`; replace with an in-app confirm),
-    add text labels to the toolbar, check the 3D mat rendering report.
+-   Feedback from Pete's assistant: the native `confirm()`/`alert()` popups are
+    replaced by an in-app dialog (`src/lib/confirm.ts`, `ConfirmDialog.svelte`) and
+    both toolbars show text labels (`ToolButton.svelte`). Still open: the 3D mat
+    rendering report (needs details of what looked wrong, and the LDraw library,
+    which the cloud sandbox can't download).
 -   Colour BIOGLOW mat: the `.spk` received was corrupted in transit
     (binary treated as text). Waiting on a zipped copy or the JPG/PNG to add it
     to the library. Reply to Pete drafted in the old thread.

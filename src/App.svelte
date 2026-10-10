@@ -3,6 +3,7 @@
     import WelcomeDialog from '$components/WelcomeDialog.svelte';
     import GuideDialog from '$components/GuideDialog.svelte';
     import BlockHelpDialog from '$components/BlockHelpDialog.svelte';
+    import ConfirmDialog from '$components/ConfirmDialog.svelte';
 </script>
 
 <svelte:head>
@@ -28,3 +29,4 @@
 <WelcomeDialog />
 <GuideDialog />
 <BlockHelpDialog />
+<ConfirmDialog />

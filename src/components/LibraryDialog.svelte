@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { askConfirm } from '$lib/confirm';
     import { Button, Modal } from 'flowbite-svelte';
     import {
         libraryStore,
@@ -55,8 +56,13 @@
         );
     }
 
-    function remove(kind: LibraryKind, name: string) {
-        if (confirm(`Delete ${name} from the library?`)) {
+    async function remove(kind: LibraryKind, name: string) {
+        if (
+            await askConfirm(`Delete ${name} from the library?`, {
+                confirmLabel: 'Delete',
+                danger: true
+            })
+        ) {
             run(() => deleteEntry(kind, name), `Deleted ${name}`);
         }
     }

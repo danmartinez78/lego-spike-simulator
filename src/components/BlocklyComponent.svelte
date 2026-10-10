@@ -38,6 +38,7 @@
     import { toolbox } from '$lib/blockly/toolbox';
     import { type BlocklyState } from '$lib/blockly/state';
     import { Button, CloseButton, Tooltip } from 'flowbite-svelte';
+    import ToolButton from '$components/ToolButton.svelte';
     import { loadScratchSb3 } from '$lib/scratch/sb3';
     import { createManifest } from '$lib/scratch/manifest';
     import { convertToBlockly, convertToScratch, mergeBlockly } from '$lib/scratch/blockly';
@@ -466,56 +467,44 @@
             <div class="w-8 h-8 flex flex-col justify-center items-center">
                 <img alt="code" width="32" height="32" src="icons/BlocklyIcon.svg" />
             </div>
-            <Button color="light" class="!p-2" on:click={askForFile}>
-                <div class="w-8 h-8 flex flex-col justify-center items-center">
-                    <img alt="open" width="32" height="32" src="icons/FolderMedium.svg" />
-                </div>
-            </Button>
+            <ToolButton label="Open" on:click={askForFile}>
+                <img alt="" width="28" height="28" src="icons/FolderMedium.svg" />
+            </ToolButton>
             <Tooltip>Open a spike program</Tooltip>
-            <Button color="light" class="!p-2" on:click={askForMerge}>
-                <div class="w-8 h-8 flex flex-col justify-center items-center">
-                    <img alt="merge" width="32" height="32" src="icons/FolderMerge.svg" />
-                </div>
-            </Button>
+            <ToolButton label="Merge" on:click={askForMerge}>
+                <img alt="" width="28" height="28" src="icons/FolderMerge.svg" />
+            </ToolButton>
             <Tooltip>Merge in another spike program</Tooltip>
-            <Button color="light" class="!p-2" on:click={saveState}>
-                <div class="w-8 h-8 flex flex-col justify-center items-center">
-                    <img alt="save" width="32" height="32" src="icons/SaveMedium.svg" />
-                </div>
-            </Button>
+            <ToolButton label="Save" on:click={saveState}>
+                <img alt="" width="28" height="28" src="icons/SaveMedium.svg" />
+            </ToolButton>
             <Tooltip>Save the spike program</Tooltip>
             <Button id="print_close_button" color="light" class="hidden" on:click={closePrint}>
                 Close print
             </Button>
             {#if !simulatorOpen}
-                <Button color="light" class="!p-2" on:click={togglePrintDialog}>
-                    <div class="w-8 h-8 flex flex-col justify-center items-center">
-                        <img alt="print" width="32" height="32" src="icons/Print.svg" />
-                    </div>
-                </Button>
+                <ToolButton label="Print" on:click={togglePrintDialog}>
+                    <img alt="" width="28" height="28" src="icons/Print.svg" />
+                </ToolButton>
                 <Tooltip>Print the code</Tooltip>
             {/if}
             {#if simulatorOpen}
-                <Button color="light" class="!p-2" on:click={toggleSize}>
-                    <div class="w-8 h-8 flex flex-row justify-center items-center text-base">
-                        1:{split == 1 ? 2 : 1}
-                    </div>
-                </Button>
+                <ToolButton label="Width" on:click={toggleSize}>
+                    <span class="text-base">1:{split == 1 ? 2 : 1}</span>
+                </ToolButton>
                 <Tooltip>Adjust the code panel width</Tooltip>
             {/if}
-            <Button color="light" class="!p-2" on:click={toggleRobot}>
-                <div class="w-8 h-8 flex flex-col justify-center items-center">
-                    <img alt="simulator" width="32" height="32" src="icons/Brick.svg" />
-                </div>
-            </Button>
+            <ToolButton label="Simulator" on:click={toggleRobot}>
+                <img alt="" width="28" height="28" src="icons/Brick.svg" />
+            </ToolButton>
             <Tooltip>Open the robot simulator panel</Tooltip>
-            <Button color="light" class="!p-2" on:click={() => (examplesOpen = true)}>
-                <BookOpenOutline class="w-8 h-8" />
-            </Button>
+            <ToolButton label="Examples" on:click={() => (examplesOpen = true)}>
+                <BookOpenOutline class="w-7 h-7" />
+            </ToolButton>
             <Tooltip>Example programs with explanations</Tooltip>
-            <Button color="light" class="!p-2" on:click={() => openGuide()}>
-                <QuestionCircleOutline class="w-8 h-8" />
-            </Button>
+            <ToolButton label="Help" on:click={() => openGuide()}>
+                <QuestionCircleOutline class="w-7 h-7" />
+            </ToolButton>
             <Tooltip>How to use the simulator</Tooltip>
             {#if !simulatorOpen}
                 <div class="flex-1" />

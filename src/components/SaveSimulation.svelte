@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { askConfirm } from '$lib/confirm';
     import { Button, Input, Modal } from 'flowbite-svelte';
     import FileSaver from 'file-saver';
     import {
@@ -69,7 +70,10 @@
             return;
         }
         const exists = $libraryStore.index[kind].some((e) => e.name === name);
-        if (exists && !confirm(`Replace ${name} in the library?`)) {
+        if (
+            exists &&
+            !(await askConfirm(`Replace ${name} in the library?`, { confirmLabel: 'Replace' }))
+        ) {
             return;
         }
         libraryMessage = `Saving ${name}...`;
