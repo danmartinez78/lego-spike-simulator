@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { showMessage } from '$lib/confirm';
     import { onDestroy, onMount } from 'svelte';
     import { Button, Input, Modal } from 'flowbite-svelte';
     import {
@@ -396,7 +397,7 @@
                     await loadSceneFromBlob(file);
                 } catch (e) {
                     console.log('Could not load scene', e);
-                    alert(
+                    showMessage(
                         `"${file.name}" could not be opened. The file looks damaged or isn't a ` +
                             'scene (.spk) file. Scene files can be broken if they are opened or ' +
                             'sent as text; try sending it zipped, or load just the mat picture ' +

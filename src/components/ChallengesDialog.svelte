@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { askConfirm } from '$lib/confirm';
     import { Button, Modal } from 'flowbite-svelte';
     import { StarSolid } from 'flowbite-svelte-icons';
     import {
@@ -68,7 +69,12 @@
     }
 
     async function openExample(name: string) {
-        if (!confirm('Replace the program in the code panel with this example?')) return;
+        if (
+            !(await askConfirm('Replace the program in the code panel with this example?', {
+                confirmLabel: 'Replace'
+            }))
+        )
+            return;
         try {
             programRequest.set({ blob: await fetchEntry('programs', name), merge: false });
             message = 'Example opened in the code panel.';

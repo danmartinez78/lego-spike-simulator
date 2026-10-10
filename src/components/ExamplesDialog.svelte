@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { askConfirm } from '$lib/confirm';
     import { Button, Input, Label, Modal, Select, Textarea } from 'flowbite-svelte';
     import { MapPinAltOutline } from 'flowbite-svelte-icons';
     import {
@@ -79,7 +80,12 @@
     }
 
     async function use(entry: LibraryEntry, merge: boolean) {
-        if (!merge && !confirm('Replace the program in the code panel with this example?')) {
+        if (
+            !merge &&
+            !(await askConfirm('Replace the program in the code panel with this example?', {
+                confirmLabel: 'Replace'
+            }))
+        ) {
             return;
         }
         message = '';
@@ -120,7 +126,7 @@
         const name = libraryFileName('programs', draft.title);
         if (
             $libraryStore.index.programs.some((p) => p.name === name) &&
-            !confirm(`Replace the example ${name}?`)
+            !(await askConfirm(`Replace the example ${name}?`, { confirmLabel: 'Replace' }))
         ) {
             return;
         }
@@ -148,7 +154,12 @@
     }
 
     async function remove(entry: LibraryEntry) {
-        if (!confirm(`Delete the example "${cardOf(entry).title}"?`)) {
+        if (
+            !(await askConfirm(`Delete the example "${cardOf(entry).title}"?`, {
+                confirmLabel: 'Delete',
+                danger: true
+            }))
+        ) {
             return;
         }
         try {
