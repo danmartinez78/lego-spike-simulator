@@ -6,7 +6,8 @@
     import PrintDialog from '$components/PrintDialog.svelte';
     import SpikeSimulatorWindow from '$components/SpikeSimulatorWindow.svelte';
     import { QuestionCircleOutline } from 'flowbite-svelte-icons';
-    import { openGuide } from '$lib/help';
+    import { openGuide, openBlockHelp } from '$lib/help';
+    import { helpFor, tooltipFor } from '$lib/blockly/blockhelp';
     import { programRequest, setProgramBuilder, type ProgramRequest } from '$lib/library';
     import { BookOpenOutline } from 'flowbite-svelte-icons';
     import ExamplesDialog from '$components/ExamplesDialog.svelte';
@@ -96,16 +97,46 @@
 
     $: handleProgramRequest($programRequest);
 
+    // Replace the internal block names used as tooltips with plain-English help.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function withHelp(definitions: any[]) {
+        return definitions.map((definition) => {
+            const tooltip = tooltipFor(definition.type);
+            return tooltip ? { ...definition, tooltip } : definition;
+        });
+    }
+
+    function registerExplainMenu() {
+        const id = 'explain_block';
+        if (Blockly.ContextMenuRegistry.registry.getItem(id)) {
+            return;
+        }
+        Blockly.ContextMenuRegistry.registry.register({
+            id,
+            scopeType: Blockly.ContextMenuRegistry.ScopeType.BLOCK,
+            displayText: 'Explain this block',
+            weight: -10,
+            preconditionFn: (scope) =>
+                scope.block && helpFor(scope.block.type) ? 'enabled' : 'hidden',
+            callback: (scope) => {
+                if (scope.block) {
+                    openBlockHelp(scope.block.type);
+                }
+            }
+        });
+    }
+
     onMount(() => {
         setProgramBuilder(buildProgram);
         fieldAngle.registerFieldAngle();
         colourPkg.registerFieldColour();
-        Blockly.common.defineBlocksWithJsonArray(procedureBlocks);
+        Blockly.common.defineBlocksWithJsonArray(withHelp(procedureBlocks));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         Blockly.setLocale(En as any as Record<string, string>);
         registerInputShadowExtension(Blockly);
         registerProcedureCallExtension(Blockly);
-        Blockly.defineBlocksWithJsonArray(blocks);
+        Blockly.defineBlocksWithJsonArray(withHelp(blocks));
+        registerExplainMenu();
         // Also apply the shadow extension to any blocks that
         // don't declare they use it.
         applyInputShadowExtension(Blockly);

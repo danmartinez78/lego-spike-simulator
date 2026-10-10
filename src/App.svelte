@@ -2,6 +2,7 @@
     import BlocklyPage from '$pages/BlocklyPage.svelte';
     import WelcomeDialog from '$components/WelcomeDialog.svelte';
     import GuideDialog from '$components/GuideDialog.svelte';
+    import BlockHelpDialog from '$components/BlockHelpDialog.svelte';
 </script>
 
 <svelte:head>
@@ -26,3 +27,4 @@
 </section>
 <WelcomeDialog />
 <GuideDialog />
+<BlockHelpDialog />

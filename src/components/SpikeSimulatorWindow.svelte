@@ -1,6 +1,14 @@
 <script lang="ts">
     import * as Blockly from 'blockly/core';
-    import { CogOutline, DatabaseOutline, QuestionCircleOutline } from 'flowbite-svelte-icons';
+    import {
+        CogOutline,
+        DatabaseOutline,
+        QuestionCircleOutline,
+        ChartLineUpOutline,
+        RulerCombinedOutline
+    } from 'flowbite-svelte-icons';
+    import { graphOpen } from '$lib/spike/telemetry';
+    import MeasureDialog from '$components/MeasureDialog.svelte';
     import { openGuide } from '$lib/help';
     import { Button, CloseButton, Tooltip } from 'flowbite-svelte';
     import MenuDropdown from '$components/MenuDropdown.svelte';
@@ -38,6 +46,7 @@
     let sceneOpen = false;
     let settingsOpen = false;
     let libraryOpen = false;
+    let measureOpen = false;
     let robotButtonColour: 'light' | 'red' | 'green' = 'light';
     let libraryClass = '!p-2';
     let runSimulation = false;
@@ -220,6 +229,7 @@
 <SimulatorSettings bind:modalOpen={settingsOpen} />
 <LibraryDialog bind:modalOpen={libraryOpen} />
 <RunOverlay />
+<MeasureDialog bind:modalOpen={measureOpen} />
 {#if modalOpen}
     <div class="{split == 1 ? 'flex-1' : 'flex-[2]'} h-full overflow-hidden">
         <div class="relative flex-1 h-full flex flex-col overflow-hidden">
@@ -277,6 +287,18 @@
                     <CogOutline class="w-8 h-8" />
                 </Button>
                 <Tooltip>Adjust simulator speed settings</Tooltip>
+                <Button
+                    color={$graphOpen ? 'blue' : 'light'}
+                    class="!p-2"
+                    on:click={() => graphOpen.update((v) => !v)}
+                >
+                    <ChartLineUpOutline class="w-8 h-8" />
+                </Button>
+                <Tooltip>Show a live graph of the sensors and motors</Tooltip>
+                <Button color="light" class="!p-2" on:click={() => (measureOpen = true)}>
+                    <RulerCombinedOutline class="w-8 h-8" />
+                </Button>
+                <Tooltip>Measure distances and angles on the mat to plan a route</Tooltip>
                 <Button id="camera_config_button" color="light" class="!p-2">
                     <div class="w-8 h-8 flex flex-col justify-center items-center">
                         <img alt="eye" width="32" height="32" src="icons/Eye.svg" />

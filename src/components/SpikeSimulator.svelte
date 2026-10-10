@@ -46,6 +46,13 @@
         type RunPath
     } from '$lib/spike/runs';
     import { getTimeFactor } from '$lib/spike/vm';
+    import {
+        startTelemetry,
+        recordTelemetry,
+        stopTelemetry,
+        graphOpen
+    } from '$lib/spike/telemetry';
+    import SensorGraph from '$components/SensorGraph.svelte';
 
     export let runSimulation: boolean = false;
     export let workspace: Blockly.WorkspaceSvg | undefined;
@@ -79,6 +86,7 @@
     let currentPath: RunPath | undefined = undefined;
     let runSeconds = 0;
     let idleSeconds = 0;
+    let simSeconds = 0;
 
     const partNames: Record<string, string> = {
         '54696': 'motor',
@@ -275,6 +283,8 @@
         }
         const robot = scene.robot;
         recordPoint(currentPath, robot.position!.x, robot.position!.z, robot.rotation ?? 0);
+        simSeconds += seconds;
+        recordTelemetry(vm.hub, simSeconds);
         if (!$runBatch.active) {
             return;
         }
@@ -364,6 +374,8 @@
             currentPath = { seed: run?.seed, points: [], timedOut: false };
             runSeconds = 0;
             idleSeconds = 0;
+            simSeconds = 0;
+            startTelemetry(hub);
             vm = new VM(id, hub, globals, $codeStore.events, $codeStore.procedures, workspace);
             vm.start();
             lastFrame = 0;
@@ -375,6 +387,7 @@
                 hubCentreButtonColour = '#ffffff';
             }
             currentPath = undefined;
+            stopTelemetry();
             if ($runBatch.active) {
                 cancelBatch();
             }
@@ -510,7 +523,10 @@
                     {/each}
                 {/if}
             </div>
-            <div class="overflow-hidden w-full h-full">
+            <div class="overflow-hidden w-full h-full relative">
+                {#if $graphOpen}
+                    <SensorGraph class="absolute bottom-0 left-0 right-0 z-10" />
+                {/if}
                 {#if runSimulation}
                     <ScenePreview
                         id="scene_preview"

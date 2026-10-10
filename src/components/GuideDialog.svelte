@@ -1,7 +1,43 @@
 <script lang="ts">
     import { Modal, TabItem, Tabs } from 'flowbite-svelte';
-    import { CogOutline, DatabaseOutline } from 'flowbite-svelte-icons';
-    import { helpStore } from '$lib/help';
+    import {
+        CogOutline,
+        DatabaseOutline,
+        ChartLineUpOutline,
+        RulerCombinedOutline
+    } from 'flowbite-svelte-icons';
+    import { helpStore, openBlockHelp } from '$lib/help';
+    import { blockHelp, helpCategories } from '$lib/blockly/blockhelp';
+    import { toolbox } from '$lib/blockly/toolbox';
+
+    const categories = helpCategories(toolbox);
+
+    // The tab showing. It follows the store only when a tab is asked for,
+    // so clicking tabs isn't undone by other help changes.
+    let activeTab = $helpStore.guideTab;
+    let lastRequest = $helpStore.guideRequest;
+    $: if ($helpStore.guideRequest != lastRequest) {
+        lastRequest = $helpStore.guideRequest;
+        activeTab = $helpStore.guideTab;
+    }
+    let search = '';
+
+    function matches(type: string, query: string) {
+        const q = query.trim().toLowerCase();
+        if (q.length == 0) {
+            return true;
+        }
+        const help = blockHelp[type];
+        return (
+            help.title.toLowerCase().includes(q) ||
+            help.text.toLowerCase().includes(q) ||
+            (help.example ?? '').toLowerCase().includes(q)
+        );
+    }
+
+    $: filtered = categories
+        .map((c) => ({ ...c, types: c.types.filter((t) => matches(t, search)) }))
+        .filter((c) => c.types.length > 0);
 
     const toolbar = [
         {
@@ -30,6 +66,14 @@
             component: CogOutline,
             text: 'Settings: simulation speed, boundary and realism.'
         },
+        {
+            component: ChartLineUpOutline,
+            text: 'Sensor graph: watch light, distance, yaw and motor readings while the robot runs. Hover after a run to read any moment.'
+        },
+        {
+            component: RulerCombinedOutline,
+            text: 'Measure: click points on the mat to see distances and turns for a route, then copy the steps.'
+        },
         { icon: 'icons/Eye.svg', text: 'Camera: top view, side views, or follow the robot.' },
         { icon: 'icons/GenericPlayIcon.svg', text: 'Run the program in the code panel.' }
     ];
@@ -44,7 +88,11 @@
 >
     <div class="max-h-[70dvh] overflow-y-auto text-sm leading-relaxed">
         <Tabs style="underline" contentClass="pt-4">
-            <TabItem open={$helpStore.guideTab == 'start'} title="Getting started">
+            <TabItem
+                open={activeTab == 'start'}
+                on:click={() => (activeTab = 'start')}
+                title="Getting started"
+            >
                 <ol class="list-decimal ml-5 flex flex-col gap-2">
                     <li>
                         <b>Write a program.</b> The left panel works like the LEGO SPIKE app. Drag
@@ -75,7 +123,11 @@
                     1:1 button changes how wide the code panel is next to the simulator.
                 </p>
             </TabItem>
-            <TabItem open={$helpStore.guideTab == 'toolbar'} title="Simulator buttons">
+            <TabItem
+                open={activeTab == 'toolbar'}
+                on:click={() => (activeTab = 'toolbar')}
+                title="Simulator buttons"
+            >
                 <div class="flex flex-col gap-2">
                     {#each toolbar as item}
                         <div class="flex flex-row gap-3 items-center">
@@ -104,7 +156,63 @@
                     live view from each sensor.
                 </p>
             </TabItem>
-            <TabItem open={$helpStore.guideTab == 'robots'} title="Building robots">
+            <TabItem
+                open={activeTab == 'blocks'}
+                on:click={() => (activeTab = 'blocks')}
+                title="Block reference"
+            >
+                <div class="flex flex-col gap-3">
+                    <input
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                        type="search"
+                        placeholder="Search blocks, e.g. yaw, wait, line"
+                        bind:value={search}
+                    />
+                    <p class="text-gray-600">
+                        Tip: in the code panel, hover over any block for a quick explanation, or
+                        right-click it and choose <b>Explain this block</b>.
+                    </p>
+                    {#if filtered.length == 0}
+                        <p class="text-gray-500">No blocks match "{search}".</p>
+                    {/if}
+                    {#each filtered as category}
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-2 mt-1">
+                                <span
+                                    class="inline-block w-3 h-3 rounded-full"
+                                    style="background-color: {category.colour}"
+                                ></span>
+                                <span class="text-xs font-semibold tracking-wide text-gray-600"
+                                    >{category.name}</span
+                                >
+                            </div>
+                            {#each category.types as type}
+                                <button
+                                    class="text-left rounded-lg px-3 py-2 hover:bg-gray-100 border-l-4"
+                                    style="border-left-color: {category.colour}"
+                                    on:click={() => openBlockHelp(type)}
+                                >
+                                    <div class="font-medium text-gray-900">
+                                        {blockHelp[type].title}
+                                        {#if blockHelp[type].sim}
+                                            <span
+                                                class="ml-1 text-[10px] uppercase tracking-wide bg-gray-200 text-gray-700 rounded px-1 py-0.5"
+                                                >sim note</span
+                                            >
+                                        {/if}
+                                    </div>
+                                    <div class="text-gray-600">{blockHelp[type].text}</div>
+                                </button>
+                            {/each}
+                        </div>
+                    {/each}
+                </div>
+            </TabItem>
+            <TabItem
+                open={activeTab == 'robots'}
+                on:click={() => (activeTab = 'robots')}
+                title="Building robots"
+            >
                 <ol class="list-decimal ml-5 flex flex-col gap-2">
                     <li>
                         Design the robot in <a
@@ -135,7 +243,11 @@
                     </li>
                 </ol>
             </TabItem>
-            <TabItem open={$helpStore.guideTab == 'library'} title="Fields and library">
+            <TabItem
+                open={activeTab == 'library'}
+                on:click={() => (activeTab = 'library')}
+                title="Fields and library"
+            >
                 <p>
                     A <b>scene</b> is a mat image plus where the robot and any obstacles start. Use the
                     scene editor to pick the mat size (FIRST LEGO League or WRO), load a mat image, add
@@ -148,7 +260,11 @@
                     when the simulator opens.
                 </p>
             </TabItem>
-            <TabItem open={$helpStore.guideTab == 'realism'} title="Realism">
+            <TabItem
+                open={activeTab == 'realism'}
+                on:click={() => (activeTab = 'realism')}
+                title="Realism"
+            >
                 <p>
                     Real robots never drive exactly the same way twice. Under <b>Settings</b>, the
                     Realism menu adds the errors a real robot has: a slightly different start each
@@ -178,7 +294,7 @@
                     for a class.
                 </p>
             </TabItem>
-            <TabItem open={$helpStore.guideTab == 'tips'} title="Tips">
+            <TabItem open={activeTab == 'tips'} on:click={() => (activeTab = 'tips')} title="Tips">
                 <ul class="list-disc ml-5 flex flex-col gap-1">
                     <li>
                         If the robot button is red, some bricks are missing. Wait a moment, or use
@@ -195,7 +311,11 @@
                     </li>
                 </ul>
             </TabItem>
-            <TabItem open={$helpStore.guideTab == 'about'} title="About">
+            <TabItem
+                open={activeTab == 'about'}
+                on:click={() => (activeTab = 'about')}
+                title="About"
+            >
                 <p>
                     The LEGO SPIKE Simulator was created by <b>Alexandre Hardy</b>. The original
                     project is at

@@ -15,7 +15,11 @@ function welcomeSeen() {
 export const helpStore = writable({
     welcomeOpen: !welcomeSeen(),
     guideOpen: false,
-    guideTab: 'start'
+    guideTab: 'start',
+    // Bumped each time a tab is requested, so the guide switches to it once.
+    guideRequest: 0,
+    // Block type shown in the "Explain this block" card.
+    blockHelpType: undefined as string | undefined
 });
 
 export function closeWelcome(dontShowAgain: boolean) {
@@ -30,5 +34,19 @@ export function closeWelcome(dontShowAgain: boolean) {
 }
 
 export function openGuide(tab = 'start') {
-    helpStore.update((old) => ({ ...old, welcomeOpen: false, guideOpen: true, guideTab: tab }));
+    helpStore.update((old) => ({
+        ...old,
+        welcomeOpen: false,
+        guideOpen: true,
+        guideTab: tab,
+        guideRequest: old.guideRequest + 1
+    }));
+}
+
+export function openBlockHelp(type: string) {
+    helpStore.update((old) => ({ ...old, blockHelpType: type }));
+}
+
+export function closeBlockHelp() {
+    helpStore.update((old) => ({ ...old, blockHelpType: undefined }));
 }
