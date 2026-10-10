@@ -198,9 +198,10 @@ export class RealismRun {
         return this.gaussian() * this.settings.gyroNoiseDeg * 0.5;
     }
 
+    // Reflected light is stored as 0 to 1 (shown to programs as 0 to 100%).
     reflected(value: number) {
-        const noisy = value + this.gaussian() * this.settings.lightNoisePct * 0.5;
-        return Math.max(0, Math.min(100, noisy));
+        const noisy = value + (this.gaussian() * this.settings.lightNoisePct * 0.5) / 100.0;
+        return Math.max(0, Math.min(1, noisy));
     }
 
     distance(value: number) {

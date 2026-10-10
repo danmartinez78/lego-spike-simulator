@@ -32,5 +32,5 @@ def scene(name, x, z, rotation):
 
 # Robot in the start box, facing the stop line.
 scene('Practice - start box.spk', -900, 300, 180)
-# Robot on the bottom of the oval, facing left along the line.
-scene('Practice - line oval.spk', 300, 400, 270)
+# Robot just outside the bottom of the oval, facing left along the line.
+scene('Practice - line oval.spk', 300, 410, 270)
