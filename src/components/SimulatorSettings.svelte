@@ -1,6 +1,7 @@
 <script lang="ts">
     import { boundaryStore } from '$lib/spike/scene';
     import { Modal, Label, Range, Toggle } from 'flowbite-svelte';
+    import RealismSettings from '$components/RealismSettings.svelte';
     import {
         getStartDelay,
         getStepSleep,
@@ -62,7 +63,7 @@
     title="Settings"
     bind:open={modalOpen}
 >
-    <div class="flex flex-col gap-2 items-start">
+    <div class="flex flex-col gap-2 items-start max-h-[70dvh] overflow-y-auto pr-2">
         <Label>Time between program steps: {stepTime} seconds</Label>
         <Range min="0" max="10" step="0.1" bind:value={stepTime} on:change={() => updateSleep()} />
         <div class="h-2" />
@@ -103,5 +104,7 @@
         >
             Show boundary collisions
         </Toggle>
+        <hr class="w-full my-2" />
+        <RealismSettings />
     </div>
 </Modal>

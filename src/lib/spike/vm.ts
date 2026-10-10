@@ -5,6 +5,7 @@ import { SoundLibrary } from '$lib/blockly/audio';
 import { type Vertex } from '$lib/ldraw/components';
 import { type SceneStore } from '$lib/spike/scene';
 import * as m4 from '$lib/ldraw/m4';
+import { realism } from '$lib/spike/realism';
 
 export type PortType = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 export const allPorts: PortType[] = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -1763,7 +1764,8 @@ export class FunctionExpression extends Expression {
                 // TODO: Should we calculate roll?
                 return new NumberValue(0);
             } else if (axis == 'yaw') {
-                return new NumberValue(Math.floor(thread.vm.hub.yaw + 0.5));
+                const yaw = thread.vm.hub.yaw + (realism()?.yawNoise() ?? 0);
+                return new NumberValue(Math.floor(yaw + 0.5));
             }
             return new NumberValue(0);
         } else if (this.opcode == 'flippersensors_reflectivity') {
@@ -2094,6 +2096,8 @@ export class Motor {
     rpm: number;
     on: boolean;
     reverse: boolean;
+    // Degrees still to turn after stopping (realism: motors don't stop dead).
+    overshoot: number;
 
     constructor(id: number) {
         this.id = id;
@@ -2103,6 +2107,7 @@ export class Motor {
         this.rpm = 135 * this.motorSpeed;
         this.on = false;
         this.reverse = false;
+        this.overshoot = 0;
     }
 
     reset() {
@@ -2112,6 +2117,7 @@ export class Motor {
         this.rpm = 135 * this.motorSpeed;
         this.on = false;
         this.reverse = false;
+        this.overshoot = 0;
     }
 
     setSpeed(percent: number) {
@@ -2153,19 +2159,47 @@ export class Motor {
         }
         this.rpm = this.getRpm(options);
         this.on = true;
+        this.overshoot = 0;
     }
 
     stopMotor() {
+        const run = realism();
+        if (this.on && run) {
+            this.overshoot = run.stopOvershoot(Math.abs(this.rpm) / 135.0);
+        } else {
+            this.reverse = false;
+        }
         this.on = false;
-        this.reverse = false;
+    }
+
+    // Degrees the motor has to turn, while running or overshooting a stop.
+    turnFraction(time: number): number {
+        const delta = (time * this.rpm) / 60.0;
+        if (this.on) {
+            return delta;
+        }
+        if (this.overshoot <= 0) {
+            return 0;
+        }
+        // Overshoot at half speed.
+        let degrees = Math.abs(delta) * 0.5 * 360;
+        if (degrees >= this.overshoot) {
+            degrees = this.overshoot;
+        }
+        this.overshoot -= degrees;
+        if (this.overshoot <= 1e-6) {
+            this.overshoot = 0;
+            this.reverse = false;
+        }
+        return (Math.sign(delta) * degrees) / 360;
     }
 
     move(time: number): number {
         // time is in seconds
-        if (!this.on) {
+        if (!this.on && this.overshoot <= 0) {
             return 0;
         }
-        const delta = (time * this.rpm) / 60.0;
+        const delta = this.turnFraction(time);
         if (this.reverse) {
             this.position -= delta * 360;
             this.relativePosition -= delta * 360;
@@ -2471,7 +2505,8 @@ export class Hub {
     }
 
     measureReflected(port: PortType, reflected: number) {
-        this.ports[port].measure.reflected = reflected;
+        const run = realism();
+        this.ports[port].measure.reflected = run ? run.reflected(reflected) : reflected;
     }
 
     measureRawColour(port: PortType, r: number, g: number, b: number) {
@@ -2481,7 +2516,8 @@ export class Hub {
     }
 
     measureDistance(port: PortType, distance: number) {
-        this.ports[port].measure.distance = distance;
+        const run = realism();
+        this.ports[port].measure.distance = run ? run.distance(distance) : distance;
     }
 
     measureForce(port: PortType, force: number) {
@@ -3016,10 +3052,43 @@ export class VM {
                 this.processSleep(stepTime);
                 this.runThreads();
                 this.moveRobot(stepTime, scene);
+                this.driftGyro(stepTime);
                 duration -= stepTime;
             }
             this.deltaTime = duration;
         }
+    }
+
+    driftGyro(seconds: number) {
+        const run = realism();
+        if (run && run.gyroDriftPerSecond != 0) {
+            this.hub.yaw += run.gyroDriftPerSecond * seconds;
+            while (this.hub.yaw >= 180.0) {
+                this.hub.yaw -= 360.0;
+            }
+            while (this.hub.yaw < -180.0) {
+                this.hub.yaw += 360.0;
+            }
+        }
+    }
+
+    // True when no program thread is running and no motor is turning.
+    isIdle(): boolean {
+        if (this.state != 'running' || this.first) {
+            return false;
+        }
+        for (const thread of Array.from(this.threads.values())) {
+            if (thread.state == 'running') {
+                return false;
+            }
+        }
+        for (const port of allPorts) {
+            const motor = this.hub.ports[port].motor;
+            if (motor && (motor.on || motor.overshoot > 0)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     turnMotor(port: PortType, seconds: number): Wheel[] {
@@ -3033,6 +3102,10 @@ export class VM {
         for (const wheel of this.hub.wheels) {
             if (wheel.port == port) {
                 wheel.distanceMoved = wheel.gearing * angle * (wheel.radius * 2.0 * Math.PI);
+                const run = realism();
+                if (run) {
+                    wheel.distanceMoved = run.wheelTravel(wheel.id, wheel.distanceMoved);
+                }
                 if (wheel.position.y <= 1e-5) {
                     // This wheel is on the ground.
                 }
@@ -3091,7 +3164,12 @@ export class VM {
                     reverse = !reverse;
                 }
 
-                if ((d1 - d0) * (d1 - d0) < 1e-3) {
+                // Each simulation step is tiny, so with realism on even a
+                // small difference between the wheels has to turn the robot.
+                const straight = realism()
+                    ? Math.abs(d1 - d0) < 1e-9
+                    : (d1 - d0) * (d1 - d0) < 1e-3;
+                if (straight) {
                     // Very close in distance, just move straight
                     const direction = m4.transformVector(
                         m4.yRotation((scene.robot.rotation! * Math.PI) / 180.0),

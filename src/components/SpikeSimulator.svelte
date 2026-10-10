@@ -35,6 +35,17 @@
     import * as m4 from '$lib/ldraw/m4';
     import JSZip from 'jszip';
     import { robotRequest, type RobotRequest } from '$lib/library';
+    import { beginRealismRun, type RealismRun } from '$lib/spike/realism';
+    import {
+        runBatch,
+        finishRun,
+        cancelBatch,
+        recordPoint,
+        idleSecondsToFinish,
+        maxRunSeconds,
+        type RunPath
+    } from '$lib/spike/runs';
+    import { getTimeFactor } from '$lib/spike/vm';
 
     export let runSimulation: boolean = false;
     export let workspace: Blockly.WorkspaceSvg | undefined;
@@ -65,6 +76,9 @@
     let lastFrame: number = 0;
     let scene = copyScene($sceneStore);
     let id = genId();
+    let currentPath: RunPath | undefined = undefined;
+    let runSeconds = 0;
+    let idleSeconds = 0;
 
     const partNames: Record<string, string> = {
         '54696': 'motor',
@@ -244,12 +258,55 @@
                     seconds = 2.0;
                 }
                 vm.step(seconds, scene);
+                trackRun(seconds * getTimeFactor());
             } else {
                 vm.step(0.0, scene);
             }
-            requestAnimationFrame(stepVM);
+            if (vm.state == 'running') {
+                requestAnimationFrame(stepVM);
+            }
         }
         lastFrame = timestamp;
+    }
+
+    function trackRun(seconds: number) {
+        if (!vm || !currentPath) {
+            return;
+        }
+        const robot = scene.robot;
+        recordPoint(currentPath, robot.position!.x, robot.position!.z, robot.rotation ?? 0);
+        if (!$runBatch.active) {
+            return;
+        }
+        runSeconds += seconds;
+        idleSeconds = vm.isIdle() ? idleSeconds + seconds : 0;
+        const timedOut = runSeconds >= maxRunSeconds;
+        if (idleSeconds >= idleSecondsToFinish || timedOut) {
+            currentPath.timedOut = timedOut;
+            const path = currentPath;
+            currentPath = undefined;
+            vm.stop();
+            if (finishRun(path)) {
+                // Next run of the batch, with a new random start.
+                setTimeout(() => {
+                    if (runSimulation && $runBatch.active) {
+                        startOrPauseSimulation(true);
+                    }
+                }, 300);
+            } else {
+                runSimulation = false;
+            }
+        }
+    }
+
+    function applyStartJitter(run: RealismRun | undefined) {
+        if (!run) {
+            return;
+        }
+        const offset = run.startOffset();
+        scene.robot.position!.x += offset.x;
+        scene.robot.position!.z += offset.z;
+        scene.robot.rotation = (scene.robot.rotation ?? 0) + offset.rotation;
     }
 
     function startOrPauseSimulation(start: boolean) {
@@ -302,6 +359,11 @@
             }
             hub = hub;
             scene = copyScene($sceneStore);
+            const run = beginRealismRun();
+            applyStartJitter(run);
+            currentPath = { seed: run?.seed, points: [], timedOut: false };
+            runSeconds = 0;
+            idleSeconds = 0;
             vm = new VM(id, hub, globals, $codeStore.events, $codeStore.procedures, workspace);
             vm.start();
             lastFrame = 0;
@@ -311,6 +373,10 @@
                 vm.stop();
                 hubImage = '0000000000000000000000000';
                 hubCentreButtonColour = '#ffffff';
+            }
+            currentPath = undefined;
+            if ($runBatch.active) {
+                cancelBatch();
             }
         }
     }

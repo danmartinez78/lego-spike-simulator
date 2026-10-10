@@ -71,3 +71,15 @@ docker run -d -p 8093:8080 -v /path/to/data:/data \
 
 `/data/library` holds the library and `/data/ldraw` the parts library. Delete
 `/data/ldraw` to fetch a newer parts library on the next start.
+
+# Realism modes
+
+The settings (cog) button has a Realism section. "Ideal" is a perfect robot,
+as in the original simulator. "Realistic" and "Challenging" add start
+position errors, wheel size mismatch, wheel slip, motor overshoot, gyro drift
+and sensor noise, so programs that only count rotations drift while programs
+that check sensors stay on target. Each value can be tuned, and a fixed seed
+makes runs repeatable. A link such as `/?realism=realistic` selects a preset.
+
+The "▶ ×5" button runs the program five times and draws every path on the
+mat, with how far apart the runs ended.

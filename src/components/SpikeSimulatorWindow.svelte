@@ -12,6 +12,9 @@
     import WheelConnector from '$components/WheelConnector.svelte';
     import LoadScene from '$components/LoadScene.svelte';
     import LibraryDialog from '$components/LibraryDialog.svelte';
+    import RunOverlay from '$components/RunOverlay.svelte';
+    import { runBatch, startBatch } from '$lib/spike/runs';
+    import { realismStore, presetLabels } from '$lib/spike/realism';
     import { libraryStore } from '$lib/library';
     import { type LDrawStore, componentStore } from '$lib/ldraw/components';
     import { Hub, codeStore } from '$lib/spike/vm';
@@ -173,6 +176,11 @@
         runSimulation = true;
     }
 
+    function startRepeatedRuns() {
+        startBatch(5);
+        startRobot();
+    }
+
     function stopRobot() {
         runSimulation = false;
     }
@@ -210,6 +218,7 @@
 <LoadScene bind:modalOpen={sceneOpen} />
 <SimulatorSettings bind:modalOpen={settingsOpen} />
 <LibraryDialog bind:modalOpen={libraryOpen} />
+<RunOverlay />
 {#if modalOpen}
     <div class="{split == 1 ? 'flex-1' : 'flex-[2]'} h-full overflow-hidden">
         <div class="relative flex-1 h-full flex flex-col overflow-hidden">
@@ -303,6 +312,34 @@
                         </div>
                     </Button>
                     <Tooltip>Start the simulation, running the code in the code panel</Tooltip>
+                    <Button color="light" class="!p-2" on:click={startRepeatedRuns}>
+                        <div class="w-8 h-8 flex flex-row justify-center items-center text-sm">
+                            <img
+                                alt="play"
+                                width="20"
+                                height="20"
+                                src="icons/GenericPlayIcon.svg"
+                            />
+                            ×5
+                        </div>
+                    </Button>
+                    <Tooltip
+                        >Run the program 5 times and draw every path on the mat, to see how much the
+                        runs differ</Tooltip
+                    >
+                {/if}
+                {#if runSimulation && $runBatch.active}
+                    <span class="text-sm">
+                        Run {Math.min($runBatch.completed.length + 1, $runBatch.total)} of {$runBatch.total}
+                    </span>
+                {/if}
+                {#if $realismStore.preset != 'ideal'}
+                    <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-900">
+                        {$realismStore.preset == 'custom'
+                            ? 'Custom realism'
+                            : presetLabels[$realismStore.preset]}
+                    </span>
+                    <Tooltip>Real-world errors are on. Change them in the settings.</Tooltip>
                 {/if}
                 {#if !blocklyOpen}
                     <Button color="light" class="!p-2" on:click={openBlockly}>
