@@ -7,15 +7,23 @@
 
     const categories = helpCategories(toolbox);
 
-    let open = false;
     $: open = $helpStore.blockHelpType !== undefined;
     $: type = $helpStore.blockHelpType;
     $: help = type ? helpFor(type) : undefined;
     $: category = type ? categoryOf(type, categories) : undefined;
 
-    function closed(isOpen: boolean) {
-        if (!isOpen && $helpStore.blockHelpType !== undefined) {
+    // The card is shown while the store names a block. Every way of closing
+    // (the X, clicking outside, Escape) clears the store.
+    function close() {
+        if ($helpStore.blockHelpType !== undefined) {
             closeBlockHelp();
+        }
+    }
+
+    function keydown(event: KeyboardEvent) {
+        if (open && event.key == 'Escape') {
+            event.preventDefault();
+            close();
         }
     }
 
@@ -24,14 +32,16 @@
         openGuide('blocks');
     }
 
-    $: closed(open);
 </script>
+
+<svelte:window on:keydown={keydown} />
 
 <Modal
     backdropClass="fixed inset-0 z-[80] bg-gray-900 bg-opacity-50 dark:bg-opacity-80"
     dialogClass="fixed top-0 start-0 end-0 h-modal md:inset-0 md:h-full z-[90] w-full p-4 flex"
     size="md"
-    bind:open
+    {open}
+    on:close={close}
     outsideclose
 >
     <svelte:fragment slot="header">
