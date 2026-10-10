@@ -391,7 +391,18 @@
         if (element) {
             const fileElement = element as HTMLInputElement;
             if (fileElement.files && fileElement.files.length > 0) {
-                await loadSceneFromBlob(fileElement.files[0]);
+                const file = fileElement.files[0];
+                try {
+                    await loadSceneFromBlob(file);
+                } catch (e) {
+                    console.log('Could not load scene', e);
+                    alert(
+                        `"${file.name}" could not be opened. The file looks damaged or isn't a ` +
+                            'scene (.spk) file. Scene files can be broken if they are opened or ' +
+                            'sent as text; try sending it zipped, or load just the mat picture ' +
+                            'with Load > Load mat in the scene editor.'
+                    );
+                }
             }
         }
     }

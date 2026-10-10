@@ -187,8 +187,7 @@ export async function loadSceneFromBlob(blob: Blob) {
     let map: Blob | undefined = undefined;
     const jsonFile = zipFile.file('scene.json');
     if (!jsonFile) {
-        console.log('Invalid scene file format, missing scene.json');
-        return;
+        throw new Error('Invalid scene file format, missing scene.json');
     }
     const sceneDefContents = await jsonFile.async('string');
     const scene = JSON.parse(sceneDefContents);
