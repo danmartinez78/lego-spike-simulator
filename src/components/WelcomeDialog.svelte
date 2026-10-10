@@ -63,6 +63,10 @@
             You can reopen this help any time with the
             <span class="font-medium">?</span> button in the toolbar.
         </p>
+        <p class="text-xs text-gray-500">
+            Based on the LEGO SPIKE Simulator by Alexandre Hardy. Free software under the GNU GPL
+            version 2. See About in the guide for credits and source code.
+        </p>
         <div class="flex flex-row flex-wrap gap-3 items-center">
             <Checkbox bind:checked={dontShowAgain}>Don't show this again</Checkbox>
             <div class="flex-1" />

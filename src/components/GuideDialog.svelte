@@ -193,14 +193,58 @@
                         The simulator is a practice tool. Always test on the real robot and mat
                         before a match.
                     </li>
+                </ul>
+            </TabItem>
+            <TabItem open={$helpStore.guideTab == 'about'} title="About">
+                <p>
+                    The LEGO SPIKE Simulator was created by <b>Alexandre Hardy</b>. The original
+                    project is at
+                    <a
+                        class="text-blue-700 underline"
+                        href="https://github.com/alexandrehardy/lego-spike-simulator"
+                        target="_blank">github.com/alexandrehardy/lego-spike-simulator</a
+                    >.
+                </p>
+                <p class="mt-2">
+                    This site runs a modified version that adds the shared library, realism
+                    settings, the ▶×5 path overlay, example programs, and this guide. Its full
+                    source code is at
+                    <a
+                        class="text-blue-700 underline"
+                        href="https://github.com/danmartinez78/lego-spike-simulator"
+                        target="_blank">github.com/danmartinez78/lego-spike-simulator</a
+                    >.
+                </p>
+                <p class="mt-2">
+                    The simulator is free software under the
+                    <a
+                        class="text-blue-700 underline"
+                        href="https://github.com/danmartinez78/lego-spike-simulator/blob/master/COPYING.md"
+                        target="_blank">GNU General Public License version 2</a
+                    >. You may use, change and share it under those terms.
+                </p>
+                <h4 class="font-medium mt-3">Also uses</h4>
+                <ul class="list-disc ml-5">
                     <li>
-                        Simulator by Alexandre Hardy (<a
+                        <a
                             class="text-blue-700 underline"
-                            href="https://github.com/alexandrehardy/lego-spike-simulator"
-                            target="_blank">source</a
-                        >), with library and realism additions for this site.
+                            href="https://developers.google.com/blockly"
+                            target="_blank">Blockly</a
+                        > by Google (Apache License 2.0) for the code blocks.
+                    </li>
+                    <li>
+                        The <a
+                            class="text-blue-700 underline"
+                            href="https://www.ldraw.org"
+                            target="_blank">LDraw</a
+                        > parts library (CC BY 2.0) for the 3D bricks.
                     </li>
                 </ul>
+                <p class="mt-3 text-xs text-gray-500">
+                    LEGO and SPIKE are trademarks of the LEGO Group. FIRST, FIRST LEGO League and
+                    BIOGLOW are trademarks of FIRST. This site is not affiliated with or endorsed by
+                    either. Field images belong to their owners and are used for team practice.
+                </p>
             </TabItem>
         </Tabs>
     </div>
