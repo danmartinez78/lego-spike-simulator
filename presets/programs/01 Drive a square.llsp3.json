@@ -1,0 +1,15 @@
+{
+  "file": "01 Drive a square.llsp3",
+  "title": "Drive a square",
+  "topic": "Basics",
+  "order": 1,
+  "summary": "Drive 30 cm, turn right, and repeat four times.",
+  "what": "The robot drives forward 30 cm, spins a quarter turn, and does that four times, so it should end up back where it started.",
+  "why": "A repeat block runs the blocks inside it again and again, so you only write one side of the square. The robot only counts how far its wheels turn. It never checks where it really is. That is called open loop.",
+  "try": [
+    "Change 30 to 50 to make a bigger square.",
+    "Change repeat 4 to repeat 3 and the turn to 240 degrees. What shape do you get?",
+    "Turn Realism to Realistic and press \u25b6\u00d75. Does the robot end in the same place each time?"
+  ],
+  "scene": "Practice - start box.spk"
+}

@@ -1,0 +1,14 @@
+{
+  "file": "02 Square with a My Block.llsp3",
+  "title": "Square with a My Block",
+  "topic": "Basics",
+  "order": 2,
+  "summary": "The same square, using your own block called Side.",
+  "what": "Exactly the same square as before, but the driving and turning live inside a My Block called Side.",
+  "why": "My Blocks let you give a name to a group of blocks and reuse it. The main program reads like a sentence, and if you improve Side, every use of it gets better at once. Good teams build a toolbox of My Blocks.",
+  "try": [
+    "Make a rectangle: use Side 40, Side 20, Side 40, Side 20 without the repeat.",
+    "Add a second input to Side for the turn amount."
+  ],
+  "scene": "Practice - start box.spk"
+}

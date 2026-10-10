@@ -66,6 +66,11 @@
                     </li>
                 </ol>
                 <p class="mt-3">
+                    New to coding the robot? The <b>book</b> button in the code panel opens example programs.
+                    Each one explains what it does and why, with ideas to try. Open one to start from
+                    it, or add it to your program to borrow its My Blocks.
+                </p>
+                <p class="mt-3">
                     Your program isn't stored on this site, so save it before closing the page. The
                     1:1 button changes how wide the code panel is next to the simulator.
                 </p>

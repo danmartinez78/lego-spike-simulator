@@ -1,0 +1,15 @@
+{
+  "file": "08 Mission template.llsp3",
+  "title": "Mission template",
+  "topic": "Missions",
+  "order": 8,
+  "summary": "A starting point for a mission run built from reliable My Blocks.",
+  "what": "Drives 40 cm, turns right, drives 30 cm and backs up, using the DriveStraight and TurnRight My Blocks.",
+  "why": "Competition runs are long lists of moves. Building them from tested My Blocks makes them easier to read, change and debug. When something goes wrong, you fix the My Block once and every step improves.",
+  "try": [
+    "Plan a path to a mission model on the field, then change the steps to drive there.",
+    "Add a \"Stop at a black line\" step to line up before an important move.",
+    "Press \u25b6\u00d75 on Realistic. If the end points spread out, which step needs a sensor?"
+  ],
+  "scene": "Practice - start box.spk"
+}

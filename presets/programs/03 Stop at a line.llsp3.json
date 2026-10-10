@@ -1,0 +1,15 @@
+{
+  "file": "03 Stop at a line.llsp3",
+  "title": "Stop at a black line",
+  "topic": "Sensors",
+  "order": 3,
+  "summary": "Drive until the colour sensor sees black.",
+  "what": "The robot drives forward and stops the moment its colour sensor (port B) sees the black line.",
+  "why": "Instead of guessing a distance, the robot watches the mat. It does not matter if it started a little early or late: it always stops at the line. Using a sensor to decide when to stop is called closed loop.",
+  "try": [
+    "Make it faster by changing the speed to 60. Does it still stop on the line?",
+    "After it stops, add a move backward 5 cm so it lines up just before the line.",
+    "With Realism on Realistic, press \u25b6\u00d75. Compare the end points with Drive a square."
+  ],
+  "scene": "Practice - start box.spk"
+}

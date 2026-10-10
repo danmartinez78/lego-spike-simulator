@@ -1,0 +1,16 @@
+{
+  "file": "07 Drive straight with the gyro.llsp3",
+  "title": "Drive straight with the gyro",
+  "topic": "Gyro",
+  "order": 7,
+  "summary": "Correct the heading all the way so the robot really drives straight.",
+  "what": "The robot drives 80 cm, constantly correcting its direction with the gyro.",
+  "why": "Real robots never drive perfectly straight: one wheel is a tiny bit bigger, or slips. The gyro notices the robot pointing off course, and the program steers back. This is another P controller: correction = yaw \u00d7 2.",
+  "try": [
+    "Set Realism to Challenging. Run \u25b6\u00d75 with this program and with a plain move 80 cm block. Compare.",
+    "Change the gain 2 to 0.5 and to 6. What happens?",
+    "Use DriveStraight and TurnRight together to make an accurate square.",
+    "The gyro keeps the robot pointing the way it started. If it starts crooked, it drives crooked. How could you line the robot up the same way every time?"
+  ],
+  "scene": "Practice - start box.spk"
+}

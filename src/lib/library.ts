@@ -12,17 +12,30 @@ import {
 } from '$lib/ldraw/components';
 import { sceneStore, type SceneObject } from '$lib/spike/scene';
 
-export type LibraryKind = 'robots' | 'scenes';
+export type LibraryKind = 'robots' | 'scenes' | 'programs';
+
+export interface LessonCard {
+    title: string;
+    topic: string;
+    order?: number;
+    summary?: string;
+    what?: string;
+    why?: string;
+    try?: string[];
+    scene?: string;
+}
 
 export interface LibraryEntry {
     name: string;
     size: number;
     modified: string;
+    card?: LessonCard;
 }
 
 export interface LibraryIndex {
     robots: LibraryEntry[];
     scenes: LibraryEntry[];
+    programs: LibraryEntry[];
     defaults: { robot?: string; scene?: string };
 }
 
@@ -39,7 +52,7 @@ export interface RobotRequest {
 
 export const libraryStore = writable<LibraryState>({
     available: false,
-    index: { robots: [], scenes: [], defaults: {} },
+    index: { robots: [], scenes: [], programs: [], defaults: {} },
     writer: undefined
 });
 
@@ -59,6 +72,7 @@ export async function refreshLibrary(): Promise<LibraryState> {
             throw new Error(`library ${response.status}`);
         }
         const index = (await response.json()) as LibraryIndex;
+        index.programs = index.programs ?? [];
         state = { ...state, available: true, index };
     } catch {
         state = { ...state, available: false };
@@ -123,14 +137,29 @@ export async function setDefault(kind: LibraryKind, name: string | null) {
     await adminRequest('PUT', 'defaults', JSON.stringify({ [field]: name }));
 }
 
+export async function saveProgram(name: string, blob: Blob, card: LessonCard) {
+    await adminRequest('PUT', `programs/${encodeURIComponent(name)}`, blob);
+    await adminRequest(
+        'PUT',
+        `programs/${encodeURIComponent(name + '.json')}`,
+        new Blob([JSON.stringify(card, null, 2)], { type: 'application/json' })
+    );
+}
+
+const extensions: Record<LibraryKind, string> = {
+    robots: '.mpd',
+    scenes: '.spk',
+    programs: '.llsp3'
+};
+
 export function libraryFileName(kind: LibraryKind, name: string) {
-    const extension = kind === 'robots' ? '.mpd' : '.spk';
+    const extension = extensions[kind];
     let clean = name
         .trim()
         .replace(/[^\w .()+-]/g, '_')
         .slice(0, 90);
     if (clean.length == 0) {
-        clean = kind === 'robots' ? 'robot' : 'scene';
+        clean = kind.slice(0, -1);
     }
     if (!clean.toLowerCase().endsWith(extension)) {
         clean += extension;
@@ -227,4 +256,23 @@ export async function loadLibraryDefaults() {
     } catch (e) {
         console.log('Could not load library defaults', e);
     }
+}
+
+// A program the code panel should open or merge in (from the Examples panel).
+export interface ProgramRequest {
+    blob: Blob;
+    merge: boolean;
+}
+
+export const programRequest = writable<ProgramRequest | undefined>(undefined);
+
+// Set by the code panel so other windows can save the current program.
+let programBuilder: (() => Promise<Blob | undefined>) | undefined = undefined;
+
+export function setProgramBuilder(builder: () => Promise<Blob | undefined>) {
+    programBuilder = builder;
+}
+
+export async function currentProgram(): Promise<Blob | undefined> {
+    return programBuilder ? await programBuilder() : undefined;
 }

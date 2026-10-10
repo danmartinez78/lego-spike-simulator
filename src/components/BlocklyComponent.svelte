@@ -7,6 +7,9 @@
     import SpikeSimulatorWindow from '$components/SpikeSimulatorWindow.svelte';
     import { QuestionCircleOutline } from 'flowbite-svelte-icons';
     import { openGuide } from '$lib/help';
+    import { programRequest, setProgramBuilder, type ProgramRequest } from '$lib/library';
+    import { BookOpenOutline } from 'flowbite-svelte-icons';
+    import ExamplesDialog from '$components/ExamplesDialog.svelte';
     import * as Blockly from 'blockly/core';
     // Import the list of blocks so it gets loaded into blockly
     import 'blockly/blocks';
@@ -77,7 +80,24 @@
         variableDialogOpen = true;
     }
 
+    let examplesOpen = false;
+
+    function handleProgramRequest(request: ProgramRequest | undefined) {
+        if (request) {
+            programRequest.set(undefined);
+            numberOfLoads++;
+            if (request.merge) {
+                mergeLlsp3(request.blob);
+            } else {
+                loadLlsp3(request.blob);
+            }
+        }
+    }
+
+    $: handleProgramRequest($programRequest);
+
     onMount(() => {
+        setProgramBuilder(buildProgram);
         fieldAngle.registerFieldAngle();
         colourPkg.registerFieldColour();
         Blockly.common.defineBlocksWithJsonArray(procedureBlocks);
@@ -136,7 +156,7 @@
         Blockly.svgResize(workspace);
     }
 
-    async function loadLlsp3(f: File) {
+    async function loadLlsp3(f: Blob) {
         const zip = new JSZip();
         const zipFile = await zip.loadAsync(f);
         const file = zipFile.file('scratch.sb3');
@@ -207,7 +227,7 @@
         }
     }
 
-    async function mergeLlsp3(f: File) {
+    async function mergeLlsp3(f: Blob) {
         const zip = new JSZip();
         const zipFile = await zip.loadAsync(f);
         const file = zipFile.file('scratch.sb3');
@@ -269,6 +289,13 @@
     }
 
     async function saveState() {
+        const content = await buildProgram();
+        if (content) {
+            FileSaver.saveAs(content, 'project.llsp3');
+        }
+    }
+
+    async function buildProgram(): Promise<Blob | undefined> {
         if (workspace) {
             let robotSvg = `<svg xmlns="http://www.w3.org/2000/svg" 
                                  id="mdi-robot-outline"
@@ -305,10 +332,10 @@
             );
             llsp3Zip.file('scratch.sb3', sb3content);
             llsp3Zip.file('icon.svg', robotSvg);
-            const content = await llsp3Zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-            FileSaver.saveAs(content, 'project.llsp3');
             // TODO: Save audio as well, we don't add new audio
+            return await llsp3Zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
         }
+        return undefined;
     }
 
     function toggleRobot() {
@@ -397,6 +424,7 @@
 />
 <ProcedureDialog bind:modalOpen={procedureDialogOpen} bind:callback={procedureCreateCallback} />
 <PrintDialog bind:modalOpen={printDialogOpen} callback={printCallback} />
+<ExamplesDialog bind:modalOpen={examplesOpen} />
 
 <div class="relative h-full w-full overflow-hidden flex flex-row">
     <!-- flex-col-reverse so that the buttons are higher in z order -->
@@ -450,6 +478,10 @@
                 </div>
             </Button>
             <Tooltip>Open the robot simulator panel</Tooltip>
+            <Button color="light" class="!p-2" on:click={() => (examplesOpen = true)}>
+                <BookOpenOutline class="w-8 h-8" />
+            </Button>
+            <Tooltip>Example programs with explanations</Tooltip>
             <Button color="light" class="!p-2" on:click={() => openGuide()}>
                 <QuestionCircleOutline class="w-8 h-8" />
             </Button>

@@ -40,7 +40,9 @@ const LAN_PREFIXES = (process.env.LAN_WRITE_PREFIXES ?? '')
 
 const KINDS = {
     robots: ['.mpd', '.ldr'],
-    scenes: ['.spk']
+    scenes: ['.spk'],
+    // Example programs, each with an optional lesson card in <name>.llsp3.json
+    programs: ['.llsp3', '.json']
 };
 
 const MIME = {
@@ -71,23 +73,35 @@ async function ensureLibrary() {
     for (const kind of Object.keys(KINDS)) {
         await fsp.mkdir(path.join(LIBRARY_DIR, kind), { recursive: true });
     }
-    // Copy bundled presets into an empty library on first start.
+    if (!fs.existsSync(SEED_DIR)) return;
+    // Copy bundled presets that this library has never seen. Remembering what
+    // was seeded means a preset someone deleted doesn't come back on restart.
+    const seededFile = path.join(LIBRARY_DIR, '.seeded.json');
+    let seeded = [];
+    try {
+        seeded = JSON.parse(await fsp.readFile(seededFile, 'utf8'));
+    } catch {
+        seeded = [];
+    }
     const defaultsFile = path.join(LIBRARY_DIR, 'defaults.json');
-    if (!fs.existsSync(defaultsFile) && fs.existsSync(SEED_DIR)) {
-        for (const kind of Object.keys(KINDS)) {
-            const from = path.join(SEED_DIR, kind);
-            if (!fs.existsSync(from)) continue;
-            for (const name of await fsp.readdir(from)) {
-                const target = path.join(LIBRARY_DIR, kind, name);
-                if (!fs.existsSync(target)) {
-                    await fsp.copyFile(path.join(from, name), target);
-                }
+    const firstStart = !fs.existsSync(defaultsFile);
+    for (const kind of Object.keys(KINDS)) {
+        const from = path.join(SEED_DIR, kind);
+        if (!fs.existsSync(from)) continue;
+        for (const name of await fsp.readdir(from)) {
+            const key = `${kind}/${name}`;
+            if (!safeName(kind, name) || seeded.includes(key)) continue;
+            const target = path.join(LIBRARY_DIR, kind, name);
+            if (!fs.existsSync(target)) {
+                await fsp.copyFile(path.join(from, name), target);
             }
+            seeded.push(key);
         }
-        const seedDefaults = path.join(SEED_DIR, 'defaults.json');
-        if (fs.existsSync(seedDefaults)) {
-            await fsp.copyFile(seedDefaults, defaultsFile);
-        }
+    }
+    await fsp.writeFile(seededFile, JSON.stringify(seeded, null, 2));
+    const seedDefaults = path.join(SEED_DIR, 'defaults.json');
+    if (firstStart && fs.existsSync(seedDefaults)) {
+        await fsp.copyFile(seedDefaults, defaultsFile);
     }
 }
 
@@ -115,14 +129,24 @@ async function writeDefaults(defaults) {
 }
 
 async function listLibrary() {
-    const result = { robots: [], scenes: [], defaults: await readDefaults() };
+    const result = { robots: [], scenes: [], programs: [], defaults: await readDefaults() };
     for (const kind of Object.keys(KINDS)) {
         const dir = path.join(LIBRARY_DIR, kind);
         const names = fs.existsSync(dir) ? await fsp.readdir(dir) : [];
         for (const name of names.sort((a, b) => a.localeCompare(b))) {
-            if (!safeName(kind, name)) continue;
+            if (!safeName(kind, name) || name.toLowerCase().endsWith('.json')) continue;
             const stat = await fsp.stat(path.join(dir, name));
-            result[kind].push({ name, size: stat.size, modified: stat.mtime.toISOString() });
+            const entry = { name, size: stat.size, modified: stat.mtime.toISOString() };
+            if (kind === 'programs') {
+                try {
+                    entry.card = JSON.parse(
+                        await fsp.readFile(path.join(dir, name + '.json'), 'utf8')
+                    );
+                } catch {
+                    // no lesson card
+                }
+            }
+            result[kind].push(entry);
         }
     }
     return result;
@@ -308,9 +332,18 @@ async function handleAdmin(req, res, parts) {
             sendJson(res, 413, { error: 'File too large' });
             return;
         }
-        if (kind === 'scenes' && body.subarray(0, 2).toString('latin1') !== 'PK') {
-            sendJson(res, 400, { error: 'Scene must be a .spk (zip) file' });
+        const isCard = name.toLowerCase().endsWith('.json');
+        if (!isCard && kind !== 'robots' && body.subarray(0, 2).toString('latin1') !== 'PK') {
+            sendJson(res, 400, { error: 'Scenes and programs must be zip files' });
             return;
+        }
+        if (isCard) {
+            try {
+                JSON.parse(body.toString('utf8'));
+            } catch {
+                sendJson(res, 400, { error: 'Lesson card must be JSON' });
+                return;
+            }
         }
         await fsp.writeFile(file + '.tmp', body);
         await fsp.rename(file + '.tmp', file);
@@ -318,6 +351,9 @@ async function handleAdmin(req, res, parts) {
         sendJson(res, 200, { name });
     } else if (req.method === 'DELETE') {
         await fsp.rm(file, { force: true });
+        if (kind === 'programs') {
+            await fsp.rm(file + '.json', { force: true });
+        }
         const defaults = await readDefaults();
         const field = kind === 'robots' ? 'robot' : 'scene';
         if (defaults[field] === name) {

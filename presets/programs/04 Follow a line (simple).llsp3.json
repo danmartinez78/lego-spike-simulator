@@ -1,0 +1,15 @@
+{
+  "file": "04 Follow a line (simple).llsp3",
+  "title": "Follow a line (simple)",
+  "topic": "Sensors",
+  "order": 4,
+  "summary": "Wiggle along the edge of a line using light and dark.",
+  "what": "The robot follows the edge of the black oval for about 150 cm.",
+  "why": "The sensor measures how much light bounces back: white is about 100, black is near 0, and the edge of the line is in between. Over dark, the robot steers one way. Over white, it steers the other way. It zig-zags along the edge. This is the simplest kind of feedback: only two choices.",
+  "try": [
+    "Change 50 to 30 or 70. What happens?",
+    "Make both speeds bigger. When does the robot lose the line?",
+    "Swap the two start moving blocks. Which edge does it follow now?"
+  ],
+  "scene": "Practice - line oval.spk"
+}

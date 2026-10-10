@@ -1,0 +1,16 @@
+{
+  "file": "05 Follow a line (smooth).llsp3",
+  "title": "Follow a line (smooth)",
+  "topic": "Sensors",
+  "order": 5,
+  "summary": "Steer more when far from the edge, less when close.",
+  "what": "The robot follows the edge of the oval smoothly instead of zig-zagging.",
+  "why": "The program works out an error: how far the light reading is from the edge value of 50. It steers by an amount that is proportional to the error. Engineers call this a P controller (P for proportional). The number 0.4 is the gain. Too small and the robot drifts off the line, too big and it wobbles.",
+  "try": [
+    "Try a gain of 0.2 and 0.8. Which follows best?",
+    "Raise the base speed from 25 to 40. Do you need a different gain?",
+    "Compare with the simple line follower using \u25b6\u00d75.",
+    "Gains that work in the simulator are a starting point. Tune them on the real robot."
+  ],
+  "scene": "Practice - line oval.spk"
+}
