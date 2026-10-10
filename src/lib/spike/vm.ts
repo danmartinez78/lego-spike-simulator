@@ -2778,6 +2778,27 @@ interface BroadcastWatcher {
     started: boolean;
 }
 
+// Rotate a 3D point around the vertical (y) axis, matching m4.yRotation.
+function yRotatePoint(p: Vertex, angle: number): Vertex {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    return { x: c * p.x + s * p.z, y: p.y, z: -s * p.x + c * p.z };
+}
+
+// Turn the robot by angle (radians) around pivot c, given in the robot's own
+// frame. Same result as the matrix chain
+// T(position) * Ry(rotation) * T(c) * Ry(angle) * T(-c), in double precision.
+function pivotRobot(scene: SceneStore, c: Vertex, angle: number) {
+    const turned = yRotatePoint(c, angle);
+    const offset = yRotatePoint(
+        { x: c.x - turned.x, y: c.y - turned.y, z: c.z - turned.z },
+        (scene.robot.rotation! * Math.PI) / 180.0
+    );
+    scene.robot.position!.x += offset.x;
+    scene.robot.position!.y += offset.y;
+    scene.robot.position!.z += offset.z;
+}
+
 export class VM {
     id: string;
     hub: Hub;
@@ -3195,19 +3216,10 @@ export class VM {
                     // c is the rotation point. The angle is given by rsin(a) = t, rcos(a) = d1;
                     // But we can actually use arc length so that the angle a=d1/t (radians);
                     const angle = reverse ? -d1 / t : d1 / t;
-                    let matrix = m4.translation(
-                        scene.robot.position!.x,
-                        scene.robot.position!.y,
-                        scene.robot.position!.z
-                    );
-                    matrix = m4.yRotate(matrix, (scene.robot.rotation! * Math.PI) / 180.0);
-                    matrix = m4.translate(matrix, +c.x, +c.y, +c.z);
-                    matrix = m4.yRotate(matrix, angle);
-                    matrix = m4.translate(matrix, -c.x, -c.y, -c.z);
-                    const position = m4.transformVector(matrix, [0, 0, 0, 1]);
-                    scene.robot.position!.x = position[0];
-                    scene.robot.position!.y = position[1];
-                    scene.robot.position!.z = position[2];
+                    // When the wheels turn at almost the same speed the pivot
+                    // is very far away, so do this in full precision rather than
+                    // with single-precision matrices, which made the robot jump.
+                    pivotRobot(scene, c, angle);
                     scene.robot.rotation! += (angle * 180.0) / Math.PI;
                     this.hub.yaw -= (angle * 180.0) / Math.PI;
                     // hubs yaw is -180 to 180
@@ -3257,19 +3269,7 @@ export class VM {
                 if (reverse) {
                     angle = -angle;
                 }
-                let matrix = m4.translation(
-                    scene.robot.position!.x,
-                    scene.robot.position!.y,
-                    scene.robot.position!.z
-                );
-                matrix = m4.yRotate(matrix, (scene.robot.rotation! * Math.PI) / 180.0);
-                matrix = m4.translate(matrix, +c.x, +c.y, +c.z);
-                matrix = m4.yRotate(matrix, angle);
-                matrix = m4.translate(matrix, -c.x, -c.y, -c.z);
-                const position = m4.transformVector(matrix, [0, 0, 0, 1]);
-                scene.robot.position!.x = position[0];
-                scene.robot.position!.y = position[1];
-                scene.robot.position!.z = position[2];
+                pivotRobot(scene, c, angle);
                 scene.robot.rotation! += (angle * 180.0) / Math.PI;
                 this.hub.yaw -= (angle * 180.0) / Math.PI;
                 // hubs yaw is -180 to 180
