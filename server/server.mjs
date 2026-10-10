@@ -2,6 +2,7 @@
 //
 // Serves:
 //   /                  the built app (DIST_DIR)
+//   /coach             the same app, showing the coach tools page
 //   /ldraw/...         an extracted LDraw parts library (LDRAW_DIR), with parts.lst
 //   /api/library       list of shared robots and scenes (LIBRARY_DIR)
 //   /api/library/{robots|scenes}/<file>   download one entry
@@ -279,9 +280,10 @@ function readBody(req) {
 async function handleAdmin(req, res, parts) {
     const who = await writer(req);
     // Visiting /api/admin/login in a browser goes through Cloudflare Access,
-    // then lands back on the app signed in.
+    // then lands back on the app (or the coach page, with ?to=coach) signed in.
     if (parts[0] === 'login' && req.method === 'GET') {
-        res.writeHead(302, { Location: '/' });
+        const to = new URL(req.url ?? '/', 'http://localhost').searchParams.get('to');
+        res.writeHead(302, { Location: to === 'coach' ? '/coach' : '/' });
         res.end();
         return;
     }
@@ -395,6 +397,17 @@ async function handle(req, res) {
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
         send(res, 405, 'Method not allowed');
+        return;
+    }
+    // The coach page is the same single-file app; it picks the page from the path.
+    // Keep it at /coach (no trailing slash) so the app's relative URLs still work.
+    if (parts[0] === 'coach' && parts.length === 1) {
+        if (pathname.endsWith('/')) {
+            res.writeHead(301, { Location: '/coach' });
+            res.end();
+        } else {
+            await sendFile(res, path.join(DIST_DIR, 'index.html'));
+        }
         return;
     }
     if (parts[0] === 'ldraw') {

@@ -368,6 +368,10 @@
                         target="_blank">GNU General Public License version 2</a
                     >. You may use, change and share it under those terms.
                 </p>
+                <p class="mt-2">
+                    Coaches manage the shared library on the
+                    <a class="text-blue-700 underline" href="coach" target="_blank">coach page</a>.
+                </p>
                 <h4 class="font-medium mt-3">Also uses</h4>
                 <ul class="list-disc ml-5">
                     <li>

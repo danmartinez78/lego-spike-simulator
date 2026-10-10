@@ -1,13 +1,10 @@
 <script lang="ts">
-    import { askConfirm } from '$lib/confirm';
     import { Button, Modal } from 'flowbite-svelte';
     import {
         libraryStore,
         refreshLibrary,
         loadRobotFromLibrary,
         loadSceneFromLibrary,
-        deleteEntry,
-        setDefault,
         type LibraryKind
     } from '$lib/library';
 
@@ -44,27 +41,6 @@
             }
             modalOpen = false;
         }, `Loaded ${name}`);
-    }
-
-    function makeDefault(kind: LibraryKind, name: string) {
-        const value = isDefault(kind, name) ? null : name;
-        run(
-            () => setDefault(kind, value),
-            value
-                ? `${name} now loads when the simulator opens`
-                : `${name} is no longer the default`
-        );
-    }
-
-    async function remove(kind: LibraryKind, name: string) {
-        if (
-            await askConfirm(`Delete ${name} from the library?`, {
-                confirmLabel: 'Delete',
-                danger: true
-            })
-        ) {
-            run(() => deleteEntry(kind, name), `Deleted ${name}`);
-        }
     }
 
     function openDialog(open: boolean) {
@@ -109,21 +85,6 @@
                                 color="blue"
                                 on:click={() => load(section.kind, entry.name)}>Load</Button
                             >
-                            {#if $libraryStore.writer}
-                                <Button
-                                    size="xs"
-                                    color="light"
-                                    on:click={() => makeDefault(section.kind, entry.name)}
-                                    >{isDefault(section.kind, entry.name)
-                                        ? 'Unset default'
-                                        : 'Make default'}</Button
-                                >
-                                <Button
-                                    size="xs"
-                                    color="light"
-                                    on:click={() => remove(section.kind, entry.name)}>Delete</Button
-                                >
-                            {/if}
                         </div>
                     {/each}
                 </div>
@@ -131,13 +92,14 @@
             <div class="text-sm text-gray-600">
                 {#if $libraryStore.writer}
                     Signed in as {$libraryStore.writer}. Save the current robot or scene to the
-                    library from the save button.
+                    library from the save button, and change the default or delete entries on the
+                    <a class="text-blue-700 underline" href="coach" target="_blank">coach page</a>.
                 {:else}
-                    To add robots and maps, <a
+                    Coaches: sign in on the <a
                         class="text-blue-700 underline"
-                        href="api/admin/login"
-                        target="_blank">sign in</a
-                    >, then reopen this window.
+                        href="coach"
+                        target="_blank">coach page</a
+                    > to add robots and maps.
                 {/if}
             </div>
             {#if message}
