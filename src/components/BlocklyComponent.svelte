@@ -5,6 +5,8 @@
     import ProcedureDialog from '$components/ProcedureDialog.svelte';
     import PrintDialog from '$components/PrintDialog.svelte';
     import SpikeSimulatorWindow from '$components/SpikeSimulatorWindow.svelte';
+    import { QuestionCircleOutline } from 'flowbite-svelte-icons';
+    import { openGuide } from '$lib/help';
     import * as Blockly from 'blockly/core';
     // Import the list of blocks so it gets loaded into blockly
     import 'blockly/blocks';
@@ -448,6 +450,10 @@
                 </div>
             </Button>
             <Tooltip>Open the robot simulator panel</Tooltip>
+            <Button color="light" class="!p-2" on:click={() => openGuide()}>
+                <QuestionCircleOutline class="w-8 h-8" />
+            </Button>
+            <Tooltip>How to use the simulator</Tooltip>
             {#if !simulatorOpen}
                 <div class="flex-1" />
                 <a href="https://developers.google.com/blockly" target="_blank">

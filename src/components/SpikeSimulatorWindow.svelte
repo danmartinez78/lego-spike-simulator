@@ -1,6 +1,7 @@
 <script lang="ts">
     import * as Blockly from 'blockly/core';
-    import { CogOutline, DatabaseOutline } from 'flowbite-svelte-icons';
+    import { CogOutline, DatabaseOutline, QuestionCircleOutline } from 'flowbite-svelte-icons';
+    import { openGuide } from '$lib/help';
     import { Button, CloseButton, Tooltip } from 'flowbite-svelte';
     import MenuDropdown from '$components/MenuDropdown.svelte';
     import { type MenuAction } from '$components/Menu.svelte';
@@ -350,6 +351,12 @@
                     <Tooltip>Open the code panel</Tooltip>
                 {/if}
                 <div class="flex-1" />
+                {#if !blocklyOpen}
+                    <Button color="light" class="!p-2" on:click={() => openGuide('toolbar')}>
+                        <QuestionCircleOutline class="w-8 h-8" />
+                    </Button>
+                    <Tooltip>How to use the simulator</Tooltip>
+                {/if}
                 {#if blocklyOpen}
                     <CloseButton on:click={closeWindow} />
                     <Tooltip>Close the simulation window</Tooltip>

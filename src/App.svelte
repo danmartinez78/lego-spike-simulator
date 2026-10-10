@@ -1,5 +1,7 @@
 <script>
     import BlocklyPage from '$pages/BlocklyPage.svelte';
+    import WelcomeDialog from '$components/WelcomeDialog.svelte';
+    import GuideDialog from '$components/GuideDialog.svelte';
 </script>
 
 <svelte:head>
@@ -22,3 +24,5 @@
 <section id="blockly-ui" class="h-dvh w-dvw overflow-hidden">
     <BlocklyPage />
 </section>
+<WelcomeDialog />
+<GuideDialog />
