@@ -1,6 +1,6 @@
 <script lang="ts">
     import * as Blockly from 'blockly/core';
-    import { CogOutline } from 'flowbite-svelte-icons';
+    import { CogOutline, DatabaseOutline } from 'flowbite-svelte-icons';
     import { Button, CloseButton, Tooltip } from 'flowbite-svelte';
     import MenuDropdown from '$components/MenuDropdown.svelte';
     import { type MenuAction } from '$components/Menu.svelte';
@@ -11,6 +11,8 @@
     import PortConnector from '$components/PortConnector.svelte';
     import WheelConnector from '$components/WheelConnector.svelte';
     import LoadScene from '$components/LoadScene.svelte';
+    import LibraryDialog from '$components/LibraryDialog.svelte';
+    import { libraryStore } from '$lib/library';
     import { type LDrawStore, componentStore } from '$lib/ldraw/components';
     import { Hub, codeStore } from '$lib/spike/vm';
     import {
@@ -31,6 +33,7 @@
     let saveOpen = false;
     let sceneOpen = false;
     let settingsOpen = false;
+    let libraryOpen = false;
     let robotButtonColour: 'light' | 'red' | 'green' = 'light';
     let libraryClass = '!p-2';
     let runSimulation = false;
@@ -190,6 +193,10 @@
         sceneOpen = true;
     }
 
+    function openSharedLibrary() {
+        libraryOpen = true;
+    }
+
     function openSettings() {
         settingsOpen = true;
     }
@@ -202,6 +209,7 @@
 <SaveSimulation bind:modalOpen={saveOpen} bind:hub />
 <LoadScene bind:modalOpen={sceneOpen} />
 <SimulatorSettings bind:modalOpen={settingsOpen} />
+<LibraryDialog bind:modalOpen={libraryOpen} />
 {#if modalOpen}
     <div class="{split == 1 ? 'flex-1' : 'flex-[2]'} h-full overflow-hidden">
         <div class="relative flex-1 h-full flex flex-col overflow-hidden">
@@ -235,6 +243,12 @@
                     </div>
                 </Button>
                 <Tooltip>Setup or load a scene based on a WRO or FLL mat</Tooltip>
+                {#if $libraryStore.available}
+                    <Button color="light" class="!p-2" on:click={openSharedLibrary}>
+                        <DatabaseOutline class="w-8 h-8" />
+                    </Button>
+                    <Tooltip>Open a robot or scene from the shared library</Tooltip>
+                {/if}
                 <Button color="light" class={libraryClass} on:click={askForLibrary}>
                     <div class="w-8 h-8 flex flex-col justify-center items-center">
                         <img alt="scene" width="32" height="32" src="icons/Library.svg" />

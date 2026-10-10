@@ -14,6 +14,7 @@
     import Menu from '$components/Menu.svelte';
     import { type MenuAction, type MenuEntry } from '$components/Menu.svelte';
     import JSZip from 'jszip';
+    import { loadSceneFromBlob } from '$lib/library';
 
     export let modalOpen = false;
     let numberOfLoads = 0;
@@ -390,63 +391,7 @@
         if (element) {
             const fileElement = element as HTMLInputElement;
             if (fileElement.files && fileElement.files.length > 0) {
-                const first = fileElement.files[0];
-                const zip = new JSZip();
-                const zipFile = await zip.loadAsync(first);
-                let map: Blob | undefined = undefined;
-                const jsonFile = zipFile.file('scene.json');
-                if (!jsonFile) {
-                    console.log('Invalid scene file format, missing scene.json');
-                    return;
-                }
-                const sceneDefContents = await jsonFile.async('string');
-                const scene = JSON.parse(sceneDefContents);
-                const objects: SceneObject[] = [];
-
-                const mapFile = zipFile.file('mat.jpg');
-                if (mapFile) {
-                    map = await mapFile.async('blob');
-                }
-
-                const robot = {
-                    anchored: scene.robot.anchored,
-                    position: scene.robot.position,
-                    rotation: scene.robot.rotation,
-                    name: scene.robot.name,
-                    bricks: $componentStore.robotModel
-                };
-                for (const obj of scene.objects) {
-                    const objFile = zipFile.file(`bricks-${obj.name}`);
-                    if (objFile) {
-                        const content = await objFile.async('string');
-                        const model = loadModel(obj.name, content);
-                        updateUnresolvedParts();
-                        objects.push({
-                            anchored: obj.anchored,
-                            position: obj.position,
-                            rotation: obj.rotation,
-                            name: obj.name,
-                            bricks: model
-                        });
-                    } else {
-                        objects.push({
-                            anchored: obj.anchored,
-                            position: obj.position,
-                            rotation: obj.rotation,
-                            name: obj.name
-                        });
-                    }
-                }
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                sceneStore.update((old) => {
-                    return {
-                        robot: robot,
-                        objects: objects,
-                        map: map,
-                        mapWidth: scene.matWidth,
-                        mapHeight: scene.matHeight
-                    };
-                });
+                await loadSceneFromBlob(fileElement.files[0]);
             }
         }
     }

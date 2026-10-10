@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button, Modal } from 'flowbite-svelte';
+    import { Button, Input, Modal } from 'flowbite-svelte';
     import FileSaver from 'file-saver';
     import {
         componentStore,
@@ -10,12 +10,23 @@
     } from '$lib/ldraw/components';
     import { allPorts, Hub } from '$lib/spike/vm';
     import { sceneStore } from '$lib/spike/scene';
+    import {
+        libraryStore,
+        libraryFileName,
+        refreshLibrary,
+        saveEntry,
+        type LibraryKind
+    } from '$lib/library';
     import JSZip from 'jszip';
 
     export let modalOpen = false;
     export let hub: Hub;
 
-    function saveRobot() {
+    let robotName = 'robot';
+    let sceneName = 'scene';
+    let libraryMessage = '';
+
+    function robotBlob(): Blob | undefined {
         const robot = $componentStore.robotModel;
         if (robot) {
             clearPorts(robot);
@@ -30,12 +41,12 @@
                 setGearRatio(robot, wheel.gearing, wheel.id);
             }
             const content = saveMPD(robot);
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            FileSaver.saveAs(blob, 'robot.mpd');
+            return new Blob([content], { type: 'text/plain;charset=utf-8' });
         }
+        return undefined;
     }
 
-    async function saveScene() {
+    async function sceneBlob(): Promise<Blob> {
         const scene = $sceneStore;
         const zip = new JSZip();
         if (scene.map) {
@@ -65,9 +76,48 @@
             }))
         };
         zip.file('scene.json', JSON.stringify(json));
-        const sceneZip = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-        FileSaver.saveAs(sceneZip, 'scene.spk');
+        return await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     }
+
+    function saveRobot() {
+        const blob = robotBlob();
+        if (blob) {
+            FileSaver.saveAs(blob, 'robot.mpd');
+        }
+    }
+
+    async function saveScene() {
+        FileSaver.saveAs(await sceneBlob(), 'scene.spk');
+    }
+
+    async function saveToLibrary(kind: LibraryKind) {
+        const name = libraryFileName(kind, kind === 'robots' ? robotName : sceneName);
+        const blob = kind === 'robots' ? robotBlob() : await sceneBlob();
+        if (!blob) {
+            libraryMessage = 'Load a robot first';
+            return;
+        }
+        const exists = $libraryStore.index[kind].some((e) => e.name === name);
+        if (exists && !confirm(`Replace ${name} in the library?`)) {
+            return;
+        }
+        libraryMessage = `Saving ${name}...`;
+        try {
+            await saveEntry(kind, name, blob);
+            libraryMessage = `Saved ${name} to the library`;
+        } catch (e) {
+            libraryMessage = `Could not save: ${(e as Error).message}`;
+        }
+    }
+
+    function openDialog(open: boolean) {
+        if (open) {
+            libraryMessage = '';
+            refreshLibrary();
+        }
+    }
+
+    $: openDialog(modalOpen);
 </script>
 
 <Modal
@@ -89,5 +139,38 @@
                 <span>Save scene with mat (zip with mpd)</span>
             </div>
         </Button>
+        {#if $libraryStore.available}
+            <hr class="w-96 my-2" />
+            <h3 class="font-medium">Save to the shared library</h3>
+            {#if $libraryStore.writer}
+                <div class="flex flex-row gap-2 w-96 items-center">
+                    <Input size="sm" bind:value={robotName} placeholder="Robot name" />
+                    <Button
+                        color="light"
+                        class="!p-2 whitespace-nowrap"
+                        on:click={() => saveToLibrary('robots')}>Save robot</Button
+                    >
+                </div>
+                <div class="flex flex-row gap-2 w-96 items-center">
+                    <Input size="sm" bind:value={sceneName} placeholder="Scene name" />
+                    <Button
+                        color="light"
+                        class="!p-2 whitespace-nowrap"
+                        on:click={() => saveToLibrary('scenes')}>Save scene</Button
+                    >
+                </div>
+                {#if libraryMessage}
+                    <div class="text-sm w-96">{libraryMessage}</div>
+                {/if}
+            {:else}
+                <div class="text-sm w-96">
+                    Saving to the library needs you to <a
+                        class="text-blue-700 underline"
+                        href="api/admin/login"
+                        target="_blank">sign in</a
+                    >.
+                </div>
+            {/if}
+        {/if}
     </div>
 </Modal>

@@ -42,3 +42,32 @@ from the web browser.
 # Scenes
 
 [WRO In house 2025 Level 1](http://ahfiles.s3-website.us-east-1.amazonaws.com/scenes/WRO-InHouse-Level1.spk)
+
+# Self-hosting with a shared library
+
+This fork adds a small server (`server/server.mjs`) and a Docker image that:
+
+-   serves the simulator,
+-   downloads the LDraw parts library once and serves it, so robots and scenes
+    load their bricks without visitors uploading `complete.zip`,
+-   keeps a shared library of robots (`.mpd`) and scenes (`.spk`), with an
+    optional default robot and scene that load when the simulator opens.
+
+Everyone can open entries from the library (the database button in the
+simulator toolbar). Saving, deleting and choosing defaults is allowed for:
+
+-   clients on your LAN connecting directly, when `LAN_WRITE_PREFIXES` is set
+    (for example `192.168.0.`),
+-   people signed in through Cloudflare Access, when `CF_ACCESS_TEAM_DOMAIN`
+    (for example `myteam.cloudflareaccess.com`) and `CF_ACCESS_AUD` (the Access
+    application's audience tag) are set. Protect the path `/api/admin` with the
+    Access application.
+
+```
+docker run -d -p 8093:8080 -v /path/to/data:/data \
+    -e LAN_WRITE_PREFIXES=192.168.0. \
+    ghcr.io/danmartinez78/lego-spike-simulator:latest
+```
+
+`/data/library` holds the library and `/data/ldraw` the parts library. Delete
+`/data/ldraw` to fetch a newer parts library on the next start.

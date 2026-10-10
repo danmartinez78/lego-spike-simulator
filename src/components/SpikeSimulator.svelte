@@ -5,7 +5,6 @@
         componentStore,
         findPartTransform,
         resolveFromZip,
-        setRobotFromFile,
         setRobotFromContent,
         setStudioMode
     } from '$lib/ldraw/components';
@@ -35,6 +34,7 @@
     import ForceCheckSensor from '$components/ForceCheckSensor.svelte';
     import * as m4 from '$lib/ldraw/m4';
     import JSZip from 'jszip';
+    import { robotRequest, type RobotRequest } from '$lib/library';
 
     export let runSimulation: boolean = false;
     export let workspace: Blockly.WorkspaceSvg | undefined;
@@ -162,34 +162,45 @@
             if (fileElement.files) {
                 if (fileElement.files.length > 0) {
                     const first = fileElement.files[0];
-                    numberOfLoads++;
-                    if (first.name.toLowerCase().endsWith('.io')) {
-                        const zip = new JSZip();
-                        const zipFile = await zip.loadAsync(first);
-                        const file = zipFile.file('model2.ldr');
-                        if (file) {
-                            const content = await file.async('string');
-                            try {
-                                setStudioMode(true);
-                                const robot = setRobotFromContent(content);
-                                compiledRobot = compiler.compileModel(robot, { rescale: false });
-                                hub.reload();
-                                hub = hub;
-                            } finally {
-                                setStudioMode(false);
-                            }
-                        }
-                    } else {
-                        const robot = await setRobotFromFile(first);
-                        compiledRobot = compiler.compileModel(robot, { rescale: false });
-                        hub.reload();
-                        connectPorts(hub, robot);
-                        connectWheels(hub, robot);
-                        loadWheelTransforms(hub, robot);
-                        hub = hub;
-                    }
+                    await loadRobotFromBlob(first.name, first);
                 }
             }
+        }
+    }
+
+    async function loadRobotFromBlob(name: string, blob: Blob) {
+        numberOfLoads++;
+        if (name.toLowerCase().endsWith('.io')) {
+            const zip = new JSZip();
+            const zipFile = await zip.loadAsync(blob);
+            const file = zipFile.file('model2.ldr');
+            if (file) {
+                const content = await file.async('string');
+                try {
+                    setStudioMode(true);
+                    const robot = setRobotFromContent(content);
+                    compiledRobot = compiler.compileModel(robot, { rescale: false });
+                    hub.reload();
+                    hub = hub;
+                } finally {
+                    setStudioMode(false);
+                }
+            }
+        } else {
+            const robot = setRobotFromContent(await blob.text());
+            compiledRobot = compiler.compileModel(robot, { rescale: false });
+            hub.reload();
+            connectPorts(hub, robot);
+            connectWheels(hub, robot);
+            loadWheelTransforms(hub, robot);
+            hub = hub;
+        }
+    }
+
+    function loadRequestedRobot(request: RobotRequest | undefined) {
+        if (request) {
+            robotRequest.set(undefined);
+            loadRobotFromBlob(request.name, request.blob);
         }
     }
 
@@ -329,6 +340,7 @@
     }
 
     $: startOrPauseSimulation(runSimulation);
+    $: loadRequestedRobot($robotRequest);
 </script>
 
 <div class="flex flex-col h-full p-2 overflow-y-scroll relative">
