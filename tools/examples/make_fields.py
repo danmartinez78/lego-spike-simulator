@@ -209,6 +209,7 @@ f.start_box(400, 380, 0, label='START 3')
 for i, shade in enumerate([230, 190, 150, 110, 70, 30]):
     f.rect(400, 170 - i * 110, 220, 100, (shade, shade, shade))
 f.label(620, -380, 'light to dark', 28, anchor='lm')
+f.robot = (-900, 380, rotation(0))  # start in lane 1
 f.save()
 
 # 3. Accuracy targets -------------------------------------------------------

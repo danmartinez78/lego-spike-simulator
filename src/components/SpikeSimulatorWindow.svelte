@@ -6,8 +6,11 @@
         QuestionCircleOutline,
         ChartLineUpOutline,
         RulerCombinedOutline,
-        MapPinAltOutline
+        MapPinAltOutline,
+        AwardOutline
     } from 'flowbite-svelte-icons';
+    import ChallengesDialog from '$components/ChallengesDialog.svelte';
+    import { activeChallenge } from '$lib/spike/challenges';
     import PlaceDialog from '$components/PlaceDialog.svelte';
     import { graphOpen } from '$lib/spike/telemetry';
     import MeasureDialog from '$components/MeasureDialog.svelte';
@@ -24,7 +27,7 @@
     import LoadScene from '$components/LoadScene.svelte';
     import LibraryDialog from '$components/LibraryDialog.svelte';
     import RunOverlay from '$components/RunOverlay.svelte';
-    import { runBatch, startBatch } from '$lib/spike/runs';
+    import { runBatch, startBatch, rerunRequest, pinnedRuns } from '$lib/spike/runs';
     import { realismStore, presetLabels } from '$lib/spike/realism';
     import { libraryStore } from '$lib/library';
     import { type LDrawStore, componentStore } from '$lib/ldraw/components';
@@ -50,6 +53,19 @@
     let libraryOpen = false;
     let measureOpen = false;
     let placeOpen = false;
+    let challengesOpen = false;
+    let lastRerun = 0;
+
+    function handleRerun(request: number) {
+        if (request != lastRerun) {
+            lastRerun = request;
+            if (!runSimulation) {
+                startRepeatedRuns();
+            }
+        }
+    }
+
+    $: handleRerun($rerunRequest);
     let robotButtonColour: 'light' | 'red' | 'green' = 'light';
     let libraryClass = '!p-2';
     let runSimulation = false;
@@ -234,6 +250,7 @@
 <RunOverlay />
 <MeasureDialog bind:modalOpen={measureOpen} />
 <PlaceDialog bind:modalOpen={placeOpen} />
+<ChallengesDialog bind:modalOpen={challengesOpen} />
 {#if modalOpen}
     <div class="{split == 1 ? 'flex-1' : 'flex-[2]'} h-full overflow-hidden">
         <div class="relative flex-1 h-full flex flex-col overflow-hidden">
@@ -295,6 +312,10 @@
                     <CogOutline class="w-8 h-8" />
                 </Button>
                 <Tooltip>Adjust simulator speed settings</Tooltip>
+                <Button color="light" class="!p-2" on:click={() => (challengesOpen = true)}>
+                    <AwardOutline class="w-8 h-8" />
+                </Button>
+                <Tooltip>Challenges: goals the simulator checks for you</Tooltip>
                 <Button
                     color={$graphOpen ? 'blue' : 'light'}
                     class="!p-2"
@@ -363,6 +384,24 @@
                     <span class="text-sm">
                         Run {Math.min($runBatch.completed.length + 1, $runBatch.total)} of {$runBatch.total}
                     </span>
+                {/if}
+                {#if $activeChallenge}
+                    <button
+                        class="text-xs px-2 py-1 rounded bg-green-100 text-green-900 flex items-center gap-1 hover:bg-green-200"
+                        on:click={() => (challengesOpen = true)}
+                    >
+                        <AwardOutline class="w-4 h-4" />
+                        {$activeChallenge.title}
+                    </button>
+                    <Tooltip>Challenge in progress. Press ▶︎×5 to check it.</Tooltip>
+                {/if}
+                {#if $pinnedRuns}
+                    <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-900">
+                        Comparing with {$pinnedRuns.label}
+                    </span>
+                    <Tooltip
+                        >The next ▶︎×5 results are compared with the runs you kept as A.</Tooltip
+                    >
                 {/if}
                 {#if $realismStore.preset != 'ideal'}
                     <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-900">

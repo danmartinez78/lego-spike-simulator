@@ -73,3 +73,50 @@ export function recordPoint(path: RunPath, x: number, z: number, rotation: numbe
     }
     path.points.push({ x, z, rotation });
 }
+
+// ---- Summaries and A vs B comparison -----------------------------------
+
+export interface RunSummary {
+    runs: number;
+    // Largest distance between any two end points, in mm.
+    spread: number;
+    // Largest difference between end headings, in degrees.
+    headingSpread: number;
+    // Average end point.
+    centre: { x: number; z: number };
+}
+
+function endOf(path: RunPath) {
+    return path.points[path.points.length - 1];
+}
+
+export function summarise(paths: RunPath[]): RunSummary {
+    const ends = paths.map(endOf).filter((p) => p !== undefined);
+    let spread = 0;
+    let headingSpread = 0;
+    let cx = 0;
+    let cz = 0;
+    for (let i = 0; i < ends.length; i++) {
+        cx += ends[i].x / ends.length;
+        cz += ends[i].z / ends.length;
+        for (let j = i + 1; j < ends.length; j++) {
+            spread = Math.max(spread, Math.hypot(ends[i].x - ends[j].x, ends[i].z - ends[j].z));
+            let d = Math.abs(ends[i].rotation - ends[j].rotation) % 360;
+            if (d > 180) d = 360 - d;
+            headingSpread = Math.max(headingSpread, d);
+        }
+    }
+    return { runs: ends.length, spread, headingSpread, centre: { x: cx, z: cz } };
+}
+
+export interface PinnedRuns {
+    label: string;
+    paths: RunPath[];
+    realism: string;
+}
+
+// Runs kept as "A" so the next batch can be compared with them.
+export const pinnedRuns = writable<PinnedRuns | undefined>(undefined);
+
+// Ask the simulator window to start another batch of runs.
+export const rerunRequest = writable(0);

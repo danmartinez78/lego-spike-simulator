@@ -5,7 +5,8 @@
         DatabaseOutline,
         ChartLineUpOutline,
         RulerCombinedOutline,
-        MapPinAltOutline
+        MapPinAltOutline,
+        AwardOutline
     } from 'flowbite-svelte-icons';
     import { helpStore, openBlockHelp } from '$lib/help';
     import { blockHelp, helpCategories } from '$lib/blockly/blockhelp';
@@ -70,6 +71,10 @@
         {
             component: CogOutline,
             text: 'Settings: simulation speed, boundary and realism.'
+        },
+        {
+            component: AwardOutline,
+            text: 'Challenges: goals like "stop on green every time". Start one, write a program, press ▶︎×5 and the simulator checks it.'
         },
         {
             component: ChartLineUpOutline,
@@ -148,7 +153,7 @@
                     {/each}
                     <div class="flex flex-row gap-3 items-center">
                         <div class="w-8 h-8 flex justify-center items-center shrink-0 text-xs">
-                            ▶×5
+                            ▶︎×5
                         </div>
                         <div>
                             Run the program five times and draw every path on the mat. See the
@@ -296,13 +301,16 @@
                         <i>move ... cm</i> and turn blocks to reach a target on the mat. This is
                         <b>open loop</b>: the robot never checks where it is.
                     </li>
-                    <li>Press <b>▶×5</b> and look at how far apart the five runs end.</li>
+                    <li>Press <b>▶︎×5</b> and look at how far apart the five runs end.</li>
                     <li>
                         Now make it <b>closed loop</b>: steer with the gyro (yaw angle) to drive
                         straight, turn until the yaw reaches an angle, or drive until the colour
                         sensor sees a line. Run ×5 again.
                     </li>
-                    <li>Compare the spread. Which sensor fixed which kind of error?</li>
+                    <li>
+                        Compare the spread. In the results window, <b>Keep as A</b> saves the first program's
+                        runs, so the next ▶︎×5 draws both and says which was more consistent.
+                    </li>
                 </ol>
                 <p class="mt-2">
                     A fixed random seed in Settings makes every run repeat the same errors, which
@@ -344,7 +352,7 @@
                 </p>
                 <p class="mt-2">
                     This site runs a modified version that adds the shared library, realism
-                    settings, the ▶×5 path overlay, example programs, and this guide. Its full
+                    settings, the ▶︎×5 path overlay, example programs, and this guide. Its full
                     source code is at
                     <a
                         class="text-blue-700 underline"
