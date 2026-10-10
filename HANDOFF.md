@@ -56,9 +56,11 @@
     both toolbars show text labels (`ToolButton.svelte`). Still open: the 3D mat
     rendering report (needs details of what looked wrong, and the LDraw library,
     which the cloud sandbox can't download).
--   Colour BIOGLOW mat: the `.spk` received was corrupted in transit
-    (binary treated as text). Waiting on a zipped copy or the JPG/PNG to add it
-    to the library. Reply to Pete drafted in the old thread.
+-   Colour BIOGLOW mat: added as the preset `presets/scenes/BIOGLOW - colour mat.spk`
+    (seeded into the library on the next container start). It was cut from a
+    2200 x 1064 screenshot Pete sent, using the outer yellow dashed border as the
+    field edge and stretched to 2360 x 1140 mm, so it is low resolution and about
+    2% off in proportion. Swap in the real mat file if one arrives.
 -   Link sharing of programs was discussed and deferred.
 
 ## Testing notes
