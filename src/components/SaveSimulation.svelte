@@ -139,10 +139,10 @@
                 {/if}
             {:else}
                 <div class="text-sm w-96">
-                    Saving to the library needs you to <a
+                    Coaches can save to the library after signing in on the <a
                         class="text-blue-700 underline"
-                        href="api/admin/login"
-                        target="_blank">sign in</a
+                        href="coach"
+                        target="_blank">coach page</a
                     >.
                 </div>
             {/if}
