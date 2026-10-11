@@ -7,6 +7,10 @@
     import SceneThumb from '$components/coach/SceneThumb.svelte';
     import LessonCardEditor from '$components/coach/LessonCardEditor.svelte';
     import LessonEditor from '$components/coach/LessonEditor.svelte';
+    import TeamPanel from '$components/coach/TeamPanel.svelte';
+    import CodeCards from '$components/coach/CodeCards.svelte';
+    import { tick } from 'svelte';
+    import type { Student } from '$lib/team';
     import { askConfirm } from '$lib/confirm';
     import { ClipboardCheckOutline } from 'flowbite-svelte-icons';
     import { challenges } from '$lib/spike/challenges';
@@ -76,6 +80,14 @@
     ];
 
     let loading = true;
+    let view: 'students' | 'library' = 'library';
+    let printing: Student[] = [];
+
+    async function printCards(students: Student[]) {
+        printing = students;
+        await tick();
+        window.print();
+    }
     let active: LibraryKind = 'lessons';
     let message = '';
     let failed = false;
@@ -423,7 +435,7 @@
     <title>Coach tools · LEGO SPIKE Simulator</title>
 </svelte:head>
 
-<div class="min-h-dvh bg-gray-50 text-gray-900">
+<div class="min-h-dvh bg-gray-50 text-gray-900 print:hidden">
     <header class="bg-white border-b border-gray-200">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-row items-center gap-3 flex-wrap">
             <img src="icons/SensorHub.svg" alt="" width="32" height="32" />
@@ -471,6 +483,25 @@
                 </div>
             </div>
         {:else}
+            <nav
+                class="flex flex-row gap-1 border-b border-gray-200 -mt-2"
+                aria-label="Coach tools"
+            >
+                {#each [{ id: 'library', label: 'Library and lessons' }, { id: 'students', label: 'Students' }] as item}
+                    <button
+                        class="px-4 py-2 -mb-px border-b-2 text-sm font-medium {view == item.id
+                            ? 'border-blue-600 text-blue-800'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'}"
+                        aria-current={view == item.id ? 'page' : undefined}
+                        on:click={() => (view = item.id == 'students' ? 'students' : 'library')}
+                        >{item.label}</button
+                    >
+                {/each}
+            </nav>
+        {/if}
+        {#if !loading && $libraryStore.available && $libraryStore.writer && view == 'students'}
+            <TeamPanel on:print={(e) => printCards(e.detail)} />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer}
             <section class="flex flex-col gap-3">
                 <div>
                     <h2 class="text-lg font-semibold">Shared library</h2>
@@ -749,6 +780,7 @@
         {/if}
     </main>
 </div>
+<CodeCards students={printing} />
 <LessonCardEditor
     bind:open={cardOpen}
     program={cardProgram}

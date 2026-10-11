@@ -13,6 +13,9 @@
     import ExamplesDialog from '$components/ExamplesDialog.svelte';
     import ChallengesDialog from '$components/ChallengesDialog.svelte';
     import LessonsDialog from '$components/LessonsDialog.svelte';
+    import StudentDialog from '$components/StudentDialog.svelte';
+    import { studentDialogOpen, studentStore } from '$lib/team';
+    import { UserCircleOutline } from 'flowbite-svelte-icons';
     import { lessonsOpen } from '$lib/lessons';
     import { ClipboardCheckOutline } from 'flowbite-svelte-icons';
     import { challengesOpen } from '$lib/spike/challenges';
@@ -463,6 +466,7 @@
 <ProcedureDialog bind:modalOpen={procedureDialogOpen} bind:callback={procedureCreateCallback} />
 <PrintDialog bind:modalOpen={printDialogOpen} callback={printCallback} />
 <ExamplesDialog bind:modalOpen={examplesOpen} />
+<StudentDialog bind:modalOpen={$studentDialogOpen} />
 <LessonsDialog bind:modalOpen={$lessonsOpen} on:setup={() => (simulatorOpen = true)} />
 <ChallengesDialog bind:modalOpen={$challengesOpen} on:started={() => (simulatorOpen = true)} />
 
@@ -522,6 +526,18 @@
                 <QuestionCircleOutline class="w-7 h-7" />
             </ToolButton>
             <Tooltip>How to use the simulator</Tooltip>
+            <ToolButton
+                label={$studentStore ? $studentStore.name.split(' ')[0] : 'Sign in'}
+                color={$studentStore ? 'green' : 'light'}
+                on:click={() => studentDialogOpen.set(true)}
+            >
+                <UserCircleOutline class="w-7 h-7" />
+            </ToolButton>
+            <Tooltip
+                >{$studentStore
+                    ? `Signed in as ${$studentStore.name}`
+                    : 'Sign in with the code from your coach'}</Tooltip
+            >
             {#if !simulatorOpen}
                 <div class="flex-1" />
                 <a href="https://developers.google.com/blockly" target="_blank">

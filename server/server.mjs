@@ -6,7 +6,8 @@
 //   /ldraw/...         an extracted LDraw parts library (LDRAW_DIR), with parts.lst
 //   /api/library       list of shared robots and scenes (LIBRARY_DIR)
 //   /api/library/{robots|scenes}/<file>   download one entry
-//   /api/admin/...     write operations (upload, delete, rename, set default)
+//   /api/admin/...     write operations (upload, delete, rename, set default, roster)
+//   /api/student/...   student sign-in with a roster code (TEAM_DIR)
 //
 // Writes are accepted from:
 //   - clients whose address starts with one of LAN_WRITE_PREFIXES
@@ -21,12 +22,14 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { createTeam } from './team.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +(process.env.PORT ?? 8080);
 const DIST_DIR = path.resolve(process.env.DIST_DIR ?? path.join(here, '..', 'dist'));
 const LDRAW_DIR = path.resolve(process.env.LDRAW_DIR ?? path.join(here, '..', 'ldraw'));
 const LIBRARY_DIR = path.resolve(process.env.LIBRARY_DIR ?? path.join(here, '..', 'library'));
+const TEAM_DIR = path.resolve(process.env.TEAM_DIR ?? path.join(path.dirname(LIBRARY_DIR), 'team'));
 const SEED_DIR = path.resolve(process.env.SEED_DIR ?? path.join(here, '..', 'presets'));
 const MAX_UPLOAD = +(process.env.MAX_UPLOAD_MB ?? 25) * 1024 * 1024;
 const CF_TEAM = (process.env.CF_ACCESS_TEAM_DOMAIN ?? '')
@@ -337,6 +340,11 @@ async function handleAdmin(req, res, parts) {
         return;
     }
 
+    if (parts[0] === 'roster') {
+        await team.handleAdmin(req, res, parts.slice(1), who);
+        return;
+    }
+
     if (parts[0] === 'rename' && req.method === 'POST') {
         let body;
         try {
@@ -496,6 +504,10 @@ async function handle(req, res) {
         await handleAdmin(req, res, parts.slice(2));
         return;
     }
+    if (parts[0] === 'api' && parts[1] === 'student') {
+        await team.handleStudent(req, res, parts.slice(2));
+        return;
+    }
     if (parts[0] === 'api' && parts[1] === 'library') {
         if (req.method !== 'GET') {
             sendJson(res, 405, { error: 'Method not allowed' });
@@ -544,6 +556,8 @@ async function handle(req, res) {
         send(res, 404, 'Not found');
     }
 }
+
+const team = createTeam({ teamDir: TEAM_DIR, sendJson, readBody });
 
 await ensureLibrary();
 http.createServer((req, res) => {
