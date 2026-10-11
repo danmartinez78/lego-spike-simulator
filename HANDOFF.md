@@ -46,7 +46,7 @@
 -   Lessons (clipboard button in the code panel): step-by-step activities with a
     Set up button, tick-off steps and an optional challenge. Stored in
     `library/lessons/*.json`; imported and exported on the coach page as zip
-    packages. Format: `docs/lessons.md`, `schemas/lesson-v1.json`. Starter
+    packages, or written with the New lesson form (live student preview). Format: `docs/lessons.md`, `schemas/lesson-v1.json`. Starter
     lessons come from `tools/examples/make_lessons.py`. Progress is per browser.
 -   Welcome screen, guide (? button) with block reference, About/credits.
 -   Block help: hover tooltips, right-click "Explain this block".

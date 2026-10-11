@@ -6,6 +6,7 @@
     import ConfirmDialog from '$components/ConfirmDialog.svelte';
     import SceneThumb from '$components/coach/SceneThumb.svelte';
     import LessonCardEditor from '$components/coach/LessonCardEditor.svelte';
+    import LessonEditor from '$components/coach/LessonEditor.svelte';
     import { askConfirm } from '$lib/confirm';
     import { ClipboardCheckOutline } from 'flowbite-svelte-icons';
     import { challenges } from '$lib/spike/challenges';
@@ -22,7 +23,10 @@
         deleteEntry,
         renameEntry,
         saveEntry,
+        libraryFileName,
+        saveLesson,
         saveLessonCard,
+        type Lesson,
         setDefault,
         type LessonCard,
         type LibraryEntry,
@@ -41,7 +45,7 @@
             kind: 'lessons',
             title: 'Lessons',
             icon: '',
-            empty: 'No lessons yet. Import a lesson package (.zip) or a lesson .json file.',
+            empty: 'No lessons yet. Write one with New lesson, or import a lesson package (.zip).',
             extensions: ['.zip', '.json'],
             upload: 'Import a lesson (.zip or .json)'
         },
@@ -88,7 +92,14 @@
     $: sceneNames = $libraryStore.index.scenes.map((s) => s.name);
     $: topics = [
         ...new Set(
-            $libraryStore.index.programs.map((p) => p.card?.topic).filter((t): t is string => !!t)
+            [
+                'Basics',
+                'Sensors',
+                'Gyro',
+                'Missions',
+                ...$libraryStore.index.programs.map((p) => p.card?.topic),
+                ...$libraryStore.index.lessons.map((l) => l.lesson?.topic)
+            ].filter((t): t is string => !!t)
         )
     ];
 
@@ -293,6 +304,41 @@
         }
     }
 
+    let lessonOpen = false;
+    let lessonName = '';
+    let lessonValue: Lesson | undefined = undefined;
+    let lessonSaving = false;
+
+    function editLesson(entry: LibraryEntry | undefined) {
+        lessonName = entry?.name ?? '';
+        lessonValue = entry?.lesson;
+        lessonOpen = true;
+        message = '';
+    }
+
+    async function saveLessonForm(lesson: Lesson) {
+        // An edited lesson keeps its file name, so students' progress stays with it.
+        const name = lessonName || libraryFileName('lessons', lesson.title);
+        if (
+            !lessonName &&
+            $libraryStore.index.lessons.some((l) => l.name == name) &&
+            !(await askConfirm(`There's already a lesson saved as ${name}. Replace it?`, {
+                confirmLabel: 'Replace',
+                danger: true
+            }))
+        ) {
+            return;
+        }
+        lessonSaving = true;
+        await run(
+            `lesson ${name}`,
+            () => saveLesson(name, lesson),
+            `Saved the lesson "${lesson.title}".`
+        );
+        lessonSaving = false;
+        if (!failed) lessonOpen = false;
+    }
+
     async function downloadLesson(entry: LibraryEntry) {
         const lesson = entry.lesson;
         if (!lesson) return;
@@ -477,8 +523,19 @@
                 {/if}
 
                 <div class="flex flex-row flex-wrap items-center gap-2">
-                    <Button color="blue" size="sm" disabled={busy != ''} on:click={chooseFile}
-                        >{section.upload}</Button
+                    {#if active == 'lessons'}
+                        <Button
+                            color="blue"
+                            size="sm"
+                            disabled={busy != ''}
+                            on:click={() => editLesson(undefined)}>New lesson</Button
+                        >
+                    {/if}
+                    <Button
+                        color={active == 'lessons' ? 'light' : 'blue'}
+                        size="sm"
+                        disabled={busy != ''}
+                        on:click={chooseFile}>{section.upload}</Button
                     >
                     <input
                         bind:this={fileInput}
@@ -645,6 +702,12 @@
                                                     size="xs"
                                                     color="light"
                                                     disabled={busy != ''}
+                                                    on:click={() => editLesson(entry)}>Edit</Button
+                                                >
+                                                <Button
+                                                    size="xs"
+                                                    color="light"
+                                                    disabled={busy != ''}
                                                     on:click={() => downloadLesson(entry)}
                                                     >Download package</Button
                                                 >
@@ -694,5 +757,15 @@
     {topics}
     saving={cardSaving}
     on:save={(e) => saveCard(e.detail)}
+/>
+<LessonEditor
+    bind:open={lessonOpen}
+    lesson={lessonValue}
+    programs={$libraryStore.index.programs.map((p) => p.name)}
+    scenes={sceneNames}
+    robots={$libraryStore.index.robots.map((r) => r.name)}
+    {topics}
+    saving={lessonSaving}
+    on:save={(e) => saveLessonForm(e.detail)}
 />
 <ConfirmDialog />
