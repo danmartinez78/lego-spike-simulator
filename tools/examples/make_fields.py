@@ -3,7 +3,7 @@
 Usage: python make_fields.py <output dir>
 
 Mats are drawn at 1 pixel per mm on a 2360 x 1140 mm field, using the
-LEGO colours the simulator's colour sensor recognises. Positions use the
+LEGO colors the simulator's color sensor recognizes. Positions use the
 simulator's convention: x across, z down the mat image, origin in the middle.
 The robot faces up the mat at rotation 180; heading h (0 = up, 90 = right)
 is rotation 180 - h.
@@ -187,12 +187,12 @@ f.rect(450, -300, 80, 80, RED)
 f.label(950, -300, 'finish', 28, anchor='lm')
 f.save()
 
-# 2. Colour stops -----------------------------------------------------------
-f = Field('Practice - colour stops')
+# 2. Color stops ------------------------------------------------------------
+f = Field('Practice - color stops')
 f.title('COLOR STOPS')
 f.start_box(-900, 380, 0)
 lane = [(RED, -150), (BLUE, -350), (GREEN, 0), (YELLOW, 150)]
-# Lane 1: coloured patches straight ahead of the start
+# Lane 1: colored patches straight ahead of the start
 for colour, z in [(GREEN, 120), (BLUE, -60), (YELLOW, -240), (RED, -420)]:
     f.rect(-900, z, 220, 50, colour)
 f.label(-1100, 120, '30 cm', 26)
@@ -204,7 +204,7 @@ f.start_box(-300, 380, 0, label='START 2')
 for i in range(6):
     f.rect(-300, 150 - i * 100, 220, 20, BLACK)
 f.label(-170, -350, 'count the lines', 28, anchor='lm')
-# Lane 3: grey-scale strip for reading reflected light values
+# Lane 3: gray-scale strip for reading reflected light values
 f.start_box(400, 380, 0, label='START 3')
 for i, shade in enumerate([230, 190, 150, 110, 70, 30]):
     f.rect(400, 170 - i * 110, 220, 100, (shade, shade, shade))
