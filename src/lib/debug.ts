@@ -23,26 +23,3 @@ export function setShowFps(show: boolean) {
         // storage unavailable: the choice lasts until the page closes
     }
 }
-
-const cameraHintKey = 'spike-sim-camera-hint-seen';
-
-function readHintSeen(): boolean {
-    try {
-        return localStorage.getItem(cameraHintKey) === '1';
-    } catch {
-        return false;
-    }
-}
-
-// Whether this browser has seen how to move the 3D view's camera. The hint
-// shows until the viewer moves the view or closes it.
-export const cameraHintSeen = writable<boolean>(readHintSeen());
-
-export function setCameraHintSeen() {
-    cameraHintSeen.set(true);
-    try {
-        localStorage.setItem(cameraHintKey, '1');
-    } catch {
-        // storage unavailable: the hint comes back next visit
-    }
-}

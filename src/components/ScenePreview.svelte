@@ -5,7 +5,7 @@
     import { brickColour, type Quad } from '$lib/ldraw/components';
     import { type SceneStore, type SceneObject } from '$lib/spike/scene';
     import * as m4 from '$lib/ldraw/m4';
-    import { showFps, cameraHintSeen, setCameraHintSeen } from '$lib/debug';
+    import { showFps } from '$lib/debug';
 
     export let id: string;
     export let scene: SceneStore;
@@ -37,6 +37,7 @@
     let panY = 0;
     const pointers = new Map<number, { x: number; y: number }>();
     let pinchDistance = 0;
+    let lastTap = -1000;
     $: viewChanged = orbitYaw != 0 || orbitPitch != 0 || zoom != 1 || panX != 0 || panY != 0;
 
     function resetView() {
@@ -51,7 +52,30 @@
         zoom = Math.min(4, Math.max(0.1, zoom * factor));
     }
 
-    // Touch screens get touch wording in the camera hint.
+    // How to move the camera: shown at the start of each run until the viewer
+    // moves the view, or for a few seconds, and again from the corner button.
+    let tipOpen = interactive;
+    let tipTimer: ReturnType<typeof setTimeout> | undefined = interactive
+        ? setTimeout(hideTip, 8000)
+        : undefined;
+
+    function hideTip() {
+        tipOpen = false;
+        if (tipTimer) {
+            clearTimeout(tipTimer);
+            tipTimer = undefined;
+        }
+    }
+
+    function toggleTip() {
+        if (tipOpen) {
+            hideTip();
+        } else {
+            tipOpen = true;
+        }
+    }
+
+    // Touch screens get touch wording in the camera tip.
     const coarsePointer =
         typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
@@ -59,8 +83,13 @@
         if (!interactive) {
             return;
         }
-        if (!$cameraHintSeen) {
-            setCameraHintSeen();
+        hideTip();
+        // Touch browsers don't always send dblclick, so spot a double tap here.
+        if (event.pointerType == 'touch' && pointers.size == 0) {
+            if (event.timeStamp - lastTap < 300) {
+                resetView();
+            }
+            lastTap = event.timeStamp;
         }
         (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -121,9 +150,7 @@
             return;
         }
         event.preventDefault();
-        if (!$cameraHintSeen) {
-            setCameraHintSeen();
-        }
+        hideTip();
         zoomBy(Math.exp(event.deltaY * 0.0015));
     }
 
@@ -505,6 +532,7 @@
 
     onDestroy(() => {
         canRender = false;
+        hideTip();
         if (mapTexture && gl) {
             gl.deleteTexture(mapTexture.texture);
             mapTexture = null;
@@ -537,25 +565,33 @@
         on:dblclick={() => interactive && resetView()}
         on:contextmenu={(e) => interactive && e.preventDefault()}
     ></canvas>
-    {#if interactive && !$cameraHintSeen}
-        <div
-            class="absolute left-1/2 top-2 flex -translate-x-1/2 items-center gap-2 rounded bg-black/60 px-2 py-1 text-xs text-white"
-        >
-            <span class="pointer-events-none">
-                {#if coarsePointer}
-                    Drag to look around · Pinch to zoom · Two fingers to slide
-                {:else}
-                    Drag to look around · Scroll to zoom · Right-drag to slide
-                {/if}
-            </span>
+    {#if interactive}
+        <div class="absolute right-1 top-1 flex max-w-[48%] flex-col items-end gap-1">
             <button
-                class="rounded px-1 hover:bg-white/20"
-                title="Hide this tip"
-                aria-label="Hide this tip"
-                on:click={setCameraHintSeen}
+                class="rounded bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-black/80"
+                title="How to move the camera"
+                aria-expanded={tipOpen}
+                on:click={toggleTip}
             >
-                ✕
+                ✥ Camera
             </button>
+            {#if tipOpen}
+                <ul
+                    class="max-w-[14rem] rounded bg-black/60 px-2 py-1 text-xs leading-snug text-white pointer-events-none"
+                >
+                    {#if coarsePointer}
+                        <li>Drag with one finger to look around</li>
+                        <li>Pinch to zoom</li>
+                        <li>Drag with two fingers to slide</li>
+                        <li>Double-tap or Reset view to go back</li>
+                    {:else}
+                        <li>Drag to look around</li>
+                        <li>Scroll to zoom</li>
+                        <li>Right-drag or Shift-drag to slide</li>
+                        <li>Double-click or Reset view to go back</li>
+                    {/if}
+                </ul>
+            {/if}
         </div>
     {/if}
     {#if interactive && viewChanged}
@@ -569,7 +605,7 @@
     {/if}
     {#if $showFps}
         <div
-            class="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 font-mono text-xs text-white pointer-events-none"
+            class="absolute left-1 top-1 max-w-[48%] rounded bg-black/60 px-1.5 py-0.5 font-mono text-xs text-white pointer-events-none"
         >
             {fps} FPS · {frameMs.toFixed(1)} ms draw · {gl
                 ? `${gl.getCanvasWidth()}×${gl.getCanvasHeight()}`
