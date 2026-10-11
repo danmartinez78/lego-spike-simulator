@@ -30,6 +30,8 @@ lesson or another coach's draft, and can only delete its own coach's drafts.
     Claude opens the coach sign-in page; enter your email and the code it sends.
 -   **Claude Code:** `claude mcp add --transport http spike https://spike.robodan.dev/mcp`,
     then `/mcp` in Claude Code to sign in.
+-   **ChatGPT, Meta Muse and others:** add a custom connector (or MCP server)
+    with the same URL in the assistant's settings, then sign in the same way.
 
 Then ask, for example: "Write a lesson on turning with the gyro using the turn
 rose field, with a check that the robot stops facing 90°."
@@ -45,9 +47,20 @@ which turns the Access login into an OAuth sign-in that MCP clients understand.
    Name "spike MCP", public hostname `spike.robodan.dev`, path `mcp`.
 2. Attach the same email policy as the coach page, so one list of coaches
    covers both.
-3. Advanced settings: turn on **Managed OAuth**. Under Allowed redirect URIs add
-   `https://claude.ai/api/mcp/auth_callback`, and turn on **Allow localhost
-   clients** for Claude Code.
+3. Advanced settings: turn on **Managed OAuth**, turn on **Allow localhost
+   clients** and **Allow loopback clients** (Claude Code, Copilot in VS Code,
+   Cursor and other assistants on the coach's own computer), and under Allowed
+   redirect URIs add one line per web assistant the coaches use:
+
+    | Assistant                                             | Redirect URI                                            |
+    | ----------------------------------------------------- | ------------------------------------------------------- |
+    | Claude (web, desktop, mobile)                         | `https://claude.ai/api/mcp/auth_callback`               |
+    | ChatGPT                                               | `https://chatgpt.com/connector_platform_oauth_redirect` |
+    | Meta Muse (from other servers' setups, not Meta docs) | `https://agent.meta.ai/api/hatch/oauth/callback`        |
+
+    If a coach's assistant fails to sign in with a redirect error, its address
+    is missing here; it's usually in that assistant's connector docs.
+
 4. Copy the new app's AUD tag and add it to the container's `CF_ACCESS_AUD`,
    comma-separated after the existing one.
 
