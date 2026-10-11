@@ -8,6 +8,7 @@
     import { studentDialogOpen, studentStore } from '$lib/team';
     import {
         assignmentType,
+        checkFirst,
         dueLabel,
         handIn,
         handedIn,
@@ -402,6 +403,9 @@
                                 : undefined}
                             signedIn={!!$studentStore}
                             handedInAt={selected ? $handedIn[selected.name] : undefined}
+                            checkFirst={selected
+                                ? checkFirst($homeworkStore, selected.name)
+                                : false}
                             on:handin={handInProgram}
                             on:openmine={openMine}
                             on:signin={() => studentDialogOpen.set(true)}

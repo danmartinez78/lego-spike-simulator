@@ -100,7 +100,7 @@ export function parentNotice(settings: TeamSettings) {
     return [
         `Hello families,`,
         ``,
-        `${team} uses the LEGO SPIKE Simulator (${new URL('./', window.location.href).href}) to practise programming robots online. It runs in the browser: there's nothing to install, no account to make, no ads and no tracking cookies.`,
+        `${team} uses the LEGO SPIKE Simulator (${new URL('./', window.location.href).href}) to practise programming robots online. It runs in the browser: there's nothing to install, no sign-up or email address, no ads and no cookies for students. Cloudflare, which delivers the site, counts visits; the team only sees totals.`,
         ``,
         `Each student gets a sign-in code from the coach. When they sign in, the site keeps the name the coach entered (first name and last initial), their progress on lessons and challenges, and the programs they hand in. Only the team's coaches can see this. ${ai}`,
         ``,

@@ -35,6 +35,7 @@
     let note = '';
     let type: AssignmentType | '' = '';
     let picked: string[] = [];
+    let checkFirst = false;
 
     const typeItems = [
         { value: '', name: 'No type' },
@@ -63,6 +64,7 @@
         note = a?.note ?? '';
         type = a?.type ?? '';
         picked = [...(a?.lessons ?? [])];
+        checkFirst = !!a?.checkFirst;
         message = '';
     }
 
@@ -73,7 +75,14 @@
     async function save() {
         busy = true;
         message = '';
-        const input = { title, due, note, type: type || undefined, lessons: picked };
+        const input = {
+            title,
+            due,
+            note,
+            type: type || undefined,
+            lessons: picked,
+            checkFirst: pickedWithCheck > 0 && checkFirst
+        };
         try {
             const result =
                 editing == 'new'
@@ -163,6 +172,9 @@
     $: groups = groupLessons(
         $libraryStore.index.lessons.filter((e) => !e.lesson?.draft || picked.includes(e.name))
     );
+    $: pickedWithCheck = picked.filter(
+        (name) => $libraryStore.index.lessons.find((e) => e.name == name)?.lesson?.check
+    ).length;
     $: sorted = [...assignments].sort((a, b) => (b.due ?? '0000').localeCompare(a.due ?? '0000'));
     $: sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name));
 </script>
@@ -260,6 +272,17 @@
                     {/each}
                 </div>
             </fieldset>
+            {#if pickedWithCheck > 0}
+                <label class="flex flex-row items-start gap-2 text-sm">
+                    <input type="checkbox" class="rounded mt-0.5" bind:checked={checkFirst} />
+                    <span
+                        ><b>Check must pass before hand-in.</b> Students can't hand in a lesson's
+                        program until its check passes. {pickedWithCheck == picked.length
+                            ? 'Every picked lesson has a check.'
+                            : `${pickedWithCheck} of the ${picked.length} picked lessons ${pickedWithCheck == 1 ? 'has' : 'have'} a check; the others aren't affected.`}</span
+                    >
+                </label>
+            {/if}
             <div class="flex flex-row gap-2 justify-end">
                 <Button color="light" on:click={() => (editing = '')}>Cancel</Button>
                 <Button type="submit" color="blue" disabled={busy}>Save assignment</Button>
@@ -304,6 +327,9 @@
                         {/if}
                     </h3>
                     <div class="text-sm text-gray-600 flex flex-row flex-wrap gap-x-3">
+                        {#if a.checkFirst}
+                            <span>Check must pass before hand-in</span>
+                        {/if}
                         {#if a.due}
                             <span class={isOverdue(a.due) ? 'text-red-700' : ''}
                                 >Due {dueLabel(a.due)}</span

@@ -27,6 +27,8 @@ export interface Assignment {
     due?: string;
     type?: AssignmentType;
     lessons: string[];
+    // Students must pass a lesson's check before handing in its program.
+    checkFirst?: boolean;
     created: string;
     // Saved by an AI assistant and not yet published: students don't see it.
     draft?: boolean;
@@ -231,9 +233,17 @@ export async function remindToSignIn() {
 
 // ---- Handing in -------------------------------------------------------------
 
+// Whether one of the student's assignments asks for this lesson's check to pass
+// before they hand in.
+export function checkFirst(assignments: Assignment[], lessonName: string) {
+    return assignments.some((a) => a.checkFirst && a.lessons.includes(lessonName));
+}
+
 export async function handIn(lessonName: string) {
     const blob = await currentProgram();
     if (!blob) throw new Error('There is no program in the code panel.');
+    // A check that just passed must reach the server before the hand-in does.
+    await flushProgress();
     const response = await fetch(`api/student/programs/${encodeURIComponent(lessonName)}`, {
         method: 'PUT',
         headers: studentHeaders(),
@@ -304,7 +314,7 @@ async function adminJson<T>(method: string, path: string, body?: unknown): Promi
 
 export type AssignmentInput = Pick<
     Assignment,
-    'title' | 'note' | 'due' | 'type' | 'lessons' | 'draft'
+    'title' | 'note' | 'due' | 'type' | 'lessons' | 'draft' | 'checkFirst'
 >;
 
 export const getHomework = () => adminJson<{ assignments: Assignment[] }>('GET', 'homework');

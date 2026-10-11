@@ -42,8 +42,13 @@
         <section class="flex flex-col gap-2">
             <h2 class="text-lg font-semibold">The short version</h2>
             <ul class="list-disc ml-5 flex flex-col gap-1">
-                <li>No accounts, no ads, no analytics and no tracking cookies.</li>
-                <li>Anyone can use the simulator without signing in.</li>
+                <li>
+                    No sign-up and no email addresses. Students sign in with a code from their
+                    coach, and anyone can use the simulator without signing in.
+                </li>
+                <li>
+                    No ads, no cookies for students, and nothing that follows anyone across sites.
+                </li>
                 <li>
                     Students who sign in with a code from their coach save their progress on the
                     team's own server. Only the team's coaches can see it.
@@ -95,12 +100,16 @@
         </section>
 
         <section class="flex flex-col gap-2">
-            <h2 class="text-lg font-semibold">Cookies</h2>
+            <h2 class="text-lg font-semibold">Cookies and visit counts</h2>
             <p>
                 The site sets no cookies for students. Coaches get one sign-in cookie when they log
-                in to the coach pages. The site is reached through Cloudflare, which protects it
-                from attacks and may handle connection details such as your internet address to do
-                that.
+                in to the coach pages.
+            </p>
+            <p>
+                The site is reached through Cloudflare, which protects it from attacks. To do that
+                it handles connection details such as your internet address, and it counts visits:
+                how many, which pages, and roughly which country and browser. The team only sees
+                those totals, never who visited or what any one person did.
             </p>
         </section>
 

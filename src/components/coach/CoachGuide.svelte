@@ -202,6 +202,10 @@
                     shows as a badge on their list. Leave it as No type if neither fits.
                 </p>
                 <p>
+                    Tick <b>Check must pass before hand-in</b> when students should get their robot right
+                    before sending you a program. It only applies to lessons with a check.
+                </p>
+                <p>
                     Under each assignment there's a row for every student: <b>Not started</b>, how
                     many steps they've ticked, or <b>Done</b>. A lesson is done when every step is
                     ticked, its check has passed and the student has pressed Hand in. A link to the

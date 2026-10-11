@@ -95,7 +95,9 @@
     Signing out clears the browser's copy of the progress. Code: `server/homework.mjs`,
     `src/lib/homework.ts`, `AssignmentsPanel.svelte`. The MCP tools are
     `list_assignments`, `save_assignment` and `delete_assignment`; the old
-    `*_homework` names still work as aliases.
+    `*_homework` names still work as aliases. An assignment with `checkFirst`
+    blocks hand-in (server and app) until the lesson's check has passed, for
+    lessons that have a check.
 -   Before going public (pre-release): `/api/admin` refuses writes whose
     `Origin` is another site (it compares with `Host` or `X-Forwarded-Host`, so
     the proxy must pass the original host); drafts are left out of the public
