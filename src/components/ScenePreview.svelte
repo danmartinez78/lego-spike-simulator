@@ -17,8 +17,8 @@
     export let rotate = false;
     export let unresolved: string[] = [];
     export let dimMap = false;
-    // Let the viewer drag to orbit, right-drag or shift-drag to pan, scroll or
-    // pinch to zoom, and double-click to reset.
+    // Let the viewer drag to orbit, right-drag, shift-drag or two-finger drag
+    // to pan, scroll or pinch to zoom, and double-click to reset.
     export let interactive = false;
 
     let canRender = false;
@@ -81,25 +81,32 @@
         const dx = event.clientX - last.x;
         const dy = event.clientY - last.y;
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        const canvas = event.currentTarget as HTMLElement;
         if (pointers.size == 2) {
+            // Two fingers: pinch to zoom, and drag to pan. One finger moving
+            // moves the midpoint between them by half as much.
             const distance = currentPinchDistance();
             if (pinchDistance > 0 && distance > 0) {
                 zoomBy(pinchDistance / distance);
             }
             pinchDistance = distance;
+            pan(canvas, dx / 2, dy / 2);
             return;
         }
-        const canvas = event.currentTarget as HTMLElement;
         if (event.shiftKey || (event.buttons & 2) != 0) {
-            // Pan by the same fraction of the view as the pointer moved.
-            const height = Math.max(1, canvas.clientHeight);
-            const viewHeight = 2 * (robotFocus ? 3 : 30) * zoom * Math.tan((22.5 * Math.PI) / 180);
-            panX += (dx / height) * viewHeight;
-            panY -= (dy / height) * viewHeight;
+            pan(canvas, dx, dy);
         } else {
             orbitYaw += dx * 0.4;
             orbitPitch = Math.min(60, Math.max(-45, orbitPitch + dy * 0.3));
         }
+    }
+
+    // Pan by the same fraction of the view as the pointer moved.
+    function pan(canvas: HTMLElement, dx: number, dy: number) {
+        const height = Math.max(1, canvas.clientHeight);
+        const viewHeight = 2 * (robotFocus ? 3 : 30) * zoom * Math.tan((22.5 * Math.PI) / 180);
+        panX += (dx / height) * viewHeight;
+        panY -= (dy / height) * viewHeight;
     }
 
     function wheel(event: WheelEvent) {
