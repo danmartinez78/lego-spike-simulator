@@ -2,14 +2,16 @@
     import * as Blockly from 'blockly/core';
     import {
         CogOutline,
-        DatabaseOutline,
         QuestionCircleOutline,
         ChartLineUpOutline,
         RulerCombinedOutline,
         MapPinAltOutline,
         AwardOutline,
-        ClipboardCheckOutline
+        ClipboardCheckOutline,
+        EditOutline,
+        ToolsOutline
     } from 'flowbite-svelte-icons';
+    import { buildToolsChoice, setBuildTools } from '$lib/buildtools';
     import { activeChallenge, challengesOpen } from '$lib/spike/challenges';
     import { lessonsOpen } from '$lib/lessons';
     import PlaceDialog from '$components/PlaceDialog.svelte';
@@ -53,6 +55,7 @@
     let sceneOpen = false;
     let settingsOpen = false;
     let libraryOpen = false;
+    let libraryKind: 'robots' | 'scenes' = 'scenes';
     let measureOpen = false;
     let placeOpen = false;
     let lastRerun = 0;
@@ -68,7 +71,7 @@
 
     $: handleRerun($rerunRequest);
     let robotButtonColour: 'light' | 'red' | 'green' = 'light';
-    let libraryClass = '';
+    let missingParts = false;
     let runSimulation = false;
     // cameraOpen is used as a bind variable, but reported as unused by es-lint
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -188,11 +191,7 @@
                 robotButtonColour = 'green';
             }
         }
-        if (store.unresolved.length > 0) {
-            libraryClass = 'animate-bounce';
-        } else {
-            libraryClass = '';
-        }
+        missingParts = store.unresolved.length > 0;
     }
 
     function startRobot() {
@@ -231,9 +230,15 @@
         sceneOpen = true;
     }
 
-    function openSharedLibrary() {
+    function openPicker(kind: 'robots' | 'scenes') {
+        libraryKind = kind;
         libraryOpen = true;
     }
+
+    // Students pick a robot and field from the library. The tools for building
+    // your own sit behind the Build button, shown from the start for coaches
+    // and always when there's no library to pick from.
+    $: showBuild = !$libraryStore.available || ($buildToolsChoice ?? !!$libraryStore.writer);
 
     function openSettings() {
         settingsOpen = true;
@@ -247,7 +252,7 @@
 <SaveSimulation bind:modalOpen={saveOpen} bind:hub />
 <LoadScene bind:modalOpen={sceneOpen} />
 <SimulatorSettings bind:modalOpen={settingsOpen} />
-<LibraryDialog bind:modalOpen={libraryOpen} />
+<LibraryDialog bind:modalOpen={libraryOpen} kind={libraryKind} />
 <RunOverlay />
 <MeasureDialog bind:modalOpen={measureOpen} />
 <PlaceDialog bind:modalOpen={placeOpen} />
@@ -260,42 +265,24 @@
                 <div class="w-8 h-8 flex flex-col justify-center items-center">
                     <img alt="code" width="32" height="32" src="icons/Brick.svg" />
                 </div>
-                <ToolButton label="Robot" color={robotButtonColour} on:click={askForRobot}>
-                    <img alt="" width="28" height="28" src="icons/Robot.svg" />
-                </ToolButton>
-                <Tooltip>Load a robot model for use in the simulator</Tooltip>
-                <ToolButton label="Ports" on:click={connectPorts}>
-                    <div class="scale-[0.875]"><HubIcon /></div>
-                </ToolButton>
-                <Tooltip>Connect ports on the spike hub of the robot</Tooltip>
-                <ToolButton label="Wheels" on:click={connectWheels}>
-                    <img alt="" width="28" height="28" src="icons/wheel.svg" />
-                </ToolButton>
-                <Tooltip>Connect wheels to motors of the robot</Tooltip>
-                <ToolButton label="Scene" on:click={loadScene}>
-                    <img alt="" width="28" height="28" src="icons/Scene.svg" />
-                </ToolButton>
-                <Tooltip>Setup or load a scene based on a WRO or FLL mat</Tooltip>
+                {#if $libraryStore.available}
+                    <ToolButton
+                        label="Robot"
+                        color={robotButtonColour}
+                        on:click={() => openPicker('robots')}
+                    >
+                        <img alt="" width="28" height="28" src="icons/Robot.svg" />
+                    </ToolButton>
+                    <Tooltip>Choose a robot</Tooltip>
+                    <ToolButton label="Field" on:click={() => openPicker('scenes')}>
+                        <img alt="" width="28" height="28" src="icons/Scene.svg" />
+                    </ToolButton>
+                    <Tooltip>Choose a field: the mat the robot drives on</Tooltip>
+                {/if}
                 <ToolButton label="Place" on:click={() => (placeOpen = true)}>
                     <MapPinAltOutline class="w-7 h-7" />
                 </ToolButton>
-                <Tooltip>Place the robot and objects on the mat by dragging</Tooltip>
-                {#if $libraryStore.available}
-                    <ToolButton label="Library" on:click={openSharedLibrary}>
-                        <DatabaseOutline class="w-7 h-7" />
-                    </ToolButton>
-                    <Tooltip>Open a robot or scene from the shared library</Tooltip>
-                {/if}
-                <ToolButton label="Parts" class={libraryClass} on:click={askForLibrary}>
-                    <img alt="" width="28" height="28" src="icons/Library.svg" />
-                </ToolButton>
-                <Tooltip>Load any missing components from the ldraw library (complete.zip)</Tooltip>
-                <ToolButton label="Save" on:click={saveRobotOrScene}>
-                    <img alt="" width="28" height="28" src="icons/SaveMedium.svg" />
-                </ToolButton>
-                <Tooltip
-                    >Save the robot with ports and wheels, or the scene (without the robot)</Tooltip
-                >
+                <Tooltip>Move the robot and objects on the mat by dragging</Tooltip>
                 <ToolButton label="Settings" on:click={openSettings}>
                     <CogOutline class="w-7 h-7" />
                 </ToolButton>
@@ -390,6 +377,60 @@
                             : presetLabels[$realismStore.preset]}
                     </span>
                     <Tooltip>Real-world errors are on. Change them in the settings.</Tooltip>
+                {/if}
+                {#if $libraryStore.available}
+                    <ToolButton
+                        label="Build"
+                        color={showBuild ? 'blue' : 'light'}
+                        on:click={() => setBuildTools(!showBuild)}
+                    >
+                        <ToolsOutline class="w-7 h-7" />
+                    </ToolButton>
+                    <Tooltip
+                        >{showBuild ? 'Hide' : 'Show'} the tools for building your own robot or field</Tooltip
+                    >
+                {/if}
+                {#if showBuild}
+                    <div
+                        class="flex flex-row flex-wrap gap-2 items-center rounded-xl bg-blue-50 border border-blue-200 p-1"
+                        role="group"
+                        aria-label="Build tools"
+                    >
+                        <ToolButton
+                            label="Open robot"
+                            color={$libraryStore.available ? 'light' : robotButtonColour}
+                            on:click={askForRobot}
+                        >
+                            <img alt="" width="28" height="28" src="icons/Robot.svg" />
+                        </ToolButton>
+                        <Tooltip>Open a robot model from your computer (.io, .ldr or .mpd)</Tooltip>
+                        <ToolButton label="Ports" on:click={connectPorts}>
+                            <div class="scale-[0.875]"><HubIcon /></div>
+                        </ToolButton>
+                        <Tooltip>Say which hub port each motor and sensor is plugged into</Tooltip>
+                        <ToolButton label="Wheels" on:click={connectWheels}>
+                            <img alt="" width="28" height="28" src="icons/wheel.svg" />
+                        </ToolButton>
+                        <Tooltip>Say which motor drives each wheel</Tooltip>
+                        <ToolButton label="Edit field" on:click={loadScene}>
+                            <EditOutline class="w-7 h-7" />
+                        </ToolButton>
+                        <Tooltip
+                            >Scene editor: pick the mat, add obstacles, or open a field file</Tooltip
+                        >
+                        <ToolButton label="Save" on:click={saveRobotOrScene}>
+                            <img alt="" width="28" height="28" src="icons/SaveMedium.svg" />
+                        </ToolButton>
+                        <Tooltip>Save the robot with its ports and wheels, or the field</Tooltip>
+                    </div>
+                {/if}
+                {#if missingParts}
+                    <ToolButton label="Parts" class="animate-bounce" on:click={askForLibrary}>
+                        <img alt="" width="28" height="28" src="icons/Library.svg" />
+                    </ToolButton>
+                    <Tooltip
+                        >Some bricks are missing. Load the LDraw parts library (complete.zip)</Tooltip
+                    >
                 {/if}
                 {#if !blocklyOpen}
                     <ToolButton label="Code" on:click={openBlockly}>

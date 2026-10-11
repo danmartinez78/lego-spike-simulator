@@ -7,6 +7,8 @@
     export let field: string | undefined;
     export let check: Partial<Check> | undefined;
     export let maxHeight = 240;
+    // How much to fade the mat picture so the check stands out.
+    export let lighten = 0.35;
 
     let canvas: HTMLCanvasElement | undefined;
     let width = 0;
@@ -29,12 +31,12 @@
         if (!canvas || !mat || width == 0) return;
         const fitted = fitCanvas(canvas, mat, width, maxHeight);
         if (!fitted) return;
-        await drawMat(fitted.ctx, fitted.view, mat.map, 0.35);
+        await drawMat(fitted.ctx, fitted.view, mat.map, lighten);
         if (check) drawCheck(fitted.ctx, fitted.view, check);
     }
 
     $: load(field);
-    $: draw(canvas, mat, width, check, maxHeight);
+    $: draw(canvas, mat, width, check, maxHeight, lighten);
 </script>
 
 <div bind:clientWidth={width} class="w-full">
