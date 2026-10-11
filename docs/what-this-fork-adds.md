@@ -111,7 +111,7 @@ assignments, and a coach page to run it all.
 
 -   **Sign in with a code.** Each student gets a code such as `WORD-WORD-NN` (no
     email or sign-up) and signs in with the Sign in button or a `/#code=...`
-    link from a printed card's QR code. Students who are not signed in are
+    link from their coach. Students who are not signed in are
     reminded once per visit when they start real work, and signing in asks
     whether the work already on that computer is theirs before adding it.
 -   **Saved progress.** For signed-in students, ticked steps, check results and
@@ -149,7 +149,7 @@ signs in on a browser. The tabs are:
     hand-in. A grid shows every student's status on every lesson, with a link to
     download each handed-in program.
 -   **Students.** Paste a list of names to give each student a random code,
-    print cut-out code cards with a sign-in QR code, copy one student's link,
+    print cut-out code cards, copy one student's link,
     export a CSV for a mail merge, issue new codes for everyone, and download a
     backup of the team and library. The page asks before adding names that look
     like full surnames.

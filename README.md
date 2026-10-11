@@ -15,8 +15,6 @@ fork turns the simulator into a site for a robotics team: students work through
 lessons and challenges and their progress is saved, and coaches set assignments
 and manage everything from one page.
 
-The team's copy runs at <https://spike.robodan.dev>.
-
 ![A finished lesson with related challenges](docs/images/student-lesson-complete.png)
 
 ## What's in it
