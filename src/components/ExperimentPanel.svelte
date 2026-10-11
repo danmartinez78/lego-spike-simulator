@@ -13,16 +13,20 @@
         headingWords,
         compareWords
     } from '$lib/spike/runs';
-    import { realismStore, applyPreset, realismName, type PresetName } from '$lib/spike/realism';
+    import {
+        realismStore,
+        applyPreset,
+        realismName,
+        presetDescriptions,
+        type PresetName
+    } from '$lib/spike/realism';
 
     export let open = false;
     export let running = false;
 
-    const levels: { name: PresetName; text: string }[] = [
-        { name: 'ideal', text: 'A perfect robot. Every run is the same.' },
-        { name: 'realistic', text: 'Like a real robot: small errors each run.' },
-        { name: 'challenging', text: 'A worn robot on a bumpy mat: bigger errors.' }
-    ];
+    const levels: { name: PresetName; text: string }[] = (
+        ['ideal', 'realistic', 'challenging'] as PresetName[]
+    ).map((name) => ({ name, text: presetDescriptions[name] }));
 
     let nameA = '';
 
@@ -88,8 +92,7 @@
                 {/each}
             </div>
             <p class="text-xs text-gray-600">
-                {levels.find((l) => l.name == $realismStore.preset)?.text ??
-                    'Your own settings, from Settings.'}
+                {presetDescriptions[$realismStore.preset]}
             </p>
         </div>
 

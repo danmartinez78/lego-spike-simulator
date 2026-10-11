@@ -11,7 +11,8 @@
         BookOpenOutline,
         ClipboardCheckOutline,
         QuestionCircleOutline,
-        UserCircleOutline
+        UserCircleOutline,
+        VideoCameraOutline
     } from 'flowbite-svelte-icons';
     import { helpStore, openBlockHelp } from '$lib/help';
     import { blockHelp, helpCategories } from '$lib/blockly/blockhelp';
@@ -80,7 +81,7 @@
         },
         {
             component: CogOutline,
-            text: 'Settings: simulation speed, boundary and realism.'
+            text: 'Settings: simulation speed, boundary and frame rate.'
         },
         {
             component: ChartLineUpOutline,
@@ -91,7 +92,7 @@
             text: 'Measure: click points on the mat to see distances and turns for a route, then copy the steps.'
         },
         {
-            icon: 'icons/Eye.svg',
+            component: VideoCameraOutline,
             text: 'Camera: top view, side views, or follow the robot. While the robot runs you can also move the view yourself: drag to look around, scroll or pinch to zoom, and right-drag, Shift-drag or drag with two fingers to slide the view. Double-click (double-tap on a tablet) or press Reset view to go back. The Camera button in the corner of the view lists these.'
         },
         { icon: 'icons/GenericPlayIcon.svg', text: 'Run the program in the code panel.' }
@@ -472,8 +473,8 @@
                     </li>
                 </ol>
                 <p class="mt-2">
-                    A fixed random seed in Settings makes every run repeat the same errors, which
-                    helps when tracking down one odd run. A teacher can share a link ending in
+                    The <b>Mode</b> button in the toolbar also changes the mode, and shows what
+                    errors to expect in each one. A teacher can share a link ending in
                     <code>?realism=realistic</code> or <code>?realism=challenging</code> to set the mode
                     for a class.
                 </p>

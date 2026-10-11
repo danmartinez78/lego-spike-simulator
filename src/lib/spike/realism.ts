@@ -10,7 +10,7 @@
 import { get, writable } from 'svelte/store';
 
 export interface RealismSettings {
-    preset: PresetName | 'custom';
+    preset: PresetName;
     // Random offset of the start position, in mm (each axis) and degrees.
     startJitterMm: number;
     startJitterDeg: number;
@@ -77,6 +77,13 @@ export const presetLabels: Record<PresetName, string> = {
     challenging: 'Challenging'
 };
 
+// What students should expect in each mode.
+export const presetDescriptions: Record<PresetName, string> = {
+    ideal: 'A perfect robot. Every run is the same.',
+    realistic: 'Like a real robot: small errors each run.',
+    challenging: 'A worn robot on a bumpy mat: bigger errors.'
+};
+
 // Short names, for buttons and badges.
 export function realismName(preset: string) {
     return preset == 'ideal'
@@ -100,11 +107,11 @@ function initialSettings(): RealismSettings {
         const saved = localStorage.getItem(storageKey);
         if (saved) {
             const parsed = JSON.parse(saved);
+            // Presets may be retuned between versions, so only keep the choice.
+            // Older versions also saved custom values and a fixed seed; those
+            // fall back to Ideal and a new seed each run.
             if (parsed.preset in presets) {
-                // Presets may be retuned between versions, so only keep the choice.
-                settings = fromPreset(parsed.preset, parsed.seed ?? 0);
-            } else {
-                settings = { ...settings, ...parsed };
+                settings = fromPreset(parsed.preset);
             }
         }
     } catch {

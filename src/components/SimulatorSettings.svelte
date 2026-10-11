@@ -1,7 +1,6 @@
 <script lang="ts">
     import { boundaryStore } from '$lib/spike/scene';
     import { Modal, Label, Range, Toggle } from 'flowbite-svelte';
-    import RealismSettings from '$components/RealismSettings.svelte';
     import { showFps, setShowFps } from '$lib/debug';
     import {
         getStartDelay,
@@ -108,7 +107,5 @@
         <Toggle size="small" on:change={() => setShowFps(!$showFps)} checked={$showFps}>
             Show frame rate (FPS)
         </Toggle>
-        <hr class="w-full my-2" />
-        <RealismSettings />
     </div>
 </Modal>

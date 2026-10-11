@@ -6,6 +6,7 @@
     import { type SceneStore, type SceneObject } from '$lib/spike/scene';
     import * as m4 from '$lib/ldraw/m4';
     import { showFps } from '$lib/debug';
+    import { VideoCameraOutline } from 'flowbite-svelte-icons';
 
     export let id: string;
     export let scene: SceneStore;
@@ -568,12 +569,12 @@
     {#if interactive}
         <div class="absolute right-1 top-1 flex max-w-[48%] flex-col items-end gap-1">
             <button
-                class="rounded bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-black/80"
+                class="inline-flex items-center gap-1 rounded bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-black/80"
                 title="How to move the camera"
                 aria-expanded={tipOpen}
                 on:click={toggleTip}
             >
-                ✥ Camera
+                <VideoCameraOutline class="h-4 w-4" /> Camera
             </button>
             {#if tipOpen}
                 <ul
