@@ -4,7 +4,8 @@
     import { Button } from 'flowbite-svelte';
     import { AwardOutline, CheckOutline, ClipboardCheckOutline } from 'flowbite-svelte-icons';
     import type { Lesson } from '$lib/library';
-    import { challengeFor, topicColour } from '$lib/lessons';
+    import { topicColour } from '$lib/lessons';
+    import type { Challenge, Progress } from '$lib/spike/challenges';
     import { describeCheck } from '$lib/spike/checks';
     import { presetLabels } from '$lib/spike/realism';
     import CheckMap from '$components/CheckMap.svelte';
@@ -15,8 +16,12 @@
     export let ticked: number[] = [];
     export let missing: string[] = [];
     export let busy = false;
-    export let passed = false;
     export let preview = false;
+    // Related challenges, shown once the lesson is done, and the student's results on them.
+    export let related: Challenge[] = [];
+    export let challengeResults: Record<string, Progress> = {};
+    // Whether there is a lesson after this one for the Next lesson button.
+    export let hasNext = false;
     export let signedIn = false;
     export let handedInAt: string | undefined = undefined;
     // Best result of the lesson's check, if the student tried it.
@@ -25,7 +30,8 @@
     const dispatch = createEventDispatcher<{
         setup: void;
         toggle: number;
-        challenge: void;
+        challenge: string;
+        next: void;
         check: void;
         handin: void;
         openmine: void;
@@ -58,7 +64,25 @@
         return name.replace(/^Practice - /, '').replace(/\.(spk|llsp3|mpd|ldr)$/i, '');
     }
 
-    $: challenge = challengeFor(lesson);
+    function challengeBadge(id: string) {
+        const result = challengeResults[id];
+        if (result?.completed) return { text: 'Complete', css: 'bg-green-100 text-green-800' };
+        if (result && result.best > 0)
+            return { text: `Best ${result.best}/5`, css: 'bg-amber-100 text-amber-800' };
+        return undefined;
+    }
+
+    // What finishing this lesson takes: every step ticked, the check passed (if
+    // there is one) and, when signed in, a program handed in. The same rule as
+    // lessonStatus() in src/lib/lessons.ts.
+    $: stepsDone = ticked.filter((s) => s < lesson.steps.length).length >= lesson.steps.length;
+    $: toFinish = [
+        { label: 'Tick every step', done: stepsDone },
+        ...(lesson.check ? [{ label: 'Pass the check', done: !!checkResult?.passed }] : []),
+        ...(signedIn ? [{ label: 'Hand in your program', done: !!handedInAt }] : [])
+    ];
+    $: complete = !preview && toFinish.every((t) => t.done);
+    $: started = ticked.length > 0 || !!checkResult || !!handedInAt;
     $: setupParts = [
         lesson.program ? `the starter program "${niceName(lesson.program)}"` : '',
         lesson.field ? `the field "${niceName(lesson.field)}"` : '',
@@ -85,6 +109,59 @@
             <p class="text-base text-gray-600">{text(lesson.summary)}</p>
         {/if}
     </header>
+
+    {#if complete}
+        <section
+            class="flex flex-col gap-3 rounded-xl border-2 border-green-300 bg-green-50 px-4 py-4"
+            aria-label="Lesson complete"
+            data-testid="lesson-complete"
+        >
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex-1">
+                    <div class="text-xl font-semibold text-green-900">Lesson complete! 🎉</div>
+                    <p class="text-sm text-green-900">
+                        {signedIn
+                            ? 'Great work. Your coach can see that you finished it.'
+                            : 'Great work. Sign in with your code so your coach can see it too.'}
+                    </p>
+                </div>
+                {#if hasNext}
+                    <Button color="green" on:click={() => dispatch('next')}>Next lesson</Button>
+                {/if}
+            </div>
+            {#if related.length > 0}
+                <div class="flex flex-col gap-2">
+                    <div class="text-sm font-semibold text-gray-900">
+                        Ready for more? Try {related.length == 1
+                            ? 'this challenge'
+                            : 'these challenges'}:
+                    </div>
+                    {#each related as c (c.id)}
+                        {@const badge = challengeBadge(c.id)}
+                        <div
+                            class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2"
+                        >
+                            <AwardOutline class="w-6 h-6 text-amber-500 shrink-0" />
+                            <div class="flex-1">
+                                <div class="text-sm font-medium text-gray-900">{c.title}</div>
+                                <div class="text-sm text-gray-600">{c.goal}</div>
+                            </div>
+                            {#if badge}
+                                <span class="text-xs rounded-full px-2 py-0.5 {badge.css}"
+                                    >{badge.text}</span
+                                >
+                            {/if}
+                            <Button
+                                size="sm"
+                                color="light"
+                                on:click={() => dispatch('challenge', c.id)}>Open challenge</Button
+                            >
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+        </section>
+    {/if}
 
     {#if setupParts.length > 0}
         <section
@@ -189,30 +266,6 @@
             </p>
         </section>
     {/if}
-    {#if challenge}
-        <section
-            class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-gray-200 px-4 py-3"
-        >
-            <AwardOutline class="w-6 h-6 text-gray-500 shrink-0" />
-            <div class="flex-1">
-                <div class="text-xs text-gray-500">
-                    Challenge · {passed ? 'passed' : 'not passed yet'}
-                </div>
-                <div class="text-sm font-medium text-gray-900">
-                    {challenge.title}
-                </div>
-                <div class="text-sm text-gray-600">{challenge.goal}</div>
-            </div>
-            {#if passed}
-                <span class="text-xs rounded-full px-2 py-0.5 bg-green-100 text-green-800"
-                    >Passed</span
-                >
-            {/if}
-            <Button size="sm" color="light" on:click={() => dispatch('challenge')}
-                >Open challenge</Button
-            >
-        </section>
-    {/if}
     {#if !preview}
         <section
             class="flex flex-col gap-2 rounded-xl border border-gray-200 px-4 py-3"
@@ -250,6 +303,45 @@
                     > to hand in your program and keep your progress on any computer.
                 </p>
             {/if}
+        </section>
+    {/if}
+    {#if !preview && !complete && started}
+        <section
+            class="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+            aria-label="To finish this lesson"
+        >
+            <div class="text-sm font-semibold text-gray-900">To finish this lesson</div>
+            <ul class="flex flex-col gap-1">
+                {#each toFinish as item}
+                    <li class="flex items-center gap-2 text-sm">
+                        <span
+                            class="inline-flex items-center justify-center w-5 h-5 rounded-full border-2 {item.done
+                                ? 'bg-green-600 border-green-600 text-white'
+                                : 'border-gray-300 bg-white'}"
+                        >
+                            {#if item.done}<CheckOutline class="w-3 h-3" />{/if}
+                        </span>
+                        <span class={item.done ? 'text-gray-500 line-through' : 'text-gray-800'}
+                            >{item.label}</span
+                        >
+                    </li>
+                {/each}
+            </ul>
+            {#if related.length > 0}
+                <p class="text-sm text-gray-600">
+                    Finish it to see {related.length == 1
+                        ? 'a related challenge'
+                        : `${related.length} related challenges`}.
+                </p>
+            {/if}
+        </section>
+    {/if}
+    {#if preview && related.length > 0}
+        <section class="rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm">
+            <div class="text-xs text-gray-500">Shown once a student finishes the lesson</div>
+            <div class="text-gray-800">
+                Related challenges: {related.map((c) => c.title).join(', ')}
+            </div>
         </section>
     {/if}
 </article>

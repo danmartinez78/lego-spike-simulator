@@ -345,12 +345,9 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
             const steps = Array.isArray(lesson.steps) ? lesson.steps.length : 0;
             const ticked = (mine?.steps ?? []).filter((n) => n < steps).length;
             const checkDone = !lesson.check || !!mine?.check?.passed;
-            const challenge = lesson.challenge
-                ? student.progress.challenges[lesson.challenge]
-                : undefined;
-            const challengeDone = !lesson.challenge || !!challenge?.completed;
-            const done = ticked >= steps && checkDone && challengeDone;
-            const started = ticked > 0 || !!mine?.check || !!challenge;
+            const handedIn = !!student.programs[name];
+            const done = ticked >= steps && checkDone && handedIn;
+            const started = ticked > 0 || !!mine?.check || handedIn;
             return {
                 status: done ? 'done' : started ? 'started' : 'not started',
                 steps: `${ticked}/${steps}`,

@@ -131,8 +131,8 @@
                         of the five runs must pass.
                     </li>
                     <li>
-                        A lesson can end with a challenge, so students practise on their own
-                        afterwards.
+                        <b>Related challenges</b> show up as "Ready for more?" once a student finishes
+                        the lesson. They're extra practice and never needed to finish it.
                     </li>
                     <li>
                         <b>Download package</b> saves a lesson with its field, robot and programs as
@@ -201,12 +201,15 @@
                 </p>
                 <p>
                     Under each assignment there's a row for every student: <b>Not started</b>, how
-                    many steps they've ticked, or <b>Done</b>. When a student presses Hand in, a
-                    link to their program appears so you can download it and look at it.
+                    many steps they've ticked, or <b>Done</b>. A lesson is done when every step is
+                    ticked, its check has passed and the student has pressed Hand in. A link to the
+                    handed-in program appears so you can download it and look at it.
                 </p>
                 <p>
                     Progress only reaches you if the student is signed in. Without a code it stays
-                    in their browser.
+                    in their browser, and students see a reminder to sign in. When they do sign in,
+                    they're asked whether the work already on that computer is theirs before it's
+                    added to their account.
                 </p>
                 <p>
                     An assignment an AI assistant sets is a draft until you press <b>Publish</b> on it.

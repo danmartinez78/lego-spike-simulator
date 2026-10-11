@@ -152,7 +152,7 @@ const ASSET_TOOLS = [
     {
         name: 'list_assignments',
         description:
-            "List assignments (title, type, due date, lessons, draft state, author) with each student's progress on each lesson: not started, started (steps ticked) or done, whether the lesson's check passed, and when they handed in a program.",
+            "List assignments (title, type, due date, lessons, draft state, author) with each student's progress on each lesson: not started, started or done (every step ticked, the check passed if the lesson has one, and a program handed in), whether the lesson's check passed, and when they handed in a program.",
         inputSchema: object({}),
         annotations: { readOnlyHint: true }
     },

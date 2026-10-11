@@ -15,8 +15,8 @@ import {
     type LibraryKind,
     type Lesson
 } from '$lib/library';
-import { allChallenges, findChallenge, type Challenge } from '$lib/spike/challenges';
-import { lessonProblems } from '../../server/lesson-rules.mjs';
+import { allChallenges, type Challenge } from '$lib/spike/challenges';
+import { lessonProblems, relatedChallenges } from '../../server/lesson-rules.mjs';
 
 export const lessonsOpen = writable(false);
 
@@ -117,23 +117,46 @@ export function recordLessonCheck(lessonName: string, passes: number, needed: nu
 
 export type LessonStatus = 'new' | 'started' | 'done';
 
-// Done means every step ticked, the lesson's check passed (if it has one) and
-// its challenge card completed (older lessons).
+// What a student still has to do to finish a lesson. `handedIn` maps lesson
+// names to hand-in times for a signed-in student; leave it out for a student
+// who isn't signed in, who can't hand in, so the steps and check are enough.
+export function lessonParts(
+    name: string,
+    lesson: Lesson,
+    progress: Record<string, LessonProgress>,
+    handedIn?: Record<string, string>
+) {
+    const mine = progress[name];
+    const ticked = mine?.steps.filter((s) => s < lesson.steps.length).length ?? 0;
+    return {
+        steps: ticked >= lesson.steps.length,
+        // undefined when the lesson has no check, or the student can't hand in.
+        check: lesson.check ? !!mine?.check?.passed : undefined,
+        handIn: handedIn ? !!handedIn[name] : undefined,
+        started: ticked > 0 || !!mine?.check || !!handedIn?.[name]
+    };
+}
+
+// Done means every step ticked, the lesson's check passed (if it has one) and,
+// for a signed-in student, a program handed in. The same rule as report() in
+// server/homework.mjs. Related challenges never count.
 export function lessonStatus(
     name: string,
     lesson: Lesson,
     progress: Record<string, LessonProgress>,
-    passed: Record<string, { completed: boolean }>
+    handedIn?: Record<string, string>
 ): LessonStatus {
-    const mine = progress[name];
-    const ticked = mine?.steps.filter((s) => s < lesson.steps.length).length ?? 0;
-    const checkDone = !lesson.check || !!mine?.check?.passed;
-    const challengeDone = !lesson.challenge || !!passed[lesson.challenge]?.completed;
-    if (ticked >= lesson.steps.length && checkDone && challengeDone) return 'done';
-    if (ticked > 0 || mine?.check || (lesson.challenge && passed[lesson.challenge])) {
-        return 'started';
-    }
-    return 'new';
+    const parts = lessonParts(name, lesson, progress, handedIn);
+    if (parts.steps && parts.check !== false && parts.handIn !== false) return 'done';
+    return parts.started ? 'started' : 'new';
+}
+
+// Lesson to show when the Lessons window next opens, for example from a challenge.
+export const requestedLesson = writable<string | undefined>(undefined);
+
+export function openLesson(name: string) {
+    requestedLesson.set(name);
+    lessonsOpen.set(true);
 }
 
 // The lesson's check, in the shape the simulator's run checker uses.
@@ -157,8 +180,18 @@ export function isPublished(entry: LibraryEntry) {
     return !!entry.lesson && !entry.lesson.draft;
 }
 
-export function challengeFor(lesson: Lesson | undefined) {
-    return findChallenge(lesson?.challenge);
+// The lesson's related challenges that are in `list`, in the lesson's order.
+export function relatedFor(lesson: Lesson | undefined, list: Challenge[]) {
+    return relatedChallenges(lesson)
+        .map((id) => list.find((c) => c.id == id))
+        .filter((c): c is Challenge => !!c);
+}
+
+// Published lessons that link to a challenge.
+export function lessonsFor(challengeId: string, entries: LibraryEntry[]) {
+    return entries.filter(
+        (e) => isPublished(e) && relatedChallenges(e.lesson).includes(challengeId)
+    );
 }
 
 // ---- Checking a lesson ----------------------------------------------------

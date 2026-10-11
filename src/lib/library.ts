@@ -43,7 +43,9 @@ export interface Lesson {
     program?: string;
     field?: string;
     robot?: string;
-    // A built-in challenge card the lesson ends with (older lessons).
+    // Related challenges' ids, shown once the lesson is done.
+    challenges?: string[];
+    // One related challenge (older lessons). Counts the same as challenges.
     challenge?: string;
     // How the simulator checks the student's runs (see docs/lessons.md).
     check?: Check;
@@ -343,6 +345,9 @@ export interface ProgramRequest {
 }
 
 export const programRequest = writable<ProgramRequest | undefined>(undefined);
+
+// Set to true to empty the code panel (for example when a student signs out).
+export const clearProgram = writable(false);
 
 // Set by the code panel so other windows can save the current program.
 let programBuilder: (() => Promise<Blob | undefined>) | undefined = undefined;

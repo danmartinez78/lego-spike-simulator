@@ -7,7 +7,8 @@
     import CheckEditor from '$components/coach/CheckEditor.svelte';
     import { cleanCheck, type Check } from '$lib/spike/checks';
     import { allChallenges } from '$lib/spike/challenges';
-    import { lessonProblem } from '$lib/lessons';
+    import { lessonProblem, relatedFor } from '$lib/lessons';
+    import { relatedChallenges } from '../../../server/lesson-rules.mjs';
     import type { Lesson, LessonStep } from '$lib/library';
 
     export let open = false;
@@ -28,7 +29,8 @@
     let program = '';
     let field = '';
     let robot = '';
-    let challenge = '';
+    // Related challenges' ids, shown to students once they finish the lesson.
+    let related: string[] = [];
     let check: Check | undefined = undefined;
     let published = false;
     let problem = '';
@@ -45,7 +47,7 @@
         program = lesson?.program ?? '';
         field = lesson?.field ?? '';
         robot = lesson?.robot ?? '';
-        challenge = lesson?.challenge ?? '';
+        related = relatedChallenges(lesson);
         check = lesson?.check ? structuredClone(lesson.check) : undefined;
         // New lessons start as drafts.
         published = !!lesson && !lesson.draft;
@@ -63,7 +65,7 @@
                 .filter((s) => s.title.length > 0 || s.text.length > 0)
                 .map((s) => (s.title ? s : { text: s.text }))
         };
-        const optional = { topic, summary, program, field, robot, challenge };
+        const optional = { topic, summary, program, field, robot };
         for (const [key, value] of Object.entries(optional)) {
             const k = key as keyof typeof optional;
             if (value.trim()) result[k] = value.trim();
@@ -74,6 +76,10 @@
         else delete result.order;
         if (check && field.trim()) result.check = cleanCheck(check);
         else delete result.check;
+        // Older lessons' single "challenge" becomes part of the list.
+        delete result.challenge;
+        if (related.length > 0) result.challenges = [...related];
+        else delete result.challenges;
         if (published) delete result.draft;
         else result.draft = true;
         return result;
@@ -135,10 +141,9 @@
     $: programItems = options(programs, 'No starter program', program);
     $: fieldItems = options(scenes, 'No field', field);
     $: robotItems = options(robots, 'Any robot', robot);
-    $: challengeItems = [
-        { value: '', name: 'No challenge' },
-        ...$allChallenges.map((c) => ({ value: c.id, name: c.title }))
-    ];
+    function toggleRelated(id: string) {
+        related = related.includes(id) ? related.filter((r) => r != id) : [...related, id];
+    }
     // List every field so the preview updates as the coach types.
     $: previewLesson = preview(
         title,
@@ -149,7 +154,7 @@
         program,
         field,
         robot,
-        challenge,
+        related,
         check,
         published
     );
@@ -291,20 +296,35 @@
                         placeholder=""
                     />
                 </div>
-                {#if challenge}
-                    <div>
-                        <Label for="lesson-challenge" class="mb-1"
-                            >Challenge card (older lessons)</Label
-                        >
-                        <Select
-                            id="lesson-challenge"
-                            items={challengeItems}
-                            bind:value={challenge}
-                            placeholder=""
-                        />
-                    </div>
-                {/if}
             </fieldset>
+
+            {#if $allChallenges.length > 0}
+                <fieldset class="flex flex-col gap-2">
+                    <legend class="text-sm font-medium text-gray-900 mb-1">
+                        Related challenges (optional)
+                    </legend>
+                    <p class="text-sm text-gray-600">
+                        Students see these as "Ready for more?" once they finish the lesson. They
+                        aren't needed to finish it.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                        {#each $allChallenges as c (c.id)}
+                            <label class="flex flex-row items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    class="rounded"
+                                    checked={related.includes(c.id)}
+                                    on:change={() => toggleRelated(c.id)}
+                                />
+                                {c.title}
+                                {#if c.draft}
+                                    <span class="text-xs text-gray-500">(draft)</span>
+                                {/if}
+                            </label>
+                        {/each}
+                    </div>
+                </fieldset>
+            {/if}
         </form>
 
         <aside class="flex flex-col gap-2 min-w-0" aria-label="Preview">
@@ -312,7 +332,12 @@
                 What students see
             </div>
             <div class="rounded-xl border border-gray-200 bg-white p-5 overflow-y-auto h-[60dvh]">
-                <LessonView lesson={previewLesson} {missing} preview />
+                <LessonView
+                    lesson={previewLesson}
+                    {missing}
+                    related={relatedFor(previewLesson, $allChallenges)}
+                    preview
+                />
             </div>
         </aside>
     </div>

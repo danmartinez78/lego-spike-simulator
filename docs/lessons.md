@@ -60,23 +60,29 @@ make one is to build it in the simulator and press Save.
 
 `lesson.json` follows [`schemas/lesson-v1.json`](../schemas/lesson-v1.json).
 
-| Field     | Required | Meaning                                                                      |
-| --------- | -------- | ---------------------------------------------------------------------------- |
-| `schema`  | yes      | Always `"spike-lesson/1"`.                                                   |
-| `title`   | yes      | The lesson's name (up to 80 characters). It also names the file.             |
-| `steps`   | yes      | At least one `{ "title"?, "text" }`. Blank lines in `text` split paragraphs. |
-| `topic`   | no       | Groups lessons: Basics, Sensors, Gyro, Missions, or your own.                |
-| `order`   | no       | Position within the topic, lowest first.                                     |
-| `summary` | no       | One line under the title in the lesson list.                                 |
-| `program` | no       | Starter program file name (`.llsp3`). Set up loads it.                       |
-| `field`   | no       | Field file name (`.spk`). Required when there's a check.                     |
-| `robot`   | no       | Robot file name (`.mpd` or `.ldr`). Without one, the student's robot stays.  |
-| `check`   | no       | How the simulator checks the student's runs (below).                         |
-| `draft`   | no       | `true` hides the lesson from students. Imports always start as drafts.       |
+| Field        | Required | Meaning                                                                      |
+| ------------ | -------- | ---------------------------------------------------------------------------- |
+| `schema`     | yes      | Always `"spike-lesson/1"`.                                                   |
+| `title`      | yes      | The lesson's name (up to 80 characters). It also names the file.             |
+| `steps`      | yes      | At least one `{ "title"?, "text" }`. Blank lines in `text` split paragraphs. |
+| `topic`      | no       | Groups lessons: Basics, Sensors, Gyro, Missions, or your own.                |
+| `order`      | no       | Position within the topic, lowest first.                                     |
+| `summary`    | no       | One line under the title in the lesson list.                                 |
+| `program`    | no       | Starter program file name (`.llsp3`). Set up loads it.                       |
+| `field`      | no       | Field file name (`.spk`). Required when there's a check.                     |
+| `robot`      | no       | Robot file name (`.mpd` or `.ldr`). Without one, the student's robot stays.  |
+| `check`      | no       | How the simulator checks the student's runs (below).                         |
+| `challenges` | no       | Related challenge ids. Students see them once they finish the lesson.        |
+| `draft`      | no       | `true` hides the lesson from students. Imports always start as drafts.       |
 
 Write for 6th to 8th graders: short sentences, one idea per step, and say what
-to press. A lesson is **done** when every step is ticked and its check has
-passed.
+to press. A lesson is **done** when every step is ticked, its check has passed
+and, for a signed-in student, a program has been handed in. Students who aren't
+signed in can't hand in, so for them the steps and the check are enough. Once a
+lesson is done, students see a "Lesson complete" banner with a button to the
+next lesson and cards for its related `challenges`, which are extra practice and
+never needed to finish the lesson. Each of those challenges also shows the
+lesson it belongs to, so a link only needs setting on the lesson.
 
 ## Checks
 
@@ -253,6 +259,7 @@ as the body; nothing is saved), and see `GET /api/challenges/schema`.
 
 ## Older lessons
 
-Lessons written before checks existed may have `"challenge": "<id>"`, naming a
-challenge. That still works: the lesson is done once the challenge is complete.
-New lessons should use `check` instead.
+Lessons link to challenges with `"challenges": ["<id>", ...]`. Lessons written
+before checks existed may have `"challenge": "<id>"` instead, which counts as one
+related challenge. Passing a related challenge is never needed to finish the
+lesson; give the lesson its own `check` for that.
