@@ -140,7 +140,7 @@ const ASSIGNMENT_SCHEMA = object(
             type: 'string',
             enum: ['practice', 'prep'],
             description:
-                'What it is for (optional): "practice" (practise what was taught) or "prep" (prepare for the next meeting)'
+                'What it is for (optional): "practice" (practice what was taught) or "prep" (prepare for the next meeting)'
         },
         due: { type: 'string', description: 'Due date, YYYY-MM-DD (optional)' },
         note: { type: 'string', description: 'Note for students (optional)' },
@@ -164,7 +164,7 @@ const ASSET_TOOLS = [
     {
         name: 'save_assignment',
         description:
-            'Save an assignment as a draft: a title, one or more published lessons (file names from list_library), an optional type ("practice" for practising what was taught, "prep" for getting ready for the next meeting), an optional due date (YYYY-MM-DD) and a note for students. Students don\'t see it until a coach publishes it on the coach page, Assignments tab. Pass id to update one of your own drafts (send the whole assignment again; it replaces the old one).',
+            'Save an assignment as a draft: a title, one or more published lessons (file names from list_library), an optional type ("practice" for practicing what was taught, "prep" for getting ready for the next meeting), an optional due date (YYYY-MM-DD) and a note for students. Students don\'t see it until a coach publishes it on the coach page, Assignments tab. Pass id to update one of your own drafts (send the whole assignment again; it replaces the old one).',
         inputSchema: object(
             {
                 assignment: ASSIGNMENT_SCHEMA,

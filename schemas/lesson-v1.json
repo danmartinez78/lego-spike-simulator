@@ -124,7 +124,7 @@
                     "items": {
                         "$ref": "#/$defs/zone"
                     },
-                    "description": "Zones the robot's centre must pass through, in order."
+                    "description": "Zones the robot's center must pass through, in order."
                 },
                 "avoid": {
                     "type": "array",
@@ -133,7 +133,7 @@
                     "items": {
                         "$ref": "#/$defs/zone"
                     },
-                    "description": "Zones the robot's centre must never enter."
+                    "description": "Zones the robot's center must never enter."
                 },
                 "follow": {
                     "type": "object",
@@ -163,7 +163,7 @@
                             "type": "number",
                             "minimum": 5,
                             "maximum": 200,
-                            "description": "How far (mm) the colour sensor may be from the line."
+                            "description": "How far (mm) the color sensor may be from the line."
                         },
                         "share": {
                             "type": "number",
@@ -173,7 +173,7 @@
                         },
                         "sensor": {
                             "enum": ["A", "B", "C", "D", "E", "F"],
-                            "description": "Colour sensor port, if the robot has more than one."
+                            "description": "Color sensor port, if the robot has more than one."
                         }
                     }
                 },
@@ -291,7 +291,7 @@
                     "additionalProperties": false
                 }
             ],
-            "description": "A circle or a box on the mat, in mm from the mat's centre (x right, z down the mat picture)."
+            "description": "A circle or a box on the mat, in mm from the mat's center (x right, z down the mat picture)."
         }
     }
 }

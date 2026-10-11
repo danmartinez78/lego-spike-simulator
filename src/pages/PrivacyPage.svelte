@@ -7,7 +7,6 @@
     onMount(loadSettings);
 
     $: team = $settingsStore.teamName;
-    $: contact = $settingsStore.privacyContact;
 </script>
 
 <svelte:head>
@@ -130,12 +129,8 @@
         <section class="flex flex-col gap-2">
             <h2 class="text-lg font-semibold">Questions, or to have information removed</h2>
             <p>
-                {#if contact}
-                    Contact {contact}.
-                {:else}
-                    Ask your coach.
-                {/if}
-                A coach can remove a student and everything saved for them at any time.
+                Ask your coach. A coach can remove a student and everything saved for them at any
+                time.
             </p>
         </section>
 

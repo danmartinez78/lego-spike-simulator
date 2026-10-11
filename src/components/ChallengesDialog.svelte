@@ -177,7 +177,7 @@
                 <p class="text-base text-gray-900 mt-2">{selected.goal}</p>
                 {#if practisedIn.length > 0}
                     <p class="text-gray-700 mt-1">
-                        Practised in:
+                        Practiced in:
                         {#each practisedIn as entry, i}
                             {i > 0 ? ', ' : ''}<button
                                 class="text-blue-700 hover:underline"
@@ -270,7 +270,7 @@
                     {$studentStore
                         ? 'Your progress is saved to your account.'
                         : 'Your progress is saved in this browser.'} The target is checked against the
-                    centre of the robot where it stops.
+                    center of the robot where it stops.
                 </p>
             </div>
         {/if}

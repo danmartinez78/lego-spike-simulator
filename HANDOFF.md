@@ -113,7 +113,7 @@
     `list_assignments` per-lesson statistics only; `names` adds each student's
     name and progress), automatic sign-out on shared computers
     (`signOutAfterMinutes`, tracked in localStorage `spike-sim-last-active`),
-    team name and privacy contact, a copyable note for families, and Remove all
+    team name, a copyable note for families, and Remove all
     students (`DELETE /api/admin/roster`). Optional env `HEAD_COACHES`
     (comma-separated emails) limits who can change them; unset, any coach can.
     The privacy notice is at `/privacy` (`src/pages/PrivacyPage.svelte`), linked

@@ -73,7 +73,7 @@ export const blockHelp: Record<string, BlockHelp> = {
     flippermove_startMove: {
         title: 'start moving',
         text: 'Starts driving forward or backward and keeps going. The program moves straight on to the next block.',
-        example: 'start moving, then wait until the colour sensor sees black, then stop moving.',
+        example: 'start moving, then wait until the color sensor sees black, then stop moving.',
         tip: 'Always pair it with something that stops the robot, like stop moving after a wait until.'
     },
     flippermove_steer: {
@@ -145,8 +145,8 @@ export const blockHelp: Record<string, BlockHelp> = {
         text: 'Chooses which way is "up" for pictures and text on the light matrix.'
     },
     flipperlight_centerButtonLight: {
-        title: 'set Centre Button Light',
-        text: "Changes the colour of the light in the hub's centre button.",
+        title: 'set Center Button Light',
+        text: "Changes the color of the light in the hub's center button.",
         example: 'Turn it green when a mission step finishes, so you can see where the program is.'
     },
     flipperlight_ultrasonicLightUp: {
@@ -208,8 +208,8 @@ export const blockHelp: Record<string, BlockHelp> = {
         tip: 'You can have more than one: they all start at the same time and run side by side.'
     },
     flipperevents_whenColor: {
-        title: 'when colour is',
-        text: 'Runs the blocks under it every time the colour sensor starts seeing the chosen colour.'
+        title: 'when color is',
+        text: 'Runs the blocks under it every time the color sensor starts seeing the chosen color.'
     },
     flipperevents_whenPressed: {
         title: 'when force sensor is',
@@ -289,7 +289,7 @@ export const blockHelp: Record<string, BlockHelp> = {
     control_wait_until: {
         title: 'wait until',
         text: 'Pauses this script until the condition becomes true. Motors that were started keep going.',
-        example: 'start moving, wait until the colour is black, stop moving.',
+        example: 'start moving, wait until the color is black, stop moving.',
         tip: 'This is the heart of closed loop control: the robot waits for the world, not for the clock.'
     },
     control_repeat_until: {
@@ -309,13 +309,13 @@ export const blockHelp: Record<string, BlockHelp> = {
 
     // ---- Sensors ----------------------------------------------------------
     flippersensors_isColor: {
-        title: 'is colour?',
-        text: 'True when the colour sensor sees the chosen colour. Use it inside if, wait until or repeat until.',
-        example: 'wait until (B is colour black?)'
+        title: 'is color?',
+        text: 'True when the color sensor sees the chosen color. Use it inside if, wait until or repeat until.',
+        example: 'wait until (B is color black?)'
     },
     flippersensors_color: {
-        title: 'colour',
-        text: 'Reports the colour the colour sensor sees right now.'
+        title: 'color',
+        text: 'Reports the color the color sensor sees right now.'
     },
     flippersensors_isReflectivity: {
         title: 'is reflection?',
@@ -324,7 +324,7 @@ export const blockHelp: Record<string, BlockHelp> = {
     },
     flippersensors_reflectivity: {
         title: 'reflected light',
-        text: 'Reports how much light bounces back into the colour sensor, from 0% (black) to 100% (white).',
+        text: 'Reports how much light bounces back into the color sensor, from 0% (black) to 100% (white).',
         example:
             'Line followers compare this number with 50 to know which side of the line they are on.',
         tip: 'Check the real numbers on your mat by writing them to the hub display. Light and shadows change them.'
@@ -440,7 +440,7 @@ export const blockHelp: Record<string, BlockHelp> = {
     operator_round: { title: 'round', text: 'Rounds a number to the nearest whole number.' },
     operator_mathop: {
         title: 'abs / sqrt / sin …',
-        text: 'Does a maths function on a number, such as abs (remove the minus sign), square root or sine.',
+        text: 'Does a math function on a number, such as abs (remove the minus sign), square root or sine.',
         example:
             'abs of relative position counts wheel degrees whether the wheel turns forward or backward.'
     },
@@ -505,8 +505,8 @@ export const blockHelp: Record<string, BlockHelp> = {
         sim: ignored
     },
     flippermoresensors_rawColor: {
-        title: 'raw colour',
-        text: 'Reports the red, green or blue amount the colour sensor measures, for finer colour checks.'
+        title: 'raw color',
+        text: 'Reports the red, green or blue amount the color sensor measures, for finer color checks.'
     },
     flippermoresensors_acceleration: {
         title: 'acceleration',

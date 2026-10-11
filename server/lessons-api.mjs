@@ -76,7 +76,7 @@ export function createLessonsApi({ libraryDir, docsDir, schemasDir, sendJson, se
             '',
             '### Fields (scenes) and their mat sizes',
             '',
-            'Coordinates are in mm with (0, 0) at the centre of the mat. x runs from',
+            'Coordinates are in mm with (0, 0) at the center of the mat. x runs from',
             '-width/2 (left) to width/2 (right); z runs from -height/2 (top edge of the',
             'mat picture) to height/2 (bottom edge).',
             '',

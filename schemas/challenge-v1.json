@@ -26,7 +26,7 @@
         },
         "skill": {
             "type": "string",
-            "description": "What it practises, for example Basics, Driving, Sensors, Gyro or Missions."
+            "description": "What it practices, for example Basics, Driving, Sensors, Gyro or Missions."
         },
         "order": {
             "type": "number",

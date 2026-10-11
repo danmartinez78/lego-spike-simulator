@@ -9,7 +9,7 @@
     "example": "08 Mission template.llsp3",
     "hints": [
         "Plan the route with the measure tool: it tells you each drive and turn.",
-        "A turn that is a few degrees off sends the robot centimetres off at the end. Try a gyro turn.",
+        "A turn that is a few degrees off sends the robot centimeters off at the end. Try a gyro turn.",
         "Use the DriveStraight and TurnRight My Blocks from the mission template example."
     ],
     "check": {

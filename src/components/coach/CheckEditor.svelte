@@ -37,13 +37,13 @@
             id: 'avoid',
             label: 'Stay-out zone',
             colour: checkColours.avoid,
-            hint: "Drag to draw a zone the robot's centre must never enter."
+            hint: "Drag to draw a zone the robot's center must never enter."
         },
         {
             id: 'line',
             label: 'Line to follow',
             colour: checkColours.follow,
-            hint: 'Click along the line from start to end. The colour sensor must stay near it.'
+            hint: 'Click along the line from start to end. The color sensor must stay near it.'
         },
         {
             id: 'move',
@@ -341,7 +341,7 @@
     }));
     const neededItems = [1, 2, 3, 4, 5].map((n) => ({ value: n, name: `${n} of 5 runs` }));
     const sensorItems = [
-        { value: '', name: 'First colour sensor' },
+        { value: '', name: 'First color sensor' },
         ...['A', 'B', 'C', 'D', 'E', 'F'].map((p) => ({ value: p, name: `Port ${p}` }))
     ];
 

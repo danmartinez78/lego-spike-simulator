@@ -4,11 +4,11 @@
     "level": 2,
     "skill": "Sensors",
     "order": 4,
-    "goal": "Drive up lane 1 and stop with the colour sensor on the green patch, every time, on Challenging.",
+    "goal": "Drive up lane 1 and stop with the color sensor on the green patch, every time, on Challenging.",
     "field": "Practice - colour stops.spk",
     "example": "03 Stop at a line.llsp3",
     "hints": [
-        "Start moving, then wait until the colour sensor sees green, then stop.",
+        "Start moving, then wait until the color sensor sees green, then stop.",
         "Driving a fixed distance will not be reliable on Challenging. Let the sensor decide.",
         "If the robot overshoots, try a slower speed."
     ],

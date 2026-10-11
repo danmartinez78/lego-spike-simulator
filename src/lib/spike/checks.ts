@@ -269,7 +269,7 @@ export function checkRun(check: Check, path: RunPath): RunResult {
                 rule: 'follow',
                 ok: false,
                 note: !f.started
-                    ? 'The colour sensor never reached the start of the line'
+                    ? 'The color sensor never reached the start of the line'
                     : f.leftAt !== undefined
                       ? `Lost the line about ${cm(f.leftAt)} along it`
                       : "Didn't get to the end of the line"
@@ -356,7 +356,7 @@ export function describeCheck(check: Check): string[] {
     const lines: string[] = [];
     if (check.follow) {
         lines.push(
-            `Follow the orange line to its end, with the colour sensor on it at least ${Math.round(check.follow.share * 100)}% of the way`
+            `Follow the orange line to its end, with the color sensor on it at least ${Math.round(check.follow.share * 100)}% of the way`
         );
     }
     if (check.waypoints?.length) {

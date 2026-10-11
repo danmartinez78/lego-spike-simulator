@@ -71,7 +71,7 @@ export function fieldProblems(spec) {
         errors.push('"title" must be text of up to 60 characters');
     if (spec.background !== undefined && !colourOf(spec.background))
         errors.push(
-            `"background" isn't a colour: use ${Object.keys(COLOURS).join(', ')} or #rrggbb`
+            `"background" isn't a color: use ${Object.keys(COLOURS).join(', ')} or #rrggbb`
         );
 
     const inside = (x, z, margin = 0) =>
@@ -96,7 +96,7 @@ export function fieldProblems(spec) {
                 return;
             }
             if (s.colour !== undefined && !colourOf(s.colour))
-                errors.push(`${where}: "${s.colour}" isn't a colour`);
+                errors.push(`${where}: "${s.colour}" isn't a color`);
             if (
                 s.width !== undefined &&
                 s.type !== 'rect' &&
@@ -124,7 +124,7 @@ export function fieldProblems(spec) {
                     errors.push(`${where}: "size" must be 10 to 300 mm`);
             } else {
                 if (!num(s.x) || !num(s.z)) errors.push(`${where}: needs x and z`);
-                else if (!inside(s.x, s.z)) warnings.push(`${where} is centred off the mat`);
+                else if (!inside(s.x, s.z)) warnings.push(`${where} is centered off the mat`);
                 if (s.type === 'rect') {
                     if (!num(s.width) || !num(s.height) || s.width <= 0 || s.height <= 0)
                         errors.push(`${where}: needs a width and height in mm`);
@@ -155,7 +155,7 @@ export function fieldProblems(spec) {
                 BRICK_COLOURS[String(o.colour).toLowerCase()] === undefined
             )
                 errors.push(
-                    `${where}: brick colour must be one of ${Object.keys(BRICK_COLOURS).join(', ')}`
+                    `${where}: brick color must be one of ${Object.keys(BRICK_COLOURS).join(', ')}`
                 );
             if (o.type === 'wall' && (!num(o.length) || o.length < 64 || o.length > 3000))
                 errors.push(`${where}: a wall needs a length of 64 to 3000 mm`);

@@ -26,7 +26,7 @@
     bind:open={modalOpen}
 >
     <div class="flex flex-col gap-2 items-center">
-        <Button class="w-96" on:click={printColour} color="light">Colour</Button>
+        <Button class="w-96" on:click={printColour} color="light">Color</Button>
         <Button class="w-96" on:click={printBW} color="light">Black and White</Button>
         <Button class="w-96" on:click={cancel}>CANCEL</Button>
     </div>

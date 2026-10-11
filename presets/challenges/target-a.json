@@ -8,7 +8,7 @@
     "field": "Practice - accuracy targets.spk",
     "hints": [
         "Use the measure tool to find how far target A is from the robot.",
-        "Measure from the centre of the robot to the centre of the target.",
+        "Measure from the center of the robot to the center of the target.",
         "If runs spread sideways, try driving straight with the gyro."
     ],
     "check": {

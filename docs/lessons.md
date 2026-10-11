@@ -117,10 +117,10 @@ A run passes when it meets all the rules; the check passes when at least
 
 | Rule        | What passes                                                                                                                                                                    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `stop`      | The robot's centre ends inside `zone`. With `heading`, it must also face `value` degrees, give or take `tolerance` (1 to 90).                                                  |
-| `waypoints` | The robot's centre passes through every zone, in the order listed (up to 20).                                                                                                  |
-| `avoid`     | The robot's centre never enters any of these zones (up to 20). Make zones a little bigger than the thing to avoid, since the robot is wider than its centre.                   |
-| `follow`    | The colour sensor follows the line from its first point to its last, staying within `width` mm of it for at least `share` (0 to 1) of the distance it travels along the way.   |
+| `stop`      | The robot's center ends inside `zone`. With `heading`, it must also face `value` degrees, give or take `tolerance` (1 to 90).                                                  |
+| `waypoints` | The robot's center passes through every zone, in the order listed (up to 20).                                                                                                  |
+| `avoid`     | The robot's center never enters any of these zones (up to 20). Make zones a little bigger than the thing to avoid, since the robot is wider than its center.                   |
+| `follow`    | The color sensor follows the line from its first point to its last, staying within `width` mm of it for at least `share` (0 to 1) of the distance it travels along the way.    |
 | `timeLimit` | The program finishes within this many simulated seconds (1 to 150).                                                                                                            |
 | `blocks`    | The program uses every block rule in `use` and none in `avoid`. Only blocks in stacks that run count (under an event block, or inside a My Block). This applies to all 5 runs. |
 
@@ -130,7 +130,7 @@ so `needed` of 4 or 5 on `realistic` rewards programs that use sensors.
 
 ### Coordinates
 
-All positions are in millimetres on the mat, with (0, 0) at the centre of the
+All positions are in millimeters on the mat, with (0, 0) at the center of the
 mat. `x` grows to the right and `z` grows **down** the mat picture, so the top
 edge of the picture is `z = -height/2`. Headings are in degrees: 0 faces up the
 mat picture, 90 faces right, 180 down, 270 left. The guide at
@@ -143,7 +143,7 @@ the mat. Every zone and line point must be on the mat.
 
 ### Following a line
 
-`follow.path` is the line the colour sensor should follow, as points in order
+`follow.path` is the line the color sensor should follow, as points in order
 from start to end (2 to 200 points; more points for tighter curves). Trace the
 **edge** the program follows (a line-follower rides the edge between black and
 white), or the middle of the line with a `width` that covers both edges.
@@ -156,8 +156,8 @@ white), or the middle of the line with a `width` that covers both edges.
     short wobbles off the line.
 -   If the first and last points are close together (a loop), the line counts as
     closed and the start is only looked for near the first point.
--   `sensor` picks the colour sensor's port when the robot has more than one.
-    Without it, the first colour sensor is used.
+-   `sensor` picks the color sensor's port when the robot has more than one.
+    Without it, the first color sensor is used.
 
 Students see their sensor's path drawn on the mat, with a circle where it first
 left the line.
@@ -177,7 +177,7 @@ left the line.
 | `my-block`        | a call to a My Block                                     |
 | `variable`        | set or change a variable                                 |
 | `maths`           | + − × ÷                                                  |
-| `colour-sensor`   | any colour sensor block or event                         |
+| `colour-sensor`   | any color sensor block or event                          |
 | `distance-sensor` | any distance sensor block or event                       |
 | `force-sensor`    | any force sensor block or event                          |
 | `gyro`            | yaw angle, reset yaw and the other orientation blocks    |
@@ -246,7 +246,7 @@ name without `.json`, and it's what a lesson's `"challenge"` points at.
 | `field`   | the `.spk` field; starting the challenge loads it            |
 | `check`   | the same check as a lesson's (above)                         |
 | `level`   | 1 starter, 2 getting there, 3 tricky                         |
-| `skill`   | what it practises: Basics, Driving, Sensors, Gyro, Missions… |
+| `skill`   | what it practices: Basics, Driving, Sensors, Gyro, Missions… |
 | `robot`   | a robot other than the default, if the challenge needs one   |
 | `example` | an example program (`.llsp3`) that helps                     |
 | `hints`   | up to 10; nudge rather than give the answer                  |
