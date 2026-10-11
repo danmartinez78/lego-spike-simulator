@@ -19,7 +19,7 @@
     import { graphOpen } from '$lib/spike/telemetry';
     import MeasureDialog from '$components/MeasureDialog.svelte';
     import { openGuide } from '$lib/help';
-    import { CloseButton, Tooltip } from 'flowbite-svelte';
+    import { Button, CloseButton, Tooltip } from 'flowbite-svelte';
     import ToolButton from '$components/ToolButton.svelte';
     import MenuDropdown from '$components/MenuDropdown.svelte';
     import { type MenuAction } from '$components/Menu.svelte';
@@ -42,7 +42,7 @@
     } from '$lib/spike/runs';
     import { robotRequest } from '$lib/library';
     import ExperimentPanel from '$components/ExperimentPanel.svelte';
-    import { realismStore, presetLabels } from '$lib/spike/realism';
+    import { realismStore, realismName } from '$lib/spike/realism';
     import { libraryStore } from '$lib/library';
     import { type LDrawStore, componentStore } from '$lib/ldraw/components';
     import { Hub, codeStore } from '$lib/spike/vm';
@@ -416,16 +416,28 @@
                         Comparing with {$pinnedRuns.label}
                     </span>
                 {/if}
-                {#if $realismStore.preset != 'ideal'}
-                    <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-900">
-                        {$realismStore.preset == 'custom'
-                            ? 'Custom realism'
-                            : presetLabels[$realismStore.preset]}
-                    </span>
-                    <Tooltip
-                        >Real-world errors are on. Change them in Experiment or Settings.</Tooltip
+                <Button
+                    color="light"
+                    class="!px-2 !py-1 min-w-[3.5rem] flex flex-col items-center justify-center gap-0.5 {$realismStore.preset ==
+                    'ideal'
+                        ? ''
+                        : '!bg-amber-100 !text-amber-900 hover:!bg-amber-200 !border-amber-300'}"
+                    aria-label="Mode: {realismName($realismStore.preset)}"
+                    on:click={openSettings}
+                >
+                    <span
+                        class="text-[11px] leading-none font-normal uppercase tracking-wide opacity-70"
+                        >Mode</span
                     >
-                {/if}
+                    <div class="h-7 flex items-center text-sm font-semibold whitespace-nowrap">
+                        {realismName($realismStore.preset)}
+                    </div>
+                </Button>
+                <Tooltip
+                    >{$realismStore.preset == 'ideal'
+                        ? 'Ideal: a perfect robot with no real-world errors.'
+                        : 'Real-world errors are on.'} Change the mode in Settings.</Tooltip
+                >
                 {#if $libraryStore.available}
                     <ToolButton
                         label="Build"
