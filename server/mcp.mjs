@@ -143,7 +143,12 @@ const ASSIGNMENT_SCHEMA = object(
                 'What it is for (optional): "practice" (practise what was taught) or "prep" (prepare for the next meeting)'
         },
         due: { type: 'string', description: 'Due date, YYYY-MM-DD (optional)' },
-        note: { type: 'string', description: 'Note for students (optional)' }
+        note: { type: 'string', description: 'Note for students (optional)' },
+        checkFirst: {
+            type: 'boolean',
+            description:
+                "Students must pass a lesson's check before they can hand in its program (optional; lessons without a check aren't affected)"
+        }
     },
     ['title', 'lessons']
 );

@@ -530,11 +530,11 @@
                 </p>
                 <h4 class="font-medium mt-3">Privacy</h4>
                 <p>
-                    You don't need an account to use the simulator, and the site has no ads,
-                    tracking or cookies for students. Your program is kept in this browser. If your
-                    coach gives you a code card, the site keeps the name your coach typed (a first
-                    name and last initial), your progress and the programs you hand in, and only
-                    your coaches can see them. Read the
+                    You don't need to sign in to use the simulator, and the site has no ads and no
+                    cookies for students. Your program is kept in this browser. If your coach gives
+                    you a code card, the site keeps the name your coach typed (a first name and last
+                    initial), your progress and the programs you hand in, and only your coaches can
+                    see them. Read the
                     <a class="text-blue-700 underline" href="privacy" target="_blank"
                         >privacy notice</a
                     > for the details.

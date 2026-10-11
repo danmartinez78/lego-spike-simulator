@@ -24,6 +24,8 @@
     export let hasNext = false;
     export let signedIn = false;
     export let handedInAt: string | undefined = undefined;
+    // The coach asked for the check to pass before handing in.
+    export let checkFirst = false;
     // Best result of the lesson's check, if the student tried it.
     export let checkResult: { best: number; passed: boolean } | undefined = undefined;
 
@@ -82,6 +84,7 @@
         ...(signedIn ? [{ label: 'Hand in your program', done: !!handedInAt }] : [])
     ];
     $: complete = !preview && toFinish.every((t) => t.done);
+    $: waitingForCheck = checkFirst && !!lesson.check && !checkResult?.passed;
     $: started = ticked.length > 0 || !!checkResult || !!handedInAt;
     $: setupParts = [
         lesson.program ? `the starter program "${niceName(lesson.program)}"` : '',
@@ -274,7 +277,10 @@
             {#if signedIn}
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                     <p class="flex-1 text-sm text-gray-800">
-                        {#if handedInAt}
+                        {#if waitingForCheck}
+                            <b>Pass the check first.</b> Your coach asked for the check to pass
+                            before you hand in. Press <b>Check my robot</b> above.
+                        {:else if handedInAt}
                             <b>Handed in</b> {when(handedInAt)}. Hand in again after you change it.
                         {:else}
                             <b>Hand in</b> the program in your code panel so your coach can see it.
@@ -283,7 +289,7 @@
                     <Button
                         size="sm"
                         color={handedInAt ? 'light' : 'green'}
-                        disabled={busy}
+                        disabled={busy || waitingForCheck}
                         on:click={() => dispatch('handin')}
                         >{handedInAt ? 'Hand in again' : 'Hand in my program'}</Button
                     >

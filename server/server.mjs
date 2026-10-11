@@ -713,7 +713,15 @@ const team = createTeam({
     onRemove: (id) => homework.removeStudent(id)
 });
 const authors = createAuthors(LIBRARY_DIR);
-const homework = createHomework({ teamDir: TEAM_DIR, team, settings, sendJson, send, readBody });
+const homework = createHomework({
+    teamDir: TEAM_DIR,
+    libraryDir: LIBRARY_DIR,
+    team,
+    settings,
+    sendJson,
+    send,
+    readBody
+});
 const lessonsApi = createLessonsApi({
     libraryDir: LIBRARY_DIR,
     docsDir: path.join(here, '..', 'docs'),

@@ -23,7 +23,7 @@ function isDate(value) {
     return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-export function createHomework({ teamDir, team, settings, sendJson, send, readBody }) {
+export function createHomework({ teamDir, libraryDir, team, settings, sendJson, send, readBody }) {
     const homeworkFile = path.join(teamDir, 'homework.json');
     const studentDir = (id) => path.join(teamDir, 'students', id);
 
@@ -131,6 +131,8 @@ export function createHomework({ teamDir, team, settings, sendJson, send, readBo
                 due: input.due || undefined,
                 type,
                 lessons: [...new Set(lessons)],
+                // Students must pass a lesson's check before handing in its program.
+                checkFirst: input?.checkFirst === true || undefined,
                 created: old?.created ?? new Date().toISOString(),
                 // An assignment from an AI assistant is a draft until a coach publishes it.
                 draft:
@@ -217,6 +219,24 @@ export function createHomework({ teamDir, team, settings, sendJson, send, readBo
         sendJson(res, 200, homework);
     }
 
+    // Whether a published assignment asks for this lesson's check to pass before
+    // hand-in. Lessons without a check never block.
+    async function needsCheckFirst(lessonFile) {
+        const homework = await loadHomework();
+        const asked = homework.assignments.some(
+            (a) => !a.draft && a.checkFirst && a.lessons.includes(lessonFile)
+        );
+        if (!asked) return false;
+        try {
+            const lesson = JSON.parse(
+                await fsp.readFile(path.join(libraryDir, 'lessons', lessonFile), 'utf8')
+            );
+            return !!lesson.check;
+        } catch {
+            return false;
+        }
+    }
+
     // /api/student/homework, /progress, /programs/<lesson>.json (signed in)
     async function handleStudent(req, res, parts, student) {
         if (parts[0] === 'homework' && parts.length === 1 && req.method === 'GET') {
@@ -267,6 +287,15 @@ export function createHomework({ teamDir, team, settings, sendJson, send, readBo
                 if (data.subarray(0, 2).toString('latin1') !== 'PK' || data.length > 5e6) {
                     sendJson(res, 400, { error: 'That is not a SPIKE program' });
                     return;
+                }
+                if (await needsCheckFirst(lesson + '.json')) {
+                    const mine = (await loadProgress(student.id)).lessons?.[lesson + '.json'];
+                    if (!mine?.check?.passed) {
+                        sendJson(res, 409, {
+                            error: 'Pass the check first: press Check my robot, then hand in. Your coach asked for that on this assignment.'
+                        });
+                        return;
+                    }
                 }
                 await fsp.mkdir(path.dirname(file), { recursive: true });
                 await fsp.writeFile(file + '.tmp', data);
