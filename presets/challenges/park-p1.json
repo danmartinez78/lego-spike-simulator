@@ -1,0 +1,29 @@
+{
+    "schema": "spike-challenge/1",
+    "title": "Park in P1",
+    "level": 3,
+    "skill": "Missions",
+    "order": 8,
+    "goal": "Leave home and park inside the blue P1 box, 4 out of 5 times, on Realistic.",
+    "field": "Practice - mini missions.spk",
+    "example": "08 Mission template.llsp3",
+    "hints": [
+        "Plan the route with the measure tool, starting from the robot.",
+        "The black guide line can help you line up before the last part of the route.",
+        "Build the run from DriveStraight and TurnRight My Blocks."
+    ],
+    "check": {
+        "realism": "realistic",
+        "needed": 4,
+        "stop": {
+            "zone": {
+                "kind": "box",
+                "x1": 230,
+                "z1": -370,
+                "x2": 370,
+                "z2": -230,
+                "label": "P1"
+            }
+        }
+    }
+}

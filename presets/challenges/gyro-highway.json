@@ -1,0 +1,28 @@
+{
+    "schema": "spike-challenge/1",
+    "title": "Gyro highway",
+    "level": 3,
+    "skill": "Gyro",
+    "order": 6,
+    "goal": "Drive 80 cm straight ahead and stop within 6 cm of the finish point, 4 out of 5 times, on Challenging.",
+    "field": "Practice - start box.spk",
+    "example": "07 Drive straight with the gyro.llsp3",
+    "hints": [
+        "A plain move block drifts. Steer with the gyro all the way.",
+        "Count the distance with the wheel motor's relative position, not with time.",
+        "A crooked start can't be fixed by the gyro. Which way does the robot drift, and why?"
+    ],
+    "check": {
+        "realism": "challenging",
+        "needed": 4,
+        "stop": {
+            "zone": {
+                "kind": "circle",
+                "x": -900,
+                "z": -500,
+                "radius": 60,
+                "label": "finish"
+            }
+        }
+    }
+}

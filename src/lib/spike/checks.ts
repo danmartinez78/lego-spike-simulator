@@ -21,6 +21,25 @@ export function angleDiff(a: number, b: number) {
     return d;
 }
 
+// Numbers typed into the check editor arrive as numbers or text; store
+// numbers, and drop empty labels.
+export function cleanCheck(c: Check): Check {
+    const copy: Check = structuredClone(c);
+    copy.needed = Number(copy.needed);
+    const zones = [copy.stop?.zone, ...(copy.waypoints ?? []), ...(copy.avoid ?? [])];
+    for (const zone of zones) {
+        if (zone && !zone.label?.trim()) delete zone.label;
+    }
+    if (copy.stop?.heading) {
+        copy.stop.heading = {
+            value: Number(copy.stop.heading.value) || 0,
+            tolerance: Number(copy.stop.heading.tolerance) || 10
+        };
+    }
+    if (copy.follow) copy.follow.width = Number(copy.follow.width);
+    return copy;
+}
+
 // Distance from a point to a zone, 0 when inside.
 export function zoneMiss(zone: Zone, x: number, z: number) {
     if (zone.kind == 'circle') {

@@ -6,7 +6,7 @@
 // a service token) or a direct LAN connection. What an assistant saves is
 // stamped with that coach's identity and starts as a draft, so publishing stays
 // a click on the coach page, and an assistant can only replace or delete its
-// own coach's drafts.
+// own coach's drafts. Lessons and challenges work the same way.
 
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -15,10 +15,74 @@ import path from 'node:path';
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
 const INSTRUCTIONS = `Tools for coaches using the LEGO SPIKE simulator.
-To write a lesson: read get_lesson_guide first (it lists this site's fields with their mat sizes, robots and programs), write the lesson JSON, run check_lesson until it has no errors, then save_lesson. Saved lessons are drafts that students can't see until a coach publishes them on the coach page (/coach).`;
+Lessons are step-by-step activities; challenges are short goals with hints and no steps. Both can have a check that the simulator runs over five runs.
+To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
 const object = (properties, required = []) => ({ type: 'object', properties, required });
+
+// Lessons and challenges get the same four tools each.
+const KINDS = {
+    lessons: {
+        one: 'lesson',
+        example: 'Drive a square.json',
+        tab: 'Lessons',
+        schema: 'lesson-v1.json'
+    },
+    challenges: {
+        one: 'challenge',
+        example: 'target-a.json',
+        tab: 'Challenges',
+        schema: 'challenge-v1.json'
+    }
+};
+
+const kindTools = Object.values(KINDS).flatMap((k) => [
+    {
+        name: `get_${k.one}`,
+        description: `Get one ${k.one} from the library as JSON, by its file name from list_library.`,
+        inputSchema: object(
+            { name: { type: 'string', description: `File name, e.g. "${k.example}"` } },
+            ['name']
+        ),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: `check_${k.one}`,
+        description: `Check a ${k.one} without saving it. Returns errors (must be fixed) and warnings (worth reading), the same checks the coach page and save_${k.one} use.`,
+        inputSchema: object({ [k.one]: { type: 'object', description: `The ${k.one} JSON` } }, [
+            k.one
+        ]),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: `save_${k.one}`,
+        description:
+            `Save a ${k.one} to the library as a draft, which students can't see until a coach publishes it on the coach page. ` +
+            `The file name comes from the title unless given${k.one == 'challenge' ? " (a challenge's id is its file name without .json)" : ''}. ` +
+            `Refuses to replace a published ${k.one} or another coach's draft; set replace to true to update your own draft.`,
+        inputSchema: object(
+            {
+                [k.one]: { type: 'object', description: `The ${k.one} JSON` },
+                name: {
+                    type: 'string',
+                    description: 'File name to save as (optional, defaults to the title)'
+                },
+                replace: {
+                    type: 'boolean',
+                    description: 'Replace your own draft with the same name'
+                }
+            },
+            [k.one]
+        )
+    },
+    {
+        name: `delete_${k.one}`,
+        description: `Delete a draft ${k.one} you saved. Published ${k.one}s and other coaches’ ${k.one}s can only be removed on the coach page.`,
+        inputSchema: object({ name: { type: 'string', description: 'File name' } }, ['name']),
+        annotations: { destructiveHint: true }
+    }
+]);
 
 const TOOLS = [
     {
@@ -30,7 +94,7 @@ const TOOLS = [
     {
         name: 'get_lesson_guide',
         description:
-            "How to write a lesson (Markdown): the lesson format, the check rules, and this site's fields with their mat sizes and robot start positions, robots, programs and existing lessons. Read this before writing a lesson.",
+            "How to write lessons and challenges (Markdown): both formats, the check rules, and this site's fields with their mat sizes and robot start positions, robots, programs, lessons and challenges. Read this first.",
         inputSchema: object({}),
         annotations: { readOnlyHint: true }
     },
@@ -41,103 +105,144 @@ const TOOLS = [
         annotations: { readOnlyHint: true }
     },
     {
-        name: 'list_library',
+        name: 'get_challenge_schema',
         description:
-            'List what is in the shared library: lessons (with title, draft state and author), fields (scenes), robots and example programs.',
+            'The JSON schema for a challenge (spike-challenge/1). Its check is the same as a lesson’s.',
         inputSchema: object({}),
         annotations: { readOnlyHint: true }
     },
     {
-        name: 'get_lesson',
-        description: 'Get one lesson from the library as JSON, by its file name from list_library.',
-        inputSchema: object(
-            {
-                name: {
-                    type: 'string',
-                    description: 'Lesson file name, e.g. "Drive a square.json"'
-                }
-            },
-            ['name']
-        ),
+        name: 'list_library',
+        description:
+            'List what is in the shared library: lessons and challenges (with title, draft state and author), fields (scenes), robots and example programs.',
+        inputSchema: object({}),
         annotations: { readOnlyHint: true }
     },
-    {
-        name: 'check_lesson',
-        description:
-            'Check a lesson without saving it. Returns errors (must be fixed) and warnings (worth reading), the same checks the coach page and save_lesson use.',
-        inputSchema: object({ lesson: { type: 'object', description: 'The lesson JSON' } }, [
-            'lesson'
-        ]),
-        annotations: { readOnlyHint: true }
-    },
-    {
-        name: 'save_lesson',
-        description:
-            "Save a lesson to the library as a draft, which students can't see until a coach publishes it on the coach page. The file name comes from the title unless given. Refuses to replace a published lesson or another coach's lesson; set replace to true to update your own draft.",
-        inputSchema: object(
-            {
-                lesson: { type: 'object', description: 'The lesson JSON' },
-                name: {
-                    type: 'string',
-                    description: 'File name to save as (optional, defaults to the title)'
-                },
-                replace: {
-                    type: 'boolean',
-                    description: 'Replace your own draft with the same name'
-                }
-            },
-            ['lesson']
-        )
-    },
-    {
-        name: 'delete_lesson',
-        description:
-            'Delete a draft lesson you saved. Published lessons and other coaches’ lessons can only be removed on the coach page.',
-        inputSchema: object({ name: { type: 'string', description: 'Lesson file name' } }, [
-            'name'
-        ]),
-        annotations: { destructiveHint: true }
-    }
+    ...kindTools
 ];
 
 class ToolError extends Error {}
 
-/** A lesson file name from a title, like libraryFileName() in src/lib/library.ts. */
-function lessonFileName(title) {
-    let clean = String(title)
-        .trim()
-        .replace(/[^\w .()+-]/g, '_')
-        .slice(0, 90);
-    if (!/^\w/.test(clean)) clean = 'lesson ' + clean;
+/** A file name from a title. Lessons keep the title, like libraryFileName() in
+ *  src/lib/library.ts; challenges use a short id like "target-a". */
+function fileNameFor(kind, title) {
+    let clean = String(title).trim();
+    if (kind === 'challenges') {
+        clean = clean
+            .replace(/\.json$/i, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 60);
+        if (!clean) clean = 'challenge';
+    } else {
+        clean = clean.replace(/[^\w .()+-]/g, '_').slice(0, 90);
+        if (!/^\w/.test(clean)) clean = 'lesson ' + clean;
+    }
     if (!clean.toLowerCase().endsWith('.json')) clean += '.json';
     return clean;
 }
 
 export function createMcp({
     libraryDir,
-    schemaFile,
+    schemasDir,
     writer,
     listLibrary,
     lessonsApi,
     lessonProblems,
+    challengeProblems,
     safeName,
     sendJson,
     send,
     readBody
 }) {
-    const lessonsDir = path.join(libraryDir, 'lessons');
+    const problems = { lessons: lessonProblems, challenges: challengeProblems };
 
-    async function readLesson(name) {
-        const file = safeName('lessons', name);
-        if (!file) throw new ToolError(`"${name}" is not a lesson file name`);
+    async function readItem(kind, name) {
+        const file = safeName(kind, name);
+        if (!file) throw new ToolError(`"${name}" is not a ${KINDS[kind].one} file name`);
         try {
-            return {
-                file,
-                lesson: JSON.parse(await fsp.readFile(path.join(lessonsDir, file), 'utf8'))
-            };
+            const text = await fsp.readFile(path.join(libraryDir, kind, file), 'utf8');
+            return { file, item: JSON.parse(text) };
         } catch {
-            return { file, lesson: undefined };
+            return { file, item: undefined };
         }
+    }
+
+    function summary(kind, e) {
+        const item = kind === 'lessons' ? e.lesson : e.challenge;
+        return {
+            name: e.name,
+            title: item?.title,
+            ...(kind === 'lessons'
+                ? { topic: item?.topic }
+                : { id: e.name.replace(/\.json$/, ''), skill: item?.skill, level: item?.level }),
+            draft: !!item?.draft,
+            author: item?.author,
+            field: item?.field,
+            hasCheck: !!item?.check,
+            modified: e.modified
+        };
+    }
+
+    async function save(kind, item, name, replace, who) {
+        const { one, tab } = KINDS[kind];
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            throw new ToolError(`${one} must be a JSON object`);
+        }
+        const { errors, warnings } = problems[kind](item, await lessonsApi.context());
+        if (errors.length > 0) {
+            return { saved: false, errors, warnings };
+        }
+        const fileName = safeName(kind, fileNameFor(kind, name || item.title));
+        if (!fileName) {
+            throw new ToolError(`Can't use "${name ?? item.title}" as a file name`);
+        }
+        const existing = (await readItem(kind, fileName)).item;
+        if (fs.existsSync(path.join(libraryDir, kind, fileName))) {
+            if (!existing || !existing.draft) {
+                throw new ToolError(
+                    `${fileName} is already a published ${one}. Save under another name; a coach can replace it on the coach page.`
+                );
+            }
+            if (existing.author !== who) {
+                throw new ToolError(
+                    `${fileName} is another coach's draft. Save under another name.`
+                );
+            }
+            if (!replace) {
+                throw new ToolError(
+                    `You already have a draft called ${fileName}. Set replace to true to update it, or pick another name.`
+                );
+            }
+        }
+        const saved = { ...item, draft: true, author: who };
+        const file = path.join(libraryDir, kind, fileName);
+        await fsp.writeFile(file + '.tmp', JSON.stringify(saved, null, 4));
+        await fsp.rename(file + '.tmp', file);
+        console.log(`${who} saved ${kind}/${fileName} through MCP`);
+        return {
+            saved: true,
+            name: fileName,
+            ...(kind === 'challenges' ? { id: fileName.replace(/\.json$/, '') } : {}),
+            draft: true,
+            warnings,
+            next: `A coach can review it and press Publish on the coach page, ${tab} tab: /coach`
+        };
+    }
+
+    async function remove(kind, name, who) {
+        const { one } = KINDS[kind];
+        const { file, item } = await readItem(kind, name);
+        if (!item) throw new ToolError(`There is no ${one} called ${name}`);
+        if (!item.draft || item.author !== who) {
+            throw new ToolError(
+                'You can only delete your own drafts here. Use the coach page for anything else.'
+            );
+        }
+        await fsp.rm(path.join(libraryDir, kind, file), { force: true });
+        console.log(`${who} deleted ${kind}/${file} through MCP`);
+        return { deleted: file };
     }
 
     const tools = {
@@ -145,32 +250,22 @@ export function createMcp({
 
         get_lesson_guide: async () => lessonsApi.guide(),
 
-        get_lesson_schema: async () => fsp.readFile(schemaFile, 'utf8'),
+        get_lesson_schema: async () =>
+            fsp.readFile(path.join(schemasDir, KINDS.lessons.schema), 'utf8'),
+
+        get_challenge_schema: async () =>
+            fsp.readFile(path.join(schemasDir, KINDS.challenges.schema), 'utf8'),
 
         list_library: async () => {
             const library = await listLibrary();
             return {
-                lessons: library.lessons.map((e) => ({
-                    name: e.name,
-                    title: e.lesson?.title,
-                    topic: e.lesson?.topic,
-                    draft: !!e.lesson?.draft,
-                    author: e.lesson?.author,
-                    field: e.lesson?.field,
-                    hasCheck: !!e.lesson?.check,
-                    modified: e.modified
-                })),
+                lessons: library.lessons.map((e) => summary('lessons', e)),
+                challenges: library.challenges.map((e) => summary('challenges', e)),
                 scenes: library.scenes.map((e) => e.name),
                 robots: library.robots.map((e) => e.name),
                 programs: library.programs.map((e) => ({ name: e.name, title: e.card?.title })),
                 defaults: library.defaults
             };
-        },
-
-        get_lesson: async ({ name }) => {
-            const { lesson } = await readLesson(name);
-            if (!lesson) throw new ToolError(`There is no lesson called ${name}`);
-            return lesson;
         },
 
         check_lesson: async ({ lesson }) => {
@@ -184,64 +279,27 @@ export function createMcp({
             };
         },
 
-        save_lesson: async ({ lesson, name, replace }, who) => {
-            if (!lesson || typeof lesson !== 'object' || Array.isArray(lesson)) {
-                throw new ToolError('lesson must be a JSON object');
-            }
-            const { errors, warnings } = lessonProblems(lesson, await lessonsApi.context());
-            if (errors.length > 0) {
-                return { saved: false, errors, warnings };
-            }
-            const fileName = safeName('lessons', lessonFileName(name || lesson.title));
-            if (!fileName) {
-                throw new ToolError(`Can't use "${name ?? lesson.title}" as a file name`);
-            }
-            const existing = (await readLesson(fileName)).lesson;
-            const exists = fs.existsSync(path.join(lessonsDir, fileName));
-            if (exists) {
-                if (!existing || !existing.draft) {
-                    throw new ToolError(
-                        `${fileName} is already a published lesson. Save under another name; a coach can replace it on the coach page.`
-                    );
-                }
-                if (existing.author !== who) {
-                    throw new ToolError(
-                        `${fileName} is another coach's draft. Save under another name.`
-                    );
-                }
-                if (!replace) {
-                    throw new ToolError(
-                        `You already have a draft called ${fileName}. Set replace to true to update it, or pick another name.`
-                    );
-                }
-            }
-            const saved = { ...lesson, draft: true, author: who };
-            const file = path.join(lessonsDir, fileName);
-            await fsp.writeFile(file + '.tmp', JSON.stringify(saved, null, 4));
-            await fsp.rename(file + '.tmp', file);
-            console.log(`${who} saved lessons/${fileName} through MCP`);
+        check_challenge: async ({ challenge }) => {
+            const result = await lessonsApi.checkChallenge(
+                Buffer.from(JSON.stringify(challenge ?? null))
+            );
             return {
-                saved: true,
-                name: fileName,
-                draft: true,
-                warnings,
-                next: 'A coach can review it and press Publish on the coach page, Lessons tab: /coach'
+                ok: result.errors.length === 0,
+                errors: result.errors,
+                warnings: result.warnings
             };
-        },
-
-        delete_lesson: async ({ name }, who) => {
-            const { file, lesson } = await readLesson(name);
-            if (!lesson) throw new ToolError(`There is no lesson called ${name}`);
-            if (!lesson.draft || lesson.author !== who) {
-                throw new ToolError(
-                    'You can only delete your own drafts here. Use the coach page for anything else.'
-                );
-            }
-            await fsp.rm(path.join(lessonsDir, file), { force: true });
-            console.log(`${who} deleted lessons/${file} through MCP`);
-            return { deleted: file };
         }
     };
+    for (const [kind, { one }] of Object.entries(KINDS)) {
+        tools[`get_${one}`] = async (args) => {
+            const { item } = await readItem(kind, args.name);
+            if (!item) throw new ToolError(`There is no ${one} called ${args.name}`);
+            return item;
+        };
+        tools[`save_${one}`] = async (args, who) =>
+            save(kind, args[one], args.name, args.replace, who);
+        tools[`delete_${one}`] = async (args, who) => remove(kind, args.name, who);
+    }
 
     async function callTool(params, who) {
         const tool = tools[params?.name];

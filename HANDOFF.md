@@ -39,7 +39,7 @@
     ▶×5 results window with A vs B comparison.
 -   Example programs with lesson cards (book button), coach-only saving.
 -   Coach tools page at `/coach` (`src/pages/CoachPage.svelte`), with tabs Lessons,
-    Challenges (built-in cards, read-only for now), Example programs, Homework,
+    Challenges, Example programs, Homework,
     Students, Robots and maps, and AI assistants: upload, rename,
     download and delete robots, scenes and programs, choose what loads on open,
     mat previews for scenes, and a lesson card form. Roadmap for the next steps
@@ -58,7 +58,7 @@
     waypoints, stay-out zones, follow a line (colour sensor within a corridor
     along a traced path), time limit and block rules, over 5 runs. Lessons draw
     them on the mat in the lesson editor (`CheckEditor.svelte`); students press
-    Check my robot, then ▶×5. Built-in challenge cards use the same engine.
+    Check my robot, then ▶×5. Challenges use the same engine.
     Runs now record each colour sensor's position and the run time.
 -   Agent authoring, no repo needed: `GET /api/lessons/guide` (docs/lessons.md
     plus the live fields with mat sizes and robot starts, robots, programs),
@@ -66,12 +66,11 @@
     lesson.json or package, nothing saved). These are public and read-only.
 -   MCP server for coaches' AI assistants at `/mcp` (`server/mcp.mjs`, setup and
     tools in `docs/mcp.md`): lesson guide, library listing, check and save
-    lessons as drafts stamped with the coach's identity (`"author"`). Same
+    lessons and challenges as drafts stamped with the coach's identity (`"author"`). Same
     sign-in as `/api/admin`; for people it needs a separate Access app on
     `/mcp` with Managed OAuth, whose AUD is added to `CF_ACCESS_AUD`
     (comma-separated). The coach page's AI assistants tab explains connecting an
-    assistant and the package-and-import route for chatbots without MCP. Next: homework and asset tools, then challenges stored
-    on the server.
+    assistant and the package-and-import route for chatbots without MCP. Next: homework and asset tools.
 -   Students (coach page, Students tab): paste names, each gets a random code
     (`WORD-WORD-NN`); print cut-out code cards with a sign-in QR, copy one
     student's link, or export a CSV for a mail merge. Stored in plain text in
@@ -92,8 +91,17 @@
 -   Welcome screen, guide (? button) with block reference, About/credits.
 -   Block help: hover tooltips, right-click "Explain this block".
 -   Sensor graph, measure/route tool, top-down Place view.
--   Practice fields, "Driving Base 3 with distance sensor" robot, 8 challenge
-    cards with auto-checking (`src/lib/spike/challenges.ts`).
+-   Practice fields, "Driving Base 3 with distance sensor" robot.
+-   Challenges (Challenges button in the code panel): goal, field, check and
+    hints, auto-checked over 5 runs. Stored in `library/challenges/<id>.json`
+    (the id is the file name, which lessons' `"challenge"` and students'
+    progress refer to); 8 ship in `presets/challenges/` and are seeded once.
+    Coaches make, edit, publish, import and delete them on the coach page's
+    Challenges tab (`ChallengeEditor.svelte`, same mat CheckEditor as lessons);
+    drafts are hidden from students. Format: `docs/lessons.md#challenges`,
+    `schemas/challenge-v1.json`, rules in `server/lesson-rules.mjs`
+    (`challengeProblems`), `POST /api/challenges/check`. App side:
+    `src/lib/spike/challenges.ts` (falls back to the presets with no server).
 -   Generators: `tools/examples/` (examples, fields, scenes, challenge
     solutions), `tools/robots/make_db3d.py`.
 

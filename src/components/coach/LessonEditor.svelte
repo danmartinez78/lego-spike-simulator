@@ -5,8 +5,8 @@
     import { ArrowDownOutline, ArrowUpOutline, TrashBinOutline } from 'flowbite-svelte-icons';
     import LessonView from '$components/LessonView.svelte';
     import CheckEditor from '$components/coach/CheckEditor.svelte';
-    import type { Check } from '$lib/spike/checks';
-    import { challenges } from '$lib/spike/challenges';
+    import { cleanCheck, type Check } from '$lib/spike/checks';
+    import { allChallenges } from '$lib/spike/challenges';
     import { lessonProblem } from '$lib/lessons';
     import type { Lesson, LessonStep } from '$lib/library';
 
@@ -79,25 +79,6 @@
         return result;
     }
 
-    // Numbers typed into the form arrive as numbers or text; store numbers,
-    // and drop empty labels.
-    function cleanCheck(c: Check): Check {
-        const copy: Check = structuredClone(c);
-        copy.needed = Number(copy.needed);
-        const zones = [copy.stop?.zone, ...(copy.waypoints ?? []), ...(copy.avoid ?? [])];
-        for (const zone of zones) {
-            if (zone && !zone.label?.trim()) delete zone.label;
-        }
-        if (copy.stop?.heading) {
-            copy.stop.heading = {
-                value: Number(copy.stop.heading.value) || 0,
-                tolerance: Number(copy.stop.heading.tolerance) || 10
-            };
-        }
-        if (copy.follow) copy.follow.width = Number(copy.follow.width);
-        return copy;
-    }
-
     function save() {
         if (order.trim() && !Number.isFinite(Number(order))) {
             problem = 'Order must be a number.';
@@ -156,7 +137,7 @@
     $: robotItems = options(robots, 'Any robot', robot);
     $: challengeItems = [
         { value: '', name: 'No challenge' },
-        ...challenges.map((c) => ({ value: c.id, name: c.title }))
+        ...$allChallenges.map((c) => ({ value: c.id, name: c.title }))
     ];
     // List every field so the preview updates as the coach types.
     $: previewLesson = preview(
@@ -330,9 +311,7 @@
             <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">
                 What students see
             </div>
-            <div
-                class="rounded-xl border border-gray-200 bg-white p-5 overflow-y-auto h-[60dvh]"
-            >
+            <div class="rounded-xl border border-gray-200 bg-white p-5 overflow-y-auto h-[60dvh]">
                 <LessonView lesson={previewLesson} {missing} preview />
             </div>
         </aside>

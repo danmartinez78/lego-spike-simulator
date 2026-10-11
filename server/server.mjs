@@ -10,6 +10,7 @@
 //   /api/student/...   student sign-in with a roster code (TEAM_DIR)
 //   /mcp               MCP server for coaches' AI assistants (same sign-in as /api/admin)
 //   /api/lessons/...   lesson authoring guide, schema and checker (read-only)
+//   /api/challenges/... challenge schema and checker (read-only)
 //
 // Writes are accepted from:
 //   - clients whose address starts with one of LAN_WRITE_PREFIXES
@@ -27,7 +28,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createTeam } from './team.mjs';
 import { createHomework } from './homework.mjs';
-import { lessonProblems } from './lesson-rules.mjs';
+import { challengeProblems, lessonProblems } from './lesson-rules.mjs';
 import { createLessonsApi } from './lessons-api.mjs';
 import { createMcp } from './mcp.mjs';
 
@@ -58,7 +59,9 @@ const KINDS = {
     // Example programs, each with an optional lesson card in <name>.llsp3.json
     programs: ['.llsp3', '.json'],
     // Lessons: <name>.json following schemas/lesson-v1.json
-    lessons: ['.json']
+    lessons: ['.json'],
+    // Challenges: <id>.json following schemas/challenge-v1.json
+    challenges: ['.json']
 };
 
 const MIME = {
@@ -150,6 +153,7 @@ async function listLibrary() {
         scenes: [],
         programs: [],
         lessons: [],
+        challenges: [],
         defaults: await readDefaults()
     };
     for (const kind of Object.keys(KINDS)) {
@@ -157,12 +161,14 @@ async function listLibrary() {
         const names = fs.existsSync(dir) ? await fsp.readdir(dir) : [];
         for (const name of names.sort((a, b) => a.localeCompare(b))) {
             if (!safeName(kind, name)) continue;
-            if (kind !== 'lessons' && name.toLowerCase().endsWith('.json')) continue;
+            const isJson = kind === 'lessons' || kind === 'challenges';
+            if (!isJson && name.toLowerCase().endsWith('.json')) continue;
             const stat = await fsp.stat(path.join(dir, name));
             const entry = { name, size: stat.size, modified: stat.mtime.toISOString() };
-            if (kind === 'lessons') {
+            if (isJson) {
                 try {
-                    entry.lesson = JSON.parse(await fsp.readFile(path.join(dir, name), 'utf8'));
+                    const json = JSON.parse(await fsp.readFile(path.join(dir, name), 'utf8'));
+                    entry[kind === 'lessons' ? 'lesson' : 'challenge'] = json;
                 } catch {
                     continue;
                 }
@@ -457,8 +463,9 @@ async function handleAdmin(req, res, parts) {
                 sendJson(res, 400, { error: 'Lesson card must be JSON' });
                 return;
             }
-            if (kind === 'lessons') {
-                const { errors } = lessonProblems(json, await lessonsApi.context());
+            if (kind === 'lessons' || kind === 'challenges') {
+                const problems = kind === 'lessons' ? lessonProblems : challengeProblems;
+                const { errors } = problems(json, await lessonsApi.context());
                 if (errors.length > 0) {
                     sendJson(res, 400, { error: errors[0], errors });
                     return;
@@ -511,6 +518,10 @@ async function handle(req, res) {
     }
     if (parts[0] === 'mcp' && parts.length === 1) {
         await mcp.handle(req, res);
+        return;
+    }
+    if (parts[0] === 'api' && parts[1] === 'challenges') {
+        await lessonsApi.handleChallenges(req, res, parts.slice(2));
         return;
     }
     if (parts[0] === 'api' && parts[1] === 'lessons') {
@@ -576,18 +587,19 @@ const homework = createHomework({ teamDir: TEAM_DIR, team, sendJson, send, readB
 const lessonsApi = createLessonsApi({
     libraryDir: LIBRARY_DIR,
     docsDir: path.join(here, '..', 'docs'),
-    schemaFile: path.join(here, '..', 'schemas', 'lesson-v1.json'),
+    schemasDir: path.join(here, '..', 'schemas'),
     sendJson,
     send,
     readBody
 });
 const mcp = createMcp({
     libraryDir: LIBRARY_DIR,
-    schemaFile: path.join(here, '..', 'schemas', 'lesson-v1.json'),
+    schemasDir: path.join(here, '..', 'schemas'),
     writer,
     listLibrary,
     lessonsApi,
     lessonProblems,
+    challengeProblems,
     safeName,
     sendJson,
     send,

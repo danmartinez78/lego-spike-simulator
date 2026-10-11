@@ -1,0 +1,65 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://spike.robodan.dev/schemas/challenge-v1.json",
+    "title": "LEGO SPIKE Simulator challenge",
+    "description": "A short goal students try from the Challenges window: a field, a check over 5 runs and a few hints, with no steps. See docs/lessons.md or /api/lessons/guide.",
+    "type": "object",
+    "required": ["schema", "title", "goal", "field", "check"],
+    "properties": {
+        "schema": {
+            "const": "spike-challenge/1"
+        },
+        "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Shown as the challenge's name."
+        },
+        "goal": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One or two sentences: what to do, how well, how often and on which realism, e.g. \"Stop inside the 6 cm ring of target A, 4 out of 5 times, on Realistic.\""
+        },
+        "level": {
+            "enum": [1, 2, 3],
+            "description": "1 starter, 2 getting there, 3 tricky. Shown as stars."
+        },
+        "skill": {
+            "type": "string",
+            "description": "What it practises, for example Basics, Driving, Sensors, Gyro or Missions."
+        },
+        "order": {
+            "type": "number",
+            "description": "Position in the list, lowest first."
+        },
+        "field": {
+            "type": "string",
+            "description": "Field the challenge is on: a .spk scene name in the library. Starting the challenge loads it."
+        },
+        "robot": {
+            "type": "string",
+            "description": "Robot the challenge needs, if not the default: a .mpd or .ldr name in the library."
+        },
+        "example": {
+            "type": "string",
+            "description": "A .llsp3 example program in the library that helps with it."
+        },
+        "hints": {
+            "type": "array",
+            "maxItems": 10,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Shown one at a time when a student asks for a hint. Nudge, don't give the answer."
+        },
+        "draft": {
+            "type": "boolean",
+            "description": "true hides the challenge from students until a coach publishes it."
+        },
+        "author": {
+            "type": "string",
+            "description": "Set by the server: the coach whose AI assistant saved the challenge through the MCP server."
+        },
+        "check": {
+            "$ref": "lesson-v1.json#/properties/check"
+        }
+    }
+}

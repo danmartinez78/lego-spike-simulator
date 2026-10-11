@@ -3,14 +3,19 @@
 //   GET  /api/lessons/guide    the authoring guide, plus this site's fields and files
 //   GET  /api/lessons/schema   the JSON schema for lesson.json
 //   POST /api/lessons/check    check a lesson.json or package (.zip); nothing is saved
+//   GET  /api/challenges/schema       the JSON schema for a challenge
+//   POST /api/challenges/check        check a challenge's JSON; nothing is saved
 
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
-import { blockRules, lessonProblems, realismNames } from './lesson-rules.mjs';
+import { blockRules, challengeProblems, lessonProblems, realismNames } from './lesson-rules.mjs';
 import { sceneMatSize, unzip } from './unzip.mjs';
 
-export function createLessonsApi({ libraryDir, docsDir, schemaFile, sendJson, send, readBody }) {
+export function createLessonsApi({ libraryDir, docsDir, schemasDir, sendJson, send, readBody }) {
+    const schemaFile = path.join(schemasDir, 'lesson-v1.json');
+    const challengeSchemaFile = path.join(schemasDir, 'challenge-v1.json');
+
     // Mat sizes of library scenes, cached by file and modification time.
     const matCache = new Map();
 
@@ -46,6 +51,7 @@ export function createLessonsApi({ libraryDir, docsDir, schemaFile, sendJson, se
         const mats = { ...(await libraryMats()), ...extra.mats };
         return {
             mats,
+            challenges: (await listKind('challenges', ['.json'])).map((n) => n.slice(0, -5)),
             files: {
                 programs: [...(await listKind('programs', ['.llsp3'])), ...extra.programs],
                 scenes: [...Object.keys(mats), ...extra.scenes],
@@ -96,6 +102,14 @@ export function createLessonsApi({ libraryDir, docsDir, schemaFile, sendJson, se
             '### Lessons already here',
             '',
             ...(await listKind('lessons', ['.json'])).map((n) => `- \`${n}\``),
+            '',
+            '### Challenges already here',
+            '',
+            "A challenge's id is its file name without `.json`.",
+            '',
+            ...(await challengeList()).map(
+                (c) => `- \`${c.name}\`: ${c.title ?? ''}${c.draft ? ' (draft)' : ''}`
+            ),
             '',
             '### Check values',
             '',
@@ -160,6 +174,63 @@ export function createLessonsApi({ libraryDir, docsDir, schemaFile, sendJson, se
         return { ...result, title: lesson?.title, files: packaged };
     }
 
+    async function challengeList() {
+        const list = [];
+        for (const name of await listKind('challenges', ['.json'])) {
+            try {
+                const json = JSON.parse(
+                    await fsp.readFile(path.join(libraryDir, 'challenges', name), 'utf8')
+                );
+                list.push({ name, title: json.title, draft: !!json.draft });
+            } catch {
+                list.push({ name });
+            }
+        }
+        return list;
+    }
+
+    async function checkChallenge(body) {
+        let challenge;
+        try {
+            challenge = JSON.parse(body.toString('utf8'));
+        } catch {
+            return { errors: ['That is not JSON'], warnings: [] };
+        }
+        const ctx = await context();
+        const result = challengeProblems(challenge, ctx);
+        if (challenge?.field && challenge?.check && !ctx.mats[challenge.field]) {
+            result.warnings.push(
+                `Couldn't find the mat size of ${challenge.field}, so the check's zones weren't checked against the mat`
+            );
+        }
+        return { ...result, title: challenge?.title };
+    }
+
+    async function handleChallenges(req, res, parts) {
+        if (parts[0] === 'schema' && parts.length === 1 && req.method === 'GET') {
+            send(
+                res,
+                200,
+                await fsp.readFile(challengeSchemaFile),
+                'application/json; charset=utf-8'
+            );
+            return;
+        }
+        if (parts[0] === 'check' && parts.length === 1 && req.method === 'POST') {
+            let body;
+            try {
+                body = await readBody(req);
+            } catch {
+                sendJson(res, 413, { error: 'Too large' });
+                return;
+            }
+            const result = await checkChallenge(body);
+            sendJson(res, 200, { ok: result.errors.length === 0, ...result });
+            return;
+        }
+        sendJson(res, 404, { error: 'Not found' });
+    }
+
     async function handle(req, res, parts) {
         if (parts[0] === 'guide' && parts.length === 1 && req.method === 'GET') {
             send(res, 200, await guide(), 'text/markdown; charset=utf-8', {
@@ -190,5 +261,5 @@ export function createLessonsApi({ libraryDir, docsDir, schemaFile, sendJson, se
         sendJson(res, 404, { error: 'Not found' });
     }
 
-    return { handle, context, guide, checkUpload };
+    return { handle, handleChallenges, context, guide, checkUpload, checkChallenge };
 }

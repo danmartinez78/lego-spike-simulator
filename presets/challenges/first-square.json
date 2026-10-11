@@ -1,0 +1,32 @@
+{
+    "schema": "spike-challenge/1",
+    "title": "Back where you started",
+    "level": 1,
+    "skill": "Basics",
+    "order": 1,
+    "goal": "Drive a square and finish within 5 cm of where you started, facing the same way (within 10°).",
+    "field": "Practice - start box.spk",
+    "example": "01 Drive a square.llsp3",
+    "hints": [
+        "A square is four sides and four quarter turns.",
+        "Steering 100 for 180 degrees turns this robot about a quarter turn.",
+        "Use a repeat block so you only write one side."
+    ],
+    "check": {
+        "realism": "ideal",
+        "needed": 5,
+        "stop": {
+            "zone": {
+                "kind": "circle",
+                "x": -900,
+                "z": 300,
+                "radius": 50,
+                "label": "start"
+            },
+            "heading": {
+                "value": 0,
+                "tolerance": 10
+            }
+        }
+    }
+}

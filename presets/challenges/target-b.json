@@ -1,0 +1,28 @@
+{
+    "schema": "spike-challenge/1",
+    "title": "Turn to target B",
+    "level": 2,
+    "skill": "Driving",
+    "order": 3,
+    "goal": "Reach target B (it needs a turn) and stop inside the 6 cm ring, 4 out of 5 times, on Realistic.",
+    "field": "Practice - accuracy targets.spk",
+    "example": "08 Mission template.llsp3",
+    "hints": [
+        "Plan the route with the measure tool: it tells you each drive and turn.",
+        "A turn that is a few degrees off sends the robot centimetres off at the end. Try a gyro turn.",
+        "Use the DriveStraight and TurnRight My Blocks from the mission template example."
+    ],
+    "check": {
+        "realism": "realistic",
+        "needed": 4,
+        "stop": {
+            "zone": {
+                "kind": "circle",
+                "x": -500,
+                "z": -150,
+                "radius": 60,
+                "label": "B"
+            }
+        }
+    }
+}
