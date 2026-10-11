@@ -145,6 +145,19 @@ export const newCode = (id: string) => rosterRequest('POST', `/${id}/code`);
 export const renameStudent = (id: string, name: string) =>
     rosterRequest('PATCH', `/${id}`, { name });
 export const removeStudent = (id: string) => rosterRequest('DELETE', `/${id}`);
+export const newCodesForEveryone = () => rosterRequest('POST', '/codes');
+
+// The site's address for a backup zip: the team (roster, progress, handed-in
+// programs, assignments) and the shared library.
+export const backupUrl = 'api/admin/backup';
+
+// Names that look like a full surname ("Maya Rodriguez" rather than "Maya R.").
+export function fullNames(names: string[]) {
+    return names.filter((name) => {
+        const words = name.trim().split(/\s+/);
+        return words.length > 1 && words.slice(1).some((w) => w.replace(/\./g, '').length > 2);
+    });
+}
 
 // The simulator's address, worked out from the coach page's address.
 export function siteAddress() {

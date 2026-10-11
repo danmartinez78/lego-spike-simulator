@@ -96,6 +96,12 @@ export function createTeam({ teamDir, sendJson, readBody, onRemove }) {
     }
     function failed(req) {
         const key = clientAddress(req);
+        // Forget old entries so the map can't grow without end.
+        if (failures.size > 10000) {
+            for (const [k, v] of failures) {
+                if (Date.now() - v.since > 10 * 60 * 1000) failures.delete(k);
+            }
+        }
         const entry = failures.get(key);
         if (!entry || Date.now() - entry.since > 10 * 60 * 1000) {
             failures.set(key, { count: 1, since: Date.now() });
@@ -141,6 +147,14 @@ export function createTeam({ teamDir, sendJson, readBody, onRemove }) {
             });
             await save(roster);
             console.log(`${who} added ${added.length} student(s)`);
+            sendJson(res, 200, roster);
+            return;
+        }
+        if (parts.length === 1 && parts[0] === 'codes' && req.method === 'POST') {
+            // A new season: everyone gets a new code and the old ones stop working.
+            for (const student of roster.students) student.code = newCode(roster);
+            await save(roster);
+            console.log(`${who} gave every student a new code`);
             sendJson(res, 200, roster);
             return;
         }

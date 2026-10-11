@@ -24,7 +24,7 @@
 
     let canRender = false;
     let gl: WebGL | undefined;
-    let droppedFrames = 0;
+    let _droppedFrames = 0;
     let lastFrame: number = 0;
     let mapTexture: MapTexture | null = null;
     let cameraMatrix: m4.Matrix4 = getCameraMatrix(lightSensorId, $componentStore.robotModel);
@@ -214,7 +214,7 @@
         // Aim for 30 fps
         const frames = Math.round(frameTime / 33);
         if (frames > 1 && lastFrame > 0) {
-            droppedFrames++;
+            _droppedFrames++;
             // TODO: Drop the model detail
         }
         lastFrame = timestamp;
