@@ -60,6 +60,8 @@ export interface LibraryEntry {
     card?: LessonCard;
     lesson?: Lesson;
     challenge?: ChallengeFile;
+    // Robots and scenes an AI assistant added: the coach it worked for.
+    author?: string;
 }
 
 export interface LibraryIndex {

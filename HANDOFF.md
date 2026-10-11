@@ -70,7 +70,13 @@
     sign-in as `/api/admin`; for people it needs a separate Access app on
     `/mcp` with Managed OAuth, whose AUD is added to `CF_ACCESS_AUD`
     (comma-separated). The coach page's AI assistants tab explains connecting an
-    assistant and the package-and-import route for chatbots without MCP. Next: homework and asset tools.
+    assistant and the package-and-import route for chatbots without MCP. It also sets homework as
+    drafts (`draft` on the assignment; students' `/api/student/homework` skips
+    them) and reads progress, and adds robots and fields: `save_field` draws a
+    mat from a JSON description (`server/fields.mjs`, format in
+    `docs/fields.md`; PNG inside `mat.jpg`, which browsers decode by content)
+    into a `.spk` (`server/zip.mjs`). Which robots and fields an assistant
+    added is in `LIBRARY_DIR/.assistant-files.json` (`server/authors.mjs`).
 -   Students (coach page, Students tab): paste names, each gets a random code
     (`WORD-WORD-NN`); print cut-out code cards with a sign-in QR, copy one
     student's link, or export a CSV for a mail merge. Stored in plain text in

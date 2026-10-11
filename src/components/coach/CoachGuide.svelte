@@ -100,8 +100,9 @@
                 </ol>
                 <p class="font-medium text-gray-900">Drafts and publishing</p>
                 <p>
-                    Anything new, imported or written by an AI assistant starts as a
-                    <b>draft</b>, marked with a grey Draft badge. Students can't see drafts. Press
+                    New and imported lessons and challenges, and anything an AI assistant writes or
+                    sets as homework, start as a <b>draft</b>, marked with a grey Draft badge.
+                    Students can't see drafts. Press
                     <b>Publish</b> when it's ready, and <b>Unpublish</b> to hide it again without losing
                     it.
                 </p>
@@ -201,6 +202,10 @@
                     Progress only reaches you if the student is signed in. Without a code it stays
                     in their browser.
                 </p>
+                <p>
+                    Homework an AI assistant sets is a draft until you press <b>Publish</b> on it. An
+                    assistant can also read this progress, so you can ask it who still has work to do.
+                </p>
                 <Button size="xs" color="light" class="self-start" on:click={() => go('homework')}
                     >Go to Homework</Button
                 >
@@ -248,6 +253,11 @@
                         under "Save to the shared library" (shown to coaches only). It's added here.
                     </li>
                     <li>
+                        An AI assistant can draw a new field from a description (lines, shapes,
+                        labels, the robot's start, walls and blocks) or add robot and scene files.
+                        These are ready to use at once and marked "From an assistant".
+                    </li>
+                    <li>
                         Lessons and challenges refer to fields and robots by file name, so renaming
                         or deleting one can break them. They show a warning badge when that happens.
                     </li>
@@ -261,14 +271,16 @@
                 <h3 class="text-base font-semibold text-gray-900">AI assistants</h3>
                 <p>
                     An AI assistant such as Claude, ChatGPT or Copilot can write lessons and
-                    challenges for you, checks included. Connect it to this site with the connector
-                    address on the AI assistants tab and it can read the library and save straight
-                    here. Or have any chatbot make a file and import it.
+                    challenges (checks included), set homework, check on students' progress, and add
+                    robots and fields. Connect it to this site with the connector address on the AI
+                    assistants tab and it can read the library and save straight here. Or have any
+                    chatbot make a lesson or challenge file and import it.
                 </p>
                 <p>
-                    Everything an assistant saves is a draft with your email on it, shown with a
-                    purple "From an assistant" badge. Look it over, especially the check on the mat,
-                    then publish it.
+                    Everything an assistant saves has your email on it, shown with a purple "From an
+                    assistant" badge. Lessons, challenges and homework are drafts: look them over,
+                    especially the check on the mat, then publish them. Robots and fields are ready
+                    to use as soon as they're saved.
                 </p>
                 <Button size="xs" color="light" class="self-start" on:click={() => go('agents')}
                     >Go to AI assistants</Button

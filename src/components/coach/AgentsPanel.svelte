@@ -40,7 +40,16 @@
         ['get_lesson, get_challenge', 'Read an existing one, to copy or improve it'],
         ['check_lesson, check_challenge', 'Check for mistakes without saving'],
         ['save_lesson, save_challenge', 'Save as a draft, with your name on it'],
-        ['delete_lesson, delete_challenge', 'Delete one of your own drafts']
+        ['delete_lesson, delete_challenge', 'Delete one of your own drafts'],
+        ['list_homework', "Homework with each student's progress, lesson by lesson"],
+        ['save_homework, delete_homework', 'Set homework as a draft, or delete your own draft'],
+        ['get_field_guide, check_field', 'How to describe a field (a practice mat), and check one'],
+        [
+            'save_field, get_field',
+            'Draw a new field from a description, or read one back to change it'
+        ],
+        ['upload_field, upload_robot', 'Add an existing .spk scene or .mpd/.ldr robot model'],
+        ['delete_field, delete_robot', 'Delete a field or robot your assistant added']
     ];
 
     const claudeCode = `claude mcp add --transport http spike ${mcpUrl}`;
@@ -55,7 +64,10 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
         'Look at the "Sample lesson - Drive a square" lesson and make a harder version that uses a My Block.',
         'Make three short lessons on the colour sensor for beginners, using the colour stops field.',
         'Make a tricky challenge on the mini missions field: drive through P1, avoid the walls and park in P2 within 20 seconds.',
-        'Look at the "Hit target A" challenge and make an easier version for beginners.'
+        'Look at the "Hit target A" challenge and make an easier version for beginners.',
+        'Set the two colour sensor lessons as homework due next Friday.',
+        "Who hasn't finished this week's homework yet?",
+        'Make a line-following field with an oval, a figure eight and a finish box, then a challenge on it.'
     ];
 
     let copied = '';
@@ -77,9 +89,12 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
     <div>
         <h2 class="text-lg font-semibold">AI assistants</h2>
         <p class="text-gray-600 text-sm">
-            An AI assistant can write lessons and challenges for you, checks included. There are two
-            ways to use one. Either way, what it makes arrives as a <strong>draft</strong>: students
-            can't see it until you look it over on the Lessons tab and press Publish.
+            An AI assistant can write lessons and challenges for you (checks included), set homework
+            and see how students are getting on, and add robots and fields. There are two ways to
+            use one. Lessons, challenges and homework it makes arrive as
+            <strong>drafts</strong>: students can't see them until you look them over and press
+            Publish. Robots and fields go into the library straight away, marked "From an assistant"
+            on the Robots and maps tab.
         </p>
     </div>
 
@@ -88,7 +103,7 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
             <h3 class="font-semibold">1. Connect your assistant to the site (MCP)</h3>
             <p class="text-sm text-gray-600">
                 Best if your assistant supports custom connectors or MCP servers. It can then read
-                the library, check lessons and save them here directly.
+                the library and homework progress, check its work and save it here directly.
             </p>
         </div>
 
@@ -121,8 +136,9 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
 
         <p class="text-sm text-gray-700">
             When you connect, a sign-in page opens. Use the same email as for this page; you'll get
-            a code by email. Lessons the assistant saves show your email, and it can only change or
-            delete its own drafts, never published lessons.
+            a code by email. Everything the assistant saves shows your email, and it can only change
+            or delete what your assistant made: never published lessons, challenges or homework, or
+            other coaches' work.
         </p>
         <p class="text-sm text-gray-600">
             If sign-in fails with a "redirect" error, the site owner needs to allow that assistant
@@ -176,7 +192,8 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
         <p class="text-sm text-gray-700">
             <strong>For a challenge</strong>, ask for a challenge JSON instead (the guide covers
             both) and have it checked at <code class="break-all">{challengeCheckUrl}</code>. Then
-            use <strong>Import a challenge</strong> on the Challenges tab.
+            use <strong>Import a challenge</strong> on the Challenges tab. Homework and new fields need
+            the connector (way 1).
         </p>
     </div>
 
@@ -187,8 +204,5 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
                 <li>"{e}"</li>
             {/each}
         </ul>
-        <p class="text-sm text-gray-600">
-            Homework and robot and map uploads are coming to the connector next.
-        </p>
     </div>
 </section>

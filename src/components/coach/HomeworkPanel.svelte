@@ -71,7 +71,10 @@
                     : await updateAssignment(editing, input);
             assignments = result.assignments;
             failed = false;
-            message = `Saved "${title.trim()}". Students see it at the top of their Lessons window.`;
+            const draft = assignments.find((a) => a.id == editing)?.draft;
+            message = draft
+                ? `Saved "${title.trim()}". It's still a draft: press Publish when students should see it.`
+                : `Saved "${title.trim()}". Students see it at the top of their Lessons window.`;
             editing = '';
         } catch (e) {
             failed = true;
@@ -93,6 +96,19 @@
             assignments = (await deleteAssignment(a.id)).assignments;
             failed = false;
             message = `Deleted "${a.title}".`;
+        } catch (e) {
+            failed = true;
+            message = (e as Error).message;
+        }
+    }
+
+    async function togglePublished(a: Assignment) {
+        try {
+            assignments = (await updateAssignment(a.id, { ...a, draft: !a.draft })).assignments;
+            failed = false;
+            message = a.draft
+                ? `"${a.title}" is published. Students see it at the top of their Lessons window.`
+                : `"${a.title}" is a draft again. Students can't see it.`;
         } catch (e) {
             failed = true;
             message = (e as Error).message;
@@ -251,7 +267,22 @@
         <article class="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <header class="px-4 py-3 flex flex-row flex-wrap items-start gap-3 border-b">
                 <div class="flex-1 min-w-[12rem]">
-                    <h3 class="font-semibold">{a.title}</h3>
+                    <h3 class="font-semibold flex flex-row flex-wrap items-center gap-2">
+                        {a.title}
+                        {#if a.draft}
+                            <span
+                                class="text-xs font-medium rounded-full px-2 py-0.5 bg-gray-200 text-gray-700"
+                                >Draft</span
+                            >
+                        {/if}
+                        {#if a.author}
+                            <span
+                                class="text-xs font-medium rounded-full px-2 py-0.5 bg-purple-100 text-purple-800"
+                                title="Saved by an AI assistant for this coach"
+                                >From an assistant · {a.author}</span
+                            >
+                        {/if}
+                    </h3>
                     <div class="text-sm text-gray-600 flex flex-row flex-wrap gap-x-3">
                         {#if a.due}
                             <span class={isOverdue(a.due) ? 'text-red-700' : ''}
@@ -272,6 +303,12 @@
                 </div>
                 <div class="flex flex-row gap-2">
                     <Button size="xs" color="light" on:click={() => startEdit(a)}>Edit</Button>
+                    <Button
+                        size="xs"
+                        color={a.draft ? 'green' : 'light'}
+                        on:click={() => togglePublished(a)}
+                        >{a.draft ? 'Publish' : 'Unpublish'}</Button
+                    >
                     <Button size="xs" color="red" outline on:click={() => remove(a)}>Delete</Button>
                 </div>
             </header>
