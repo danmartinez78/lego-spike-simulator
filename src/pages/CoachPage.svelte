@@ -12,6 +12,7 @@
     import AgentsPanel from '$components/coach/AgentsPanel.svelte';
     import ChallengesPanel from '$components/coach/ChallengesPanel.svelte';
     import CodeCards from '$components/coach/CodeCards.svelte';
+    import CoachGuide from '$components/coach/CoachGuide.svelte';
     import { tick } from 'svelte';
     import type { Student } from '$lib/team';
     import { askConfirm } from '$lib/confirm';
@@ -76,7 +77,7 @@
             kind: 'programs',
             title: 'Example programs',
             icon: 'icons/Library.svg',
-            empty: 'No example programs yet. Upload a .llsp3 program, then add its lesson card.',
+            empty: 'No example programs yet. Upload a .llsp3 program, then add its explanation.',
             extensions: ['.llsp3'],
             upload: 'Upload a program (.llsp3)'
         }
@@ -115,7 +116,7 @@
         },
         examples: {
             title: 'Example programs',
-            about: 'Starter programs students open from the Examples window. Give each one a lesson card that explains what it does and what to try.'
+            about: 'Starter programs students open from the Examples window. Give each one an explanation of what it does and what to try.'
         },
         assets: {
             title: 'Robots and maps',
@@ -123,6 +124,26 @@
         }
     };
     let view: View = 'lessons';
+    let guideOpen = false;
+    let guideSection: View | 'start' = 'start';
+
+    function openGuide(section: View | 'start') {
+        guideSection = section;
+        guideOpen = true;
+    }
+
+    // Show the guide once, the first time a coach signs in on this browser.
+    const guideSeenKey = 'spike-sim-coach-guide-seen';
+    $: if ($libraryStore.writer && !loading) firstVisit();
+    function firstVisit() {
+        try {
+            if (localStorage.getItem(guideSeenKey)) return;
+            localStorage.setItem(guideSeenKey, '1');
+        } catch {
+            return;
+        }
+        openGuide('start');
+    }
 
     function showView(id: View) {
         view = id;
@@ -266,7 +287,7 @@
         const what = title ? `"${title}" (${entry.name})` : entry.name;
         const used = kind == 'lessons' ? [] : challengesUsing(kind, entry.name);
         const lessons = lessonsUsing(kind, entry.name);
-        let extra = kind == 'programs' ? ' Its lesson card is deleted too.' : '';
+        let extra = kind == 'programs' ? ' Its explanation is deleted too.' : '';
         if (used.length > 0) {
             extra += ` ${used.length} challenge card${used.length == 1 ? '' : 's'} (${used.map((c) => c.title).join(', ')}) use${used.length == 1 ? 's' : ''} it.`;
         }
@@ -488,7 +509,7 @@
         await run(
             `card ${cardProgram}`,
             () => saveLessonCard(cardProgram, card),
-            `Saved the lesson card for "${card.title}".`
+            `Saved the explanation for "${card.title}".`
         );
         cardSaving = false;
         if (!failed) cardOpen = false;
@@ -513,6 +534,9 @@
                     >{#if $libraryStore.writer.startsWith('lan ')}Signed in from the home network{:else}Signed
                         in as <b>{$libraryStore.writer}</b>{/if}</span
                 >
+            {/if}
+            {#if $libraryStore.writer}
+                <Button color="light" size="sm" on:click={() => openGuide(view)}>Guide</Button>
             {/if}
             <Button href="./" color="light" size="sm">Open the simulator</Button>
         </div>
@@ -741,7 +765,7 @@
                                                 {#if active == 'programs' && !entry.card}
                                                     <span
                                                         class="text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800"
-                                                        >No lesson card</span
+                                                        >No explanation</span
                                                     >
                                                 {/if}
                                             </div>
@@ -781,7 +805,7 @@
                                                         ? `${usedBy.length} challenge${usedBy.length == 1 ? '' : 's'}`
                                                         : '',
                                                     cards.length > 0
-                                                        ? `${cards.length} lesson card${cards.length == 1 ? '' : 's'}`
+                                                        ? `${cards.length} example program${cards.length == 1 ? '' : 's'}`
                                                         : '',
                                                     lessons.length > 0
                                                         ? `${lessons.length} lesson${lessons.length == 1 ? '' : 's'}`
@@ -801,8 +825,8 @@
                                                     disabled={busy != ''}
                                                     on:click={() => editCard(entry)}
                                                     >{entry.card
-                                                        ? 'Edit lesson card'
-                                                        : 'Add lesson card'}</Button
+                                                        ? 'Edit explanation'
+                                                        : 'Add an explanation'}</Button
                                                 >
                                             {/if}
                                             {#if hasDefault}
@@ -903,5 +927,10 @@
     {topics}
     saving={lessonSaving}
     on:save={(e) => saveLessonForm(e.detail)}
+/>
+<CoachGuide
+    bind:open={guideOpen}
+    section={guideSection}
+    on:go={(e) => e.detail != 'start' && showView(e.detail)}
 />
 <ConfirmDialog />

@@ -1,5 +1,5 @@
 <script lang="ts">
-    // Form for the lesson card shown with an example program in the Examples window.
+    // Form for the explanation (lesson card) shown with an example program in the Examples window.
     import { createEventDispatcher } from 'svelte';
     import { Button, Input, Label, Modal, Select, Textarea } from 'flowbite-svelte';
     import type { LessonCard } from '$lib/library';
@@ -80,7 +80,7 @@
 </script>
 
 <Modal
-    title={card ? 'Edit lesson card' : 'Add a lesson card'}
+    title={card ? 'Edit the explanation' : 'Explain this example'}
     bind:open
     size="lg"
     backdropClass="fixed inset-0 z-40 bg-gray-900 bg-opacity-50"
