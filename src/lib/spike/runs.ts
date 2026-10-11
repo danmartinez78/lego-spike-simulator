@@ -7,12 +7,16 @@ export interface PathPoint {
     x: number;
     z: number;
     rotation: number;
+    // Where each colour sensor was on the mat, by port, as [x, z].
+    sensors?: Record<string, [number, number]>;
 }
 
 export interface RunPath {
     seed: number | undefined;
     points: PathPoint[];
     timedOut: boolean;
+    // How long the run took, in simulated seconds (not counting the idle end).
+    seconds?: number;
 }
 
 export interface RunBatch {
@@ -62,7 +66,13 @@ export function cancelBatch() {
     }));
 }
 
-export function recordPoint(path: RunPath, x: number, z: number, rotation: number) {
+export function recordPoint(
+    path: RunPath,
+    x: number,
+    z: number,
+    rotation: number,
+    sensors?: Record<string, [number, number]>
+) {
     const last = path.points[path.points.length - 1];
     if (last) {
         const dx = last.x - x;
@@ -71,7 +81,20 @@ export function recordPoint(path: RunPath, x: number, z: number, rotation: numbe
             return;
         }
     }
-    path.points.push({ x, z, rotation });
+    path.points.push(sensors ? { x, z, rotation, sensors } : { x, z, rotation });
+}
+
+// A point given in the robot's own frame (mm), placed on the mat. Matches how
+// the simulator turns the robot (m4.yRotation).
+export function robotToMat(
+    local: { x: number; z: number },
+    position: { x: number; z: number },
+    rotation: number
+): [number, number] {
+    const a = (rotation * Math.PI) / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    return [position.x + c * local.x + s * local.z, position.z - s * local.x + c * local.z];
 }
 
 // ---- Summaries and A vs B comparison -----------------------------------

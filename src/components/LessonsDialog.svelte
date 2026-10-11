@@ -25,10 +25,13 @@
         programRequest,
         type LibraryEntry
     } from '$lib/library';
-    import { openChallenge, progressStore } from '$lib/spike/challenges';
+    import { activeChallenge, openChallenge, progressStore } from '$lib/spike/challenges';
+    import { applyPreset } from '$lib/spike/realism';
     import {
         challengeFor,
         groupLessons,
+        isPublished,
+        lessonCheck,
         lessonProgress,
         lessonStatus,
         missingFiles,
@@ -82,6 +85,28 @@
         openChallenge(challenge.id);
     }
 
+    // Load the lesson's field and robot and make its check the active one.
+    // The student's program stays as it is.
+    async function startCheck() {
+        if (!selected?.lesson) return;
+        const check = lessonCheck(selected.name, selected.lesson);
+        if (!check) return;
+        busy = true;
+        message = '';
+        try {
+            await loadSceneFromLibrary(check.field);
+            if (check.robot) await loadRobotFromLibrary(check.robot);
+            applyPreset(check.realism);
+            activeChallenge.set(check);
+            modalOpen = false;
+            dispatch('setup');
+        } catch (e) {
+            message = `Could not set up the check: ${(e as Error).message}`;
+        } finally {
+            busy = false;
+        }
+    }
+
     function choose(entry: LibraryEntry) {
         selected = entry;
         message = '';
@@ -125,7 +150,8 @@
             Promise.all([refreshLibrary(), refreshHomework()]).then(([state]) => {
                 if (selected) return;
                 const first =
-                    homework[0]?.entries[0] ?? groupLessons(state.index.lessons)[0]?.entries[0];
+                    homework[0]?.entries[0] ??
+                    groupLessons(state.index.lessons.filter(isPublished))[0]?.entries[0];
                 if (first) selected = first;
             });
         }
@@ -143,7 +169,7 @@
             .map((assignment) => {
                 const entries = assignment.lessons
                     .map((name) => lessons.find((l) => l.name == name))
-                    .filter((e): e is LibraryEntry => !!e?.lesson);
+                    .filter((e): e is LibraryEntry => !!e && isPublished(e));
                 const done = entries.filter(
                     (e) => e.lesson && lessonStatus(e.name, e.lesson, progress, passed) == 'done'
                 ).length;
@@ -153,13 +179,10 @@
     }
 
     $: opened(modalOpen);
-    $: groups = groupLessons($libraryStore.index.lessons);
-    $: homework = homeworkLessons(
-        $homeworkStore,
-        $libraryStore.index.lessons,
-        $lessonProgress,
-        $progressStore
-    );
+    // Drafts are for coaches only.
+    $: published = $libraryStore.index.lessons.filter(isPublished);
+    $: groups = groupLessons(published);
+    $: homework = homeworkLessons($homeworkStore, published, $lessonProgress, $progressStore);
     $: allEntries = groups.flatMap((g) => g.entries);
     $: lesson = selected?.lesson;
     $: position = selected ? allEntries.findIndex((e) => e.name == selected?.name) + 1 : 0;
@@ -314,6 +337,10 @@
                             on:setup={setUp}
                             on:toggle={(e) => selected && toggleStep(selected.name, e.detail)}
                             on:challenge={showChallenge}
+                            on:check={startCheck}
+                            checkResult={selected
+                                ? $lessonProgress[selected.name]?.check
+                                : undefined}
                             signedIn={!!$studentStore}
                             handedInAt={selected ? $handedIn[selected.name] : undefined}
                             on:handin={handInProgram}

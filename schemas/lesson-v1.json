@@ -2,18 +2,31 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://spike.robodan.dev/schemas/lesson-v1.json",
     "title": "LEGO SPIKE Simulator lesson",
-    "description": "A lesson students work through in the simulator's Lessons window. See docs/lessons.md.",
+    "description": "A lesson students work through in the simulator's Lessons window, with an optional check of their runs. See docs/lessons.md or /api/lessons/guide.",
     "type": "object",
     "required": ["schema", "title", "steps"],
     "properties": {
-        "schema": { "const": "spike-lesson/1" },
-        "title": { "type": "string", "minLength": 1, "description": "Shown as the lesson's name." },
+        "schema": {
+            "const": "spike-lesson/1"
+        },
+        "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shown as the lesson's name.",
+            "maxLength": 80
+        },
         "topic": {
             "type": "string",
             "description": "Groups lessons, for example Basics, Sensors, Gyro or Missions."
         },
-        "order": { "type": "number", "description": "Position within the topic, lowest first." },
-        "summary": { "type": "string", "description": "One line shown in the lesson list." },
+        "order": {
+            "type": "number",
+            "description": "Position within the topic, lowest first."
+        },
+        "summary": {
+            "type": "string",
+            "description": "One line shown in the lesson list."
+        },
         "steps": {
             "type": "array",
             "minItems": 1,
@@ -22,7 +35,9 @@
                 "type": "object",
                 "required": ["text"],
                 "properties": {
-                    "title": { "type": "string" },
+                    "title": {
+                        "type": "string"
+                    },
                     "text": {
                         "type": "string",
                         "minLength": 1,
@@ -45,7 +60,228 @@
         },
         "challenge": {
             "type": "string",
-            "description": "Id of a built-in challenge the simulator checks, for example first-square."
+            "description": "Older lessons: id of a built-in challenge card, for example first-square. New lessons use check."
+        },
+        "draft": {
+            "type": "boolean",
+            "description": "true hides the lesson from students. Imported lessons always start as drafts."
+        },
+        "check": {
+            "type": "object",
+            "description": "How the simulator checks the student's 5 runs. Needs a field, realism, needed and at least one rule.",
+            "required": ["realism", "needed"],
+            "additionalProperties": false,
+            "properties": {
+                "realism": {
+                    "enum": ["ideal", "realistic", "challenging"]
+                },
+                "needed": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "description": "Runs out of 5 that must pass."
+                },
+                "stop": {
+                    "type": "object",
+                    "required": ["zone"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "zone": {
+                            "$ref": "#/$defs/zone"
+                        },
+                        "heading": {
+                            "type": "object",
+                            "required": ["value", "tolerance"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "value": {
+                                    "type": "number",
+                                    "description": "Degrees: 0 up the mat, 90 right."
+                                },
+                                "tolerance": {
+                                    "type": "number",
+                                    "minimum": 1,
+                                    "maximum": 90
+                                }
+                            }
+                        }
+                    }
+                },
+                "waypoints": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {
+                        "$ref": "#/$defs/zone"
+                    },
+                    "description": "Zones the robot's centre must pass through, in order."
+                },
+                "avoid": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {
+                        "$ref": "#/$defs/zone"
+                    },
+                    "description": "Zones the robot's centre must never enter."
+                },
+                "follow": {
+                    "type": "object",
+                    "required": ["path", "width", "share"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "path": {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 200,
+                            "items": {
+                                "type": "object",
+                                "required": ["x", "z"],
+                                "properties": {
+                                    "x": {
+                                        "type": "number"
+                                    },
+                                    "z": {
+                                        "type": "number"
+                                    }
+                                },
+                                "additionalProperties": false
+                            },
+                            "description": "The line, from start to end, in mm."
+                        },
+                        "width": {
+                            "type": "number",
+                            "minimum": 5,
+                            "maximum": 200,
+                            "description": "How far (mm) the colour sensor may be from the line."
+                        },
+                        "share": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 1,
+                            "description": "Share of the way the sensor must stay within width."
+                        },
+                        "sensor": {
+                            "enum": ["A", "B", "C", "D", "E", "F"],
+                            "description": "Colour sensor port, if the robot has more than one."
+                        }
+                    }
+                },
+                "timeLimit": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 150,
+                    "description": "Seconds the program may take."
+                },
+                "blocks": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "use": {
+                            "type": "array",
+                            "items": {
+                                "enum": [
+                                    "repeat",
+                                    "repeat-until",
+                                    "forever",
+                                    "if",
+                                    "wait-until",
+                                    "wait",
+                                    "my-block",
+                                    "variable",
+                                    "maths",
+                                    "colour-sensor",
+                                    "distance-sensor",
+                                    "force-sensor",
+                                    "gyro",
+                                    "move-for",
+                                    "start-moving",
+                                    "motor"
+                                ]
+                            }
+                        },
+                        "avoid": {
+                            "type": "array",
+                            "items": {
+                                "enum": [
+                                    "repeat",
+                                    "repeat-until",
+                                    "forever",
+                                    "if",
+                                    "wait-until",
+                                    "wait",
+                                    "my-block",
+                                    "variable",
+                                    "maths",
+                                    "colour-sensor",
+                                    "distance-sensor",
+                                    "force-sensor",
+                                    "gyro",
+                                    "move-for",
+                                    "start-moving",
+                                    "motor"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "zone": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": ["kind", "x", "z", "radius"],
+                    "properties": {
+                        "kind": {
+                            "const": "circle"
+                        },
+                        "x": {
+                            "type": "number"
+                        },
+                        "z": {
+                            "type": "number"
+                        },
+                        "radius": {
+                            "type": "number",
+                            "minimum": 10,
+                            "maximum": 1000
+                        },
+                        "label": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "required": ["kind", "x1", "z1", "x2", "z2"],
+                    "properties": {
+                        "kind": {
+                            "const": "box"
+                        },
+                        "x1": {
+                            "type": "number"
+                        },
+                        "z1": {
+                            "type": "number"
+                        },
+                        "x2": {
+                            "type": "number"
+                        },
+                        "z2": {
+                            "type": "number"
+                        },
+                        "label": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            ],
+            "description": "A circle or a box on the mat, in mm from the mat's centre (x right, z down the mat picture)."
         }
     }
 }

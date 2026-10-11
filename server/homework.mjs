@@ -67,9 +67,17 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
             if (!lessonBase(name) || !value || !Array.isArray(value.steps)) continue;
             const steps = value.steps.filter((s) => Number.isInteger(s) && s >= 0 && s < 100);
             const updated = typeof value.updated === 'string' ? value.updated : '';
-            if (!lessons[name] || (lessons[name].updated ?? '') <= updated) {
+            const before = lessons[name];
+            if (!before || (before.updated ?? '') <= updated) {
                 lessons[name] = { steps: [...new Set(steps)], updated };
             }
+            // The lesson's check result only ever improves.
+            const best = Math.max(
+                before?.check?.best ?? 0,
+                Math.min(5, Number(value.check?.best) || 0)
+            );
+            const passed = !!before?.check?.passed || value.check?.passed === true;
+            if (best > 0 || passed) lessons[name].check = { best, passed };
         }
         const challenges = { ...old.challenges };
         for (const [id, value] of Object.entries(incoming?.challenges ?? {})) {

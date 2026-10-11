@@ -3,6 +3,7 @@
 // and everything here quietly reports that no library is available.
 
 import { get, writable } from 'svelte/store';
+import type { Check } from '$lib/spike/checks';
 import JSZip from 'jszip';
 import {
     componentStore,
@@ -41,7 +42,12 @@ export interface Lesson {
     program?: string;
     field?: string;
     robot?: string;
+    // A built-in challenge card the lesson ends with (older lessons).
     challenge?: string;
+    // How the simulator checks the student's runs (see docs/lessons.md).
+    check?: Check;
+    // Drafts are only shown to coaches.
+    draft?: boolean;
 }
 
 export interface LibraryEntry {
@@ -321,4 +327,34 @@ export function setProgramBuilder(builder: () => Promise<Blob | undefined>) {
 
 export async function currentProgram(): Promise<Blob | undefined> {
     return programBuilder ? await programBuilder() : undefined;
+}
+
+// ---- Mat pictures, for drawing checks ---------------------------------------
+
+export interface MatPicture {
+    width: number;
+    height: number;
+    map?: Blob;
+}
+
+const matCache = new Map<string, Promise<MatPicture>>();
+
+// The mat picture and size of a library scene (cached; scenes rarely change).
+export function readMat(sceneName: string): Promise<MatPicture> {
+    const modified = get(libraryStore).index.scenes.find((e) => e.name == sceneName)?.modified;
+    const key = `${sceneName}@${modified}`;
+    let mat = matCache.get(key);
+    if (!mat) {
+        mat = (async () => {
+            const zip = await new JSZip().loadAsync(await fetchEntry('scenes', sceneName));
+            const json = zip.file('scene.json');
+            if (!json) throw new Error(`${sceneName} has no scene.json`);
+            const scene = JSON.parse(await json.async('string'));
+            const map = await zip.file('mat.jpg')?.async('blob');
+            return { width: scene.matWidth ?? 2360, height: scene.matHeight ?? 1140, map };
+        })();
+        mat.catch(() => matCache.delete(key));
+        matCache.set(key, mat);
+    }
+    return mat;
 }

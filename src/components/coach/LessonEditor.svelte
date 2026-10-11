@@ -4,6 +4,8 @@
     import { Button, Input, Label, Modal, Select, Textarea } from 'flowbite-svelte';
     import { ArrowDownOutline, ArrowUpOutline, TrashBinOutline } from 'flowbite-svelte-icons';
     import LessonView from '$components/LessonView.svelte';
+    import CheckEditor from '$components/coach/CheckEditor.svelte';
+    import type { Check } from '$lib/spike/checks';
     import { challenges } from '$lib/spike/challenges';
     import { lessonProblem } from '$lib/lessons';
     import type { Lesson, LessonStep } from '$lib/library';
@@ -27,6 +29,8 @@
     let field = '';
     let robot = '';
     let challenge = '';
+    let check: Check | undefined = undefined;
+    let published = false;
     let problem = '';
 
     // Fill the form each time it opens.
@@ -42,6 +46,9 @@
         field = lesson?.field ?? '';
         robot = lesson?.robot ?? '';
         challenge = lesson?.challenge ?? '';
+        check = lesson?.check ? structuredClone(lesson.check) : undefined;
+        // New lessons start as drafts.
+        published = !!lesson && !lesson.draft;
         problem = '';
     }
 
@@ -65,7 +72,30 @@
         const number = Number(order);
         if (order.trim() && Number.isFinite(number)) result.order = number;
         else delete result.order;
+        if (check && field.trim()) result.check = cleanCheck(check);
+        else delete result.check;
+        if (published) delete result.draft;
+        else result.draft = true;
         return result;
+    }
+
+    // Numbers typed into the form arrive as numbers or text; store numbers,
+    // and drop empty labels.
+    function cleanCheck(c: Check): Check {
+        const copy: Check = structuredClone(c);
+        copy.needed = Number(copy.needed);
+        const zones = [copy.stop?.zone, ...(copy.waypoints ?? []), ...(copy.avoid ?? [])];
+        for (const zone of zones) {
+            if (zone && !zone.label?.trim()) delete zone.label;
+        }
+        if (copy.stop?.heading) {
+            copy.stop.heading = {
+                value: Number(copy.stop.heading.value) || 0,
+                tolerance: Number(copy.stop.heading.tolerance) || 10
+            };
+        }
+        if (copy.follow) copy.follow.width = Number(copy.follow.width);
+        return copy;
     }
 
     function save() {
@@ -74,6 +104,10 @@
             return;
         }
         const result = build();
+        if (check && !field.trim()) {
+            problem = 'Pick a field for the check, or remove the check.';
+            return;
+        }
         const issue = lessonProblem(result);
         if (issue) {
             problem = issue.replace(
@@ -134,7 +168,9 @@
         program,
         field,
         robot,
-        challenge
+        challenge,
+        check,
+        published
     );
 
     function preview(...fields: unknown[]): Lesson {
@@ -154,8 +190,10 @@
     size="xl"
     backdropClass="fixed inset-0 z-40 bg-gray-900 bg-opacity-50"
 >
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- No scroll anchoring: drawing a check adds rows, and the mat must not jump. -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 [overflow-anchor:none]">
         <form class="flex flex-col gap-4" on:submit|preventDefault={save}>
+            <!-- The check and the Save button are below, across the whole window. -->
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div class="sm:col-span-2">
                     <Label for="lesson-title" class="mb-1">Title</Label>
@@ -272,24 +310,20 @@
                         placeholder=""
                     />
                 </div>
-                <div>
-                    <Label for="lesson-challenge" class="mb-1">Challenge</Label>
-                    <Select
-                        id="lesson-challenge"
-                        items={challengeItems}
-                        bind:value={challenge}
-                        placeholder=""
-                    />
-                </div>
+                {#if challenge}
+                    <div>
+                        <Label for="lesson-challenge" class="mb-1"
+                            >Challenge card (older lessons)</Label
+                        >
+                        <Select
+                            id="lesson-challenge"
+                            items={challengeItems}
+                            bind:value={challenge}
+                            placeholder=""
+                        />
+                    </div>
+                {/if}
             </fieldset>
-
-            {#if problem}
-                <p class="text-sm text-red-700" role="alert">{problem}</p>
-            {/if}
-            <div class="flex flex-row gap-2 justify-end">
-                <Button color="light" on:click={() => (open = false)}>Cancel</Button>
-                <Button type="submit" color="blue" disabled={saving}>Save lesson</Button>
-            </div>
         </form>
 
         <aside class="flex flex-col gap-2 min-w-0" aria-label="Preview">
@@ -297,10 +331,35 @@
                 What students see
             </div>
             <div
-                class="rounded-xl border border-gray-200 bg-white p-5 overflow-y-auto max-h-[70dvh]"
+                class="rounded-xl border border-gray-200 bg-white p-5 overflow-y-auto h-[60dvh]"
             >
                 <LessonView lesson={previewLesson} {missing} preview />
             </div>
         </aside>
+    </div>
+    <div class="flex flex-col gap-4 mt-6 border-t pt-4 [overflow-anchor:none]">
+        <fieldset class="flex flex-col gap-2">
+            <legend class="text-sm font-medium text-gray-900 mb-1">
+                Check (optional){field ? ` · on ${field.replace(/\.spk$/i, '')}` : ''}
+            </legend>
+            <CheckEditor bind:check {field} />
+        </fieldset>
+
+        {#if problem}
+            <p class="text-sm text-red-700" role="alert">{problem}</p>
+        {/if}
+        <div class="flex flex-row flex-wrap items-center gap-2 justify-end">
+            <label class="flex flex-row items-center gap-2 text-sm mr-auto">
+                <input type="checkbox" class="rounded" bind:checked={published} />
+                <span
+                    ><b>Published</b>
+                    <span class="text-gray-500"
+                        >{published ? 'Students can see it.' : 'Draft: only coaches see it.'}</span
+                    ></span
+                >
+            </label>
+            <Button color="light" on:click={() => (open = false)}>Cancel</Button>
+            <Button color="blue" disabled={saving} on:click={save}>Save lesson</Button>
+        </div>
     </div>
 </Modal>

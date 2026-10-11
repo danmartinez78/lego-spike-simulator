@@ -41,6 +41,7 @@
         finishRun,
         cancelBatch,
         recordPoint,
+        robotToMat,
         idleSecondsToFinish,
         maxRunSeconds,
         type RunPath
@@ -150,6 +151,42 @@
                 connectWheels(hub, subpart.model);
             }
         }
+    }
+
+    // Where each colour sensor sits in the robot's own frame (mm), by port, so
+    // line-following checks can tell where the sensor went.
+    let sensorOffsets: Record<string, { x: number; z: number }> = {};
+
+    function colourSensorOffsets() {
+        const offsets: Record<string, { x: number; z: number }> = {};
+        const robot = $componentStore.robotModel;
+        if (!robot) return offsets;
+        for (const [port, value] of Object.entries(hub.ports)) {
+            const id = value.light?.id;
+            if (value.type != 'light' || id === undefined) continue;
+            const result = findPartTransform(robot, id);
+            if (!result) continue;
+            const p = m4.transformVector(partMatrix(result.forward), [0.0, 0.0, 0.0, 1.0]);
+            offsets[port] = { x: p[0], z: p[2] };
+        }
+        return offsets;
+    }
+
+    // A part's transform in the robot's frame, in mm (as for the wheels).
+    function partMatrix(forward: m4.Matrix4) {
+        let matrix = m4.identity();
+        if (compiledRobot) {
+            matrix = m4.translate(matrix, 0.0, compiledRobot.bbox.min.y, 0.0);
+            matrix = m4.translate(
+                matrix,
+                compiledRobot.recenter.x,
+                compiledRobot.recenter.y,
+                compiledRobot.recenter.z
+            );
+        }
+        matrix = m4.axisRotate(matrix, [1.0, 0.0, 0.0], Math.PI);
+        matrix = m4.scale(matrix, 0.4, 0.4, 0.4);
+        return m4.multiply(matrix, forward);
     }
 
     function loadWheelTransforms(hub: Hub, robot: Model) {
@@ -282,7 +319,18 @@
             return;
         }
         const robot = scene.robot;
-        recordPoint(currentPath, robot.position!.x, robot.position!.z, robot.rotation ?? 0);
+        let sensorsOnMat: Record<string, [number, number]> | undefined = undefined;
+        for (const [port, local] of Object.entries(sensorOffsets)) {
+            sensorsOnMat ??= {};
+            sensorsOnMat[port] = robotToMat(local, robot.position!, robot.rotation ?? 0);
+        }
+        recordPoint(
+            currentPath,
+            robot.position!.x,
+            robot.position!.z,
+            robot.rotation ?? 0,
+            sensorsOnMat
+        );
         simSeconds += seconds;
         recordTelemetry(vm.hub, simSeconds);
         if (!$runBatch.active) {
@@ -293,6 +341,7 @@
         const timedOut = runSeconds >= maxRunSeconds;
         if (idleSeconds >= idleSecondsToFinish || timedOut) {
             currentPath.timedOut = timedOut;
+            currentPath.seconds = Math.max(0, runSeconds - idleSeconds);
             const path = currentPath;
             currentPath = undefined;
             vm.stop();
@@ -372,6 +421,7 @@
             const run = beginRealismRun();
             applyStartJitter(run);
             currentPath = { seed: run?.seed, points: [], timedOut: false };
+            sensorOffsets = colourSensorOffsets();
             runSeconds = 0;
             idleSeconds = 0;
             simSeconds = 0;
