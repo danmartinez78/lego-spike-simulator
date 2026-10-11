@@ -37,6 +37,9 @@ assignments, and a coach page to run it all.
 
 ### Getting started
 
+-   **Devices.** The site works on laptops, Chromebooks and full-size tablets.
+    Phones and small tablets are not supported, because their screens are too
+    small for block coding.
 -   **Welcome screen** on the first visit, with what the simulator is and how to
     begin.
 -   **Guide** (the ? button): how to use the simulator, a searchable block
