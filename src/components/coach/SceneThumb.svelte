@@ -7,12 +7,14 @@
     // Small picture of a library scene's mat, read from mat.jpg inside the .spk zip.
     import JSZip from 'jszip';
     import { fetchEntry } from '$lib/library';
+    import PreviewDialog from '$components/coach/PreviewDialog.svelte';
 
     export let name: string;
     export let modified: string;
 
     let src: string | undefined;
     let failed = false;
+    let open = false;
 
     function matImage(name: string, modified: string) {
         const key = `${name}|${modified}`;
@@ -37,12 +39,19 @@
     );
 </script>
 
-<div
-    class="w-24 h-16 shrink-0 rounded-md border border-gray-200 bg-gray-100 overflow-hidden flex items-center justify-center"
+<button
+    type="button"
+    class="w-24 h-16 shrink-0 rounded-md border border-gray-200 bg-gray-100 overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    title="Show the mat"
+    aria-label="Show the mat for {name}"
+    on:click={() => (open = true)}
 >
     {#if src}
         <img {src} alt="Mat for {name}" class="w-full h-full object-cover" />
     {:else}
         <span class="text-xs text-gray-400">{failed ? 'No mat' : '…'}</span>
     {/if}
-</div>
+</button>
+{#if open}
+    <PreviewDialog bind:open kind="scenes" {name} />
+{/if}

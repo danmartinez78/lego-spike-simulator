@@ -264,6 +264,10 @@
                 </p>
                 <ul class="list-disc ml-5 flex flex-col gap-1">
                     <li>
+                        Click a field's mat picture to see it full size, or <b>View 3D</b> on a robot
+                        to see the model turning.
+                    </li>
+                    <li>
                         Upload a robot as a .mpd or .ldr model (for example from Studio), or a field
                         as a .spk scene.
                     </li>
