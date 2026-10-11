@@ -73,8 +73,8 @@
         <p
             class="sm:hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
         >
-            Building programs works best on a laptop, Chromebook or tablet. On a phone you can look
-            around, but the blocks are hard to drag.
+            The simulator needs a bigger screen: use a laptop, Chromebook or full-size tablet.
+            Phones and small tablets aren't supported, because the blocks are too small to drag.
         </p>
         <p class="text-sm text-gray-600">
             This browser keeps your program for you, even if you close the page. You can reopen this

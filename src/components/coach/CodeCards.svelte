@@ -20,8 +20,8 @@
             <div class="text-xs text-gray-600 mt-1">Your code</div>
             <div class="font-mono text-lg font-bold tracking-wider">{s.code}</div>
             <div class="text-xs text-gray-700 mt-1 leading-snug">
-                On a laptop or tablet, go to <b>{site}</b>, press <b>Sign in</b> and type your code.
-                Keep it to yourself, like a password.
+                On a laptop or full-size tablet, go to <b>{site}</b>, press <b>Sign in</b> and type your
+                code. Keep it to yourself, like a password.
             </div>
         </div>
     {/each}
