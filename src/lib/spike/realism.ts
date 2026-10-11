@@ -77,6 +77,17 @@ export const presetLabels: Record<PresetName, string> = {
     challenging: 'Challenging'
 };
 
+// Short names, for buttons and badges.
+export function realismName(preset: string) {
+    return preset == 'ideal'
+        ? 'Ideal'
+        : preset == 'realistic'
+          ? 'Realistic'
+          : preset == 'challenging'
+            ? 'Challenging'
+            : 'Custom';
+}
+
 const storageKey = 'spike-sim-realism';
 
 function fromPreset(name: PresetName, seed = 0): RealismSettings {

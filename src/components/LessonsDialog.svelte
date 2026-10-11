@@ -27,6 +27,7 @@
     } from '$lib/library';
     import { activeChallenge, openChallenge, progressStore } from '$lib/spike/challenges';
     import { applyPreset } from '$lib/spike/realism';
+    import { requestRuns } from '$lib/spike/runs';
     import {
         challengeFor,
         groupLessons,
@@ -100,6 +101,7 @@
             activeChallenge.set(check);
             modalOpen = false;
             dispatch('setup');
+            requestRuns('check');
         } catch (e) {
             message = `Could not set up the check: ${(e as Error).message}`;
         } finally {

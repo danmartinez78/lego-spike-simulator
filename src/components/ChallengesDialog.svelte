@@ -182,7 +182,10 @@
             <ol class="list-decimal ml-5 text-gray-700">
                 <li>Press <b>Start challenge</b>. It loads the field and sets the realism.</li>
                 <li>Write your program in the code panel.</li>
-                <li>Press <b>▶︎×5</b>. The results show the target and which runs passed.</li>
+                <li>
+                    Press the green <b>Check</b> button in the simulator. Your program runs 5 times and
+                    the results show which runs passed.
+                </li>
             </ol>
             <h4 class="font-medium mt-4">Hints</h4>
             {#if hintsShown == 0}
