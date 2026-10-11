@@ -2,7 +2,8 @@
     import { Modal, TabItem, Tabs } from 'flowbite-svelte';
     import {
         CogOutline,
-        DatabaseOutline,
+        EditOutline,
+        ToolsOutline,
         ChartLineUpOutline,
         RulerCombinedOutline,
         MapPinAltOutline,
@@ -71,31 +72,11 @@
     ];
 
     const toolbar = [
-        {
-            icon: 'icons/Robot.svg',
-            text: 'Load a robot model from your computer (.io, .ldr or .mpd).'
-        },
-        { icon: 'icons/HubSmall.svg', text: 'Connect the motors and sensors to hub ports A to F.' },
-        { icon: 'icons/wheel.svg', text: 'Tell the simulator which motor drives each wheel.' },
-        {
-            icon: 'icons/Scene.svg',
-            text: 'Scene editor: choose the mat, place the robot and obstacles, load a saved scene.'
-        },
+        { icon: 'icons/Robot.svg', text: 'Robot: choose a robot from this site.' },
+        { icon: 'icons/Scene.svg', text: 'Field: choose the mat the robot drives on.' },
         {
             component: MapPinAltOutline,
-            text: 'Place: drag the robot and objects on a top-down view of the mat, turn them, and save the start position.'
-        },
-        {
-            component: DatabaseOutline,
-            text: 'Shared library: robots and fields saved on this site for everyone.'
-        },
-        {
-            icon: 'icons/Library.svg',
-            text: 'Brick library: only needed if parts are missing (the button bounces).'
-        },
-        {
-            icon: 'icons/SaveMedium.svg',
-            text: 'Save the robot or scene to your computer or the shared library.'
+            text: 'Place: drag the robot and objects on a top-down view of the mat, and turn them.'
         },
         {
             component: CogOutline,
@@ -111,6 +92,29 @@
         },
         { icon: 'icons/Eye.svg', text: 'Camera: top view, side views, or follow the robot.' },
         { icon: 'icons/GenericPlayIcon.svg', text: 'Run the program in the code panel.' }
+    ];
+
+    const buildTools = [
+        {
+            icon: 'icons/Robot.svg',
+            text: 'Open robot: load a robot model from your computer (.io, .ldr or .mpd).'
+        },
+        {
+            icon: 'icons/HubSmall.svg',
+            text: 'Ports: connect the motors and sensors to hub ports A to F.'
+        },
+        {
+            icon: 'icons/wheel.svg',
+            text: 'Wheels: tell the simulator which motor drives each wheel.'
+        },
+        {
+            component: EditOutline,
+            text: 'Edit field: the scene editor. Choose the mat, add obstacles, or open a field file.'
+        },
+        {
+            icon: 'icons/SaveMedium.svg',
+            text: 'Save the robot or field to your computer.'
+        }
     ];
 </script>
 
@@ -262,6 +266,31 @@
                         </div>
                     </div>
                 </div>
+                <h4 class="font-medium mt-4 mb-1 flex flex-row items-center gap-2">
+                    <ToolsOutline class="w-5 h-5" /> Build tools
+                </h4>
+                <p class="mb-2">
+                    Press <b>Build</b> to show the tools for making your own robot or field. Most of
+                    the time you won't need them.
+                </p>
+                <div class="flex flex-col gap-2">
+                    {#each buildTools as item}
+                        <div class="flex flex-row gap-3 items-center">
+                            <div class="w-8 h-8 flex justify-center items-center shrink-0">
+                                {#if item.icon}
+                                    <img alt="" width="28" height="28" src={item.icon} />
+                                {:else if item.component}
+                                    <svelte:component this={item.component} class="w-7 h-7" />
+                                {/if}
+                            </div>
+                            <div>{item.text}</div>
+                        </div>
+                    {/each}
+                </div>
+                <p class="mt-3">
+                    If some bricks are missing, a bouncing <b>Parts</b> button appears. Press it to load
+                    the LDraw parts library.
+                </p>
                 <p class="mt-3">
                     While it runs, the panel on the left shows the hub screen and buttons, plus a
                     live view from each sensor.
@@ -343,14 +372,15 @@
                         colour, distance and force sensors, and the 56 mm or 88 mm wheels. Parts
                         that only look similar won't move or sense.
                     </li>
-                    <li>Load it with the robot button.</li>
+                    <li>Press <b>Build</b> in the simulator, then <b>Open robot</b>.</li>
                     <li>
-                        Use the hub button to say which port each motor and sensor is plugged into,
-                        and the wheel button to link each wheel to its motor.
+                        Use <b>Ports</b> to say which port each motor and sensor is plugged into,
+                        and
+                        <b>Wheels</b> to link each wheel to its motor.
                     </li>
                     <li>
-                        Save it as .mpd (save button). The .mpd keeps the port and wheel setup, so
-                        next time it's ready to drive.
+                        Save it as .mpd (the <b>Save</b> build tool). The .mpd keeps the port and wheel
+                        setup, so next time it's ready to drive.
                     </li>
                 </ol>
             </TabItem>
@@ -360,10 +390,13 @@
                 title="Fields and library"
             >
                 <p>
-                    A <b>scene</b> is a mat image plus where the robot and any obstacles start. Use the
-                    scene editor to pick the mat size (FIRST LEGO League or WRO), load a mat image, add
-                    obstacle models, and drag the robot to its start. Arrow keys nudge the selected object,
-                    and r / R rotate it.
+                    Press <b>Field</b> to choose a field from this site. A field (also called a
+                    scene) is a mat picture plus where the robot and any obstacles start. To make
+                    your own, press
+                    <b>Build</b>, then <b>Edit field</b> to open the scene editor. There you can pick
+                    the mat size (FIRST LEGO League or WRO), load a mat image, add obstacle models, and
+                    drag the robot to its start. Arrow keys nudge the selected object, and r / R rotate
+                    it.
                 </p>
                 <p class="mt-2">
                     The <b>Place</b> button (map pin) shows the mat from above: drag the robot or an
@@ -373,14 +406,14 @@
                 <p class="mt-2">
                     The library has <b>practice fields</b> for building skills: a line course,
                     colour stops, accuracy targets, a turn rose, a wall course and mini missions.
-                    For the wall course, load the robot <i>Driving Base 3 with distance sensor</i>
+                    For the wall course, choose the robot <i>Driving Base 3 with distance sensor</i>
                     (sensor on port F). Sensors can see obstacles, but the robot drives through them
                     rather than pushing them.
                 </p>
                 <p class="mt-2">
-                    The <b>shared library</b> holds robots and scenes saved on this site. Anyone can
-                    load from it. Only coaches can add, delete or choose the defaults that load when
-                    the simulator opens.
+                    The robots and fields you can choose are saved on this site for everyone. Only
+                    coaches can add, delete or choose the defaults that load when the simulator
+                    opens.
                 </p>
             </TabItem>
             <TabItem
@@ -424,7 +457,7 @@
                 <ul class="list-disc ml-5 flex flex-col gap-1">
                     <li>
                         If the robot button is red, some bricks are missing. Wait a moment, or use
-                        the brick library button.
+                        the bouncing Parts button.
                     </li>
                     <li>
                         Settings has a time scale to run faster or slower, and a step delay to watch

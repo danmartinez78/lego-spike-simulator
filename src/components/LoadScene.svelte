@@ -15,7 +15,7 @@
     import Menu from '$components/Menu.svelte';
     import { type MenuAction, type MenuEntry } from '$components/Menu.svelte';
     import JSZip from 'jszip';
-    import { loadSceneFromBlob } from '$lib/library';
+    import { currentSceneName, loadSceneFromBlob } from '$lib/library';
 
     export let modalOpen = false;
     let numberOfLoads = 0;
@@ -395,6 +395,7 @@
                 const file = fileElement.files[0];
                 try {
                     await loadSceneFromBlob(file);
+                    currentSceneName.set(undefined);
                 } catch (e) {
                     console.log('Could not load scene', e);
                     showMessage(

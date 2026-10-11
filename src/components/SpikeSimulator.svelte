@@ -34,7 +34,7 @@
     import ForceCheckSensor from '$components/ForceCheckSensor.svelte';
     import * as m4 from '$lib/ldraw/m4';
     import JSZip from 'jszip';
-    import { robotRequest, type RobotRequest } from '$lib/library';
+    import { currentRobotName, libraryStore, robotRequest, type RobotRequest } from '$lib/library';
     import { beginRealismRun, type RealismRun } from '$lib/spike/realism';
     import {
         runBatch,
@@ -221,6 +221,7 @@
             if (fileElement.files) {
                 if (fileElement.files.length > 0) {
                     const first = fileElement.files[0];
+                    currentRobotName.set(undefined);
                     await loadRobotFromBlob(first.name, first);
                 }
             }
@@ -484,34 +485,41 @@
         <input type="file" id="load_library" class="hidden" accept=".zip" on:change={loadLibrary} />
     {/key}
     {#if !compiledRobot && !runSimulation}
-        <div class="m-2">
-            Use LeoCad (<a href="https://www.leocad.org/" target="_blank">https://www.leocad.org/</a
-            >) to create a model for your robot or Bricklink Studio (<a
-                href="https://www.bricklink.com/v3/studio/download.page"
-                target="_blank">https://www.bricklink.com/v3/studio/download.page</a
-            >). Then upload the robot.
-        </div>
-        <div class="m-2">
-            <span
-                >Load the robot by clicking the
-                <img class="inline mx-2" alt="robot" width="32" height="32" src="icons/Robot.svg" />
-                icon. Then setup or load the scene to run the robot in by clicking on the
-                <img class="inline mx-2" alt="scene" width="32" height="32" src="icons/Scene.svg" />
-                icon.</span
-            >
-        </div>
-        <div class="m-2">
-            You may need to upload the component library (complete.zip) to load your model (<a
-                href="https://library.ldraw.org/updates?latest"
-                target="_blank">https://library.ldraw.org/updates?latest</a
-            >). Check to see if there are any missing parts to see if the library needs to be
-            loaded. The
-            <img class="inline mx-2" alt="scene" width="32" height="32" src="icons/Library.svg" /> icon
-            will bounce if additional parts are needed. Click on it to load parts.
-        </div>
-        <div class="m-2">
-            Always load the robot before the library, only missing bricks are loaded from the
-            library.
+        <div class="m-4 flex flex-col gap-3 max-w-xl text-gray-800">
+            {#if $libraryStore.available}
+                <p class="text-lg font-medium">No robot yet</p>
+                <p>
+                    Press <b>Robot</b> to choose a robot, then <b>Field</b> to choose the mat it drives
+                    on.
+                </p>
+                <p class="text-sm text-gray-600">
+                    Built your own robot in BrickLink Studio or LeoCAD? Press <b>Build</b>, then
+                    <b>Open robot</b>.
+                </p>
+            {:else}
+                <p>
+                    Make a robot in <a
+                        class="text-blue-700 underline"
+                        href="https://www.bricklink.com/v3/studio/download.page"
+                        target="_blank">BrickLink Studio</a
+                    >
+                    or
+                    <a
+                        class="text-blue-700 underline"
+                        href="https://www.leocad.org/"
+                        target="_blank">LeoCAD</a
+                    >, then load it with <b>Open robot</b>. Set up the mat with <b>Edit field</b>.
+                </p>
+                <p class="text-sm text-gray-600">
+                    If some bricks are missing, a bouncing <b>Parts</b> button appears. Load the
+                    LDraw parts library (<a
+                        class="text-blue-700 underline"
+                        href="https://library.ldraw.org/updates?latest"
+                        target="_blank">complete.zip</a
+                    >) with it. Load the robot first; only missing bricks are taken from the
+                    library.
+                </p>
+            {/if}
         </div>
     {/if}
 

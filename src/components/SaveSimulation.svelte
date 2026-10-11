@@ -114,37 +114,27 @@
                 <span>Save scene with mat (zip with mpd)</span>
             </div>
         </Button>
-        {#if $libraryStore.available}
+        {#if $libraryStore.available && $libraryStore.writer}
             <hr class="w-96 my-2" />
             <h3 class="font-medium">Save to the shared library</h3>
-            {#if $libraryStore.writer}
-                <div class="flex flex-row gap-2 w-96 items-center">
-                    <Input size="sm" bind:value={robotName} placeholder="Robot name" />
-                    <Button
-                        color="light"
-                        class="!p-2 whitespace-nowrap"
-                        on:click={() => saveToLibrary('robots')}>Save robot</Button
-                    >
-                </div>
-                <div class="flex flex-row gap-2 w-96 items-center">
-                    <Input size="sm" bind:value={sceneName} placeholder="Scene name" />
-                    <Button
-                        color="light"
-                        class="!p-2 whitespace-nowrap"
-                        on:click={() => saveToLibrary('scenes')}>Save scene</Button
-                    >
-                </div>
-                {#if libraryMessage}
-                    <div class="text-sm w-96">{libraryMessage}</div>
-                {/if}
-            {:else}
-                <div class="text-sm w-96">
-                    Coaches can save to the library after signing in on the <a
-                        class="text-blue-700 underline"
-                        href="coach"
-                        target="_blank">coach page</a
-                    >.
-                </div>
+            <div class="flex flex-row gap-2 w-96 items-center">
+                <Input size="sm" bind:value={robotName} placeholder="Robot name" />
+                <Button
+                    color="light"
+                    class="!p-2 whitespace-nowrap"
+                    on:click={() => saveToLibrary('robots')}>Save robot</Button
+                >
+            </div>
+            <div class="flex flex-row gap-2 w-96 items-center">
+                <Input size="sm" bind:value={sceneName} placeholder="Scene name" />
+                <Button
+                    color="light"
+                    class="!p-2 whitespace-nowrap"
+                    on:click={() => saveToLibrary('scenes')}>Save scene</Button
+                >
+            </div>
+            {#if libraryMessage}
+                <div class="text-sm w-96">{libraryMessage}</div>
             {/if}
         {/if}
     </div>
