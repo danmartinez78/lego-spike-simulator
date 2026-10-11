@@ -57,6 +57,7 @@ export interface PipeLine {
     nearUniform: WebGLUniformLocation | null;
     farUniform: WebGLUniformLocation | null;
     renderDepthUniform: WebGLUniformLocation | null;
+    lightingUniform: WebGLUniformLocation | null;
 }
 
 export interface MapTexture {
@@ -133,66 +134,66 @@ export class WebGLCompiler {
 
         for (const line of model.lines) {
             for (const v of [line.p1, line.p2]) {
-                if (!minx || v.x < minx) {
+                if (minx === undefined || v.x < minx) {
                     minx = v.x;
                 }
-                if (!maxx || v.x > maxx) {
+                if (maxx === undefined || v.x > maxx) {
                     maxx = v.x;
                 }
-                if (!miny || v.y < miny) {
+                if (miny === undefined || v.y < miny) {
                     miny = v.y;
                 }
-                if (!maxy || v.y > maxy) {
+                if (maxy === undefined || v.y > maxy) {
                     maxy = v.y;
                 }
-                if (!minz || v.z < minz) {
+                if (minz === undefined || v.z < minz) {
                     minz = v.z;
                 }
-                if (!maxz || v.z > maxz) {
+                if (maxz === undefined || v.z > maxz) {
                     maxz = v.z;
                 }
             }
         }
         for (const t of model.triangles) {
             for (const v of [t.p1, t.p2, t.p3]) {
-                if (!minx || v.x < minx) {
+                if (minx === undefined || v.x < minx) {
                     minx = v.x;
                 }
-                if (!maxx || v.x > maxx) {
+                if (maxx === undefined || v.x > maxx) {
                     maxx = v.x;
                 }
-                if (!miny || v.y < miny) {
+                if (miny === undefined || v.y < miny) {
                     miny = v.y;
                 }
-                if (!maxy || v.y > maxy) {
+                if (maxy === undefined || v.y > maxy) {
                     maxy = v.y;
                 }
-                if (!minz || v.z < minz) {
+                if (minz === undefined || v.z < minz) {
                     minz = v.z;
                 }
-                if (!maxz || v.z > maxz) {
+                if (maxz === undefined || v.z > maxz) {
                     maxz = v.z;
                 }
             }
         }
         for (const q of model.quads) {
             for (const v of [q.p1, q.p2, q.p3, q.p4]) {
-                if (!minx || v.x < minx) {
+                if (minx === undefined || v.x < minx) {
                     minx = v.x;
                 }
-                if (!maxx || v.x > maxx) {
+                if (maxx === undefined || v.x > maxx) {
                     maxx = v.x;
                 }
-                if (!miny || v.y < miny) {
+                if (miny === undefined || v.y < miny) {
                     miny = v.y;
                 }
-                if (!maxy || v.y > maxy) {
+                if (maxy === undefined || v.y > maxy) {
                     maxy = v.y;
                 }
-                if (!minz || v.z < minz) {
+                if (minz === undefined || v.z < minz) {
                     minz = v.z;
                 }
-                if (!maxz || v.z > maxz) {
+                if (maxz === undefined || v.z > maxz) {
                     maxz = v.z;
                 }
             }
@@ -249,22 +250,22 @@ export class WebGLCompiler {
                 for (const b of vertices) {
                     const v4 = m4.transformVector(submodel.matrix, [b.x, b.y, b.z, 1]);
                     const v = { x: v4[0], y: v4[1], z: v4[2] };
-                    if (!minx || v.x < minx) {
+                    if (minx === undefined || v.x < minx) {
                         minx = v.x;
                     }
-                    if (!maxx || v.x > maxx) {
+                    if (maxx === undefined || v.x > maxx) {
                         maxx = v.x;
                     }
-                    if (!miny || v.y < miny) {
+                    if (miny === undefined || v.y < miny) {
                         miny = v.y;
                     }
-                    if (!maxy || v.y > maxy) {
+                    if (maxy === undefined || v.y > maxy) {
                         maxy = v.y;
                     }
-                    if (!minz || v.z < minz) {
+                    if (minz === undefined || v.z < minz) {
                         minz = v.z;
                     }
-                    if (!maxz || v.z > maxz) {
+                    if (maxz === undefined || v.z > maxz) {
                         maxz = v.z;
                     }
                 }
@@ -882,9 +883,18 @@ export class WebGL extends WebGLCompiler {
     mindist: number;
     maxdist: number;
     fragmentDerivative: boolean;
+    // Caps the canvas resolution on high-DPI screens; school laptops and
+    // Chromebooks can't fill 2x or 3x the pixels every frame.
+    maxPixelRatio: number;
+    // Shade brick faces so they read as 3D. Off for sensor views, which
+    // need the exact brick colors.
+    lighting: boolean;
 
-    static create(canvas: HTMLCanvasElement): WebGL | undefined {
-        const gl = canvas.getContext('webgl');
+    static create(
+        canvas: HTMLCanvasElement,
+        attributes?: WebGLContextAttributes
+    ): WebGL | undefined {
+        const gl = canvas.getContext('webgl', attributes);
         if (!gl) {
             console.log('No WebGL available');
             return undefined;
@@ -906,6 +916,8 @@ export class WebGL extends WebGLCompiler {
         this.perspectiveAngle = 45;
         this.mindist = 0.1;
         this.maxdist = 1000.0;
+        this.maxPixelRatio = 1.5;
+        this.lighting = false;
         this.setupPipeline();
         this.fragmentDerivative = false;
         this.modelBuffers = new Map<number, ModelBuffer>();
@@ -1062,7 +1074,7 @@ export class WebGL extends WebGLCompiler {
     }
 
     clear() {
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     }
 
     flush() {
@@ -1698,7 +1710,15 @@ export class WebGL extends WebGLCompiler {
             0
         );
         this.gl.drawArrays(this.gl.LINES, model.lineOffset, model.lines * 2);
+        // Only the derivatives shader has the lighting uniform.
+        const shade = this.lighting && this.brickPipeline.lightingUniform !== null;
+        if (shade) {
+            this.gl.uniform1i(this.brickPipeline.lightingUniform, 1);
+        }
         this.gl.drawArrays(this.gl.TRIANGLES, model.triangleOffset, model.triangles * 3);
+        if (shade) {
+            this.gl.uniform1i(this.brickPipeline.lightingUniform, 0);
+        }
     }
 
     drawDepthQuad(texture: MapTexture) {
@@ -1913,7 +1933,8 @@ export class WebGL extends WebGLCompiler {
                     brightnessUniform: brightnessUniform,
                     nearUniform: nearUniform,
                     farUniform: farUniform,
-                    renderDepthUniform: renderDepthUniform
+                    renderDepthUniform: renderDepthUniform,
+                    lightingUniform: this.gl.getUniformLocation(legoProgram, 'lighting')
                 };
                 this.pipeline = this.brickPipeline;
                 if (modelMatrixUniform) {
@@ -1966,7 +1987,8 @@ export class WebGL extends WebGLCompiler {
                     brightnessUniform: brightnessUniform,
                     nearUniform: null,
                     farUniform: null,
-                    renderDepthUniform: null
+                    renderDepthUniform: null,
+                    lightingUniform: null
                 };
                 if (modelMatrixUniform) {
                     this.gl.uniformMatrix4fv(modelMatrixUniform, false, this.modelMatrix);
@@ -1991,6 +2013,9 @@ export class WebGL extends WebGLCompiler {
         this.texcoordBuffer = this.gl.createBuffer();
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.depthFunc(this.gl.LESS);
+        // Push faces back a little so the edge lines on them don't flicker.
+        this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
+        this.gl.polygonOffset(1.0, 1.0);
         if (this.brickPipeline) {
             this.gl.useProgram(this.brickPipeline.program);
         }
@@ -2042,7 +2067,7 @@ export class WebGL extends WebGLCompiler {
     }
 
     getPixelRatio() {
-        return window.devicePixelRatio || 1;
+        return Math.min(window.devicePixelRatio || 1, this.maxPixelRatio);
     }
 
     resizeCanvasToDisplaySize() {
@@ -2092,31 +2117,39 @@ export class WebGL extends WebGLCompiler {
         const srcFormat = this.gl.RGBA;
         const srcType = this.gl.UNSIGNED_BYTE;
 
+        // WebGL1 only builds mipmaps for power of 2 images. Mats are
+        // usually 1 px per mm (2360 x 1140), so resample them to the
+        // nearest power of 2 first. Without mipmaps, thin lines and text
+        // shimmer when the mat is shown smaller than its pixel size.
+        const maxSize = this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE) as number;
+        let source: HTMLImageElement | HTMLCanvasElement = image;
+        if (!this.isPowerOf2(image.width) || !this.isPowerOf2(image.height)) {
+            const resized = document.createElement('canvas');
+            resized.width = this.nearestPowerOf2(image.width, maxSize);
+            resized.height = this.nearestPowerOf2(image.height, maxSize);
+            const ctx = resized.getContext('2d');
+            if (ctx) {
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(image, 0, 0, resized.width, resized.height);
+                source = resized;
+            }
+        }
+
         this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
         this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
-        this.gl.texImage2D(this.gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image);
-
-        // WebGL1 has different requirements for power of 2 images
-        // vs. non power of 2 images so check if the image is a
-        // power of 2 in both dimensions.
-        if (this.isPowerOf2(image.width) && this.isPowerOf2(image.height)) {
-            // Yes, it's a power of 2. Generate mips.
+        this.gl.texImage2D(this.gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, source);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+        if (this.isPowerOf2(source.width) && this.isPowerOf2(source.height)) {
             this.gl.generateMipmap(this.gl.TEXTURE_2D);
+            this.gl.texParameteri(
+                this.gl.TEXTURE_2D,
+                this.gl.TEXTURE_MIN_FILTER,
+                this.gl.LINEAR_MIPMAP_LINEAR
+            );
         } else {
-            // No, it's not a power of 2. Turn off mips and set
-            // wrapping to clamp to edge
-            this.gl.texParameteri(
-                this.gl.TEXTURE_2D,
-                this.gl.TEXTURE_WRAP_S,
-                this.gl.CLAMP_TO_EDGE
-            );
-            this.gl.texParameteri(
-                this.gl.TEXTURE_2D,
-                this.gl.TEXTURE_WRAP_T,
-                this.gl.CLAMP_TO_EDGE
-            );
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
         }
 
         return { width: image.naturalWidth, height: image.naturalHeight, texture: texture };
@@ -2124,6 +2157,11 @@ export class WebGL extends WebGLCompiler {
 
     isPowerOf2(value: number) {
         return (value & (value - 1)) === 0;
+    }
+
+    nearestPowerOf2(value: number, max: number) {
+        const p = Math.pow(2, Math.round(Math.log2(Math.max(1, value))));
+        return Math.min(p, max);
     }
 
     deleteTexture(t: WebGLTexture) {
@@ -2146,6 +2184,12 @@ export class WebGL extends WebGLCompiler {
             height: this.gl.drawingBufferHeight,
             buffer: pixels
         };
+    }
+
+    // Depth written by the depth shader at a pixel, from 0 (near) to 1 (far).
+    depthAt(frame: ColourBuffer, x: number, y: number): number {
+        const i = (x + y * frame.width) * 4;
+        return Math.min(1.0, (frame.buffer[i] + frame.buffer[i + 1] / 256.0) / 255.0);
     }
 
     getCanvasWidth() {

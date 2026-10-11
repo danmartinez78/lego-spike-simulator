@@ -26,6 +26,8 @@
     let gl: WebGL | undefined;
     let _droppedFrames = 0;
     let lastFrame: number = 0;
+    let sampled = false;
+    let registered: { hub: Hub; port: PortType } | undefined;
     let mapTexture: MapTexture | null = null;
     let cameraMatrix: m4.Matrix4 = getCameraMatrix(lightSensorId, $componentStore.robotModel);
     let lastColour = '#330033';
@@ -109,6 +111,10 @@
         return result;
     }
 
+    // Nearest named color for each pixel value seen, so each distinct
+    // value is only matched once.
+    const nearestCache = new Map<number, { nearest: string | undefined; dist: number }>();
+
     interface HistogramEntry {
         k: string;
         v: number;
@@ -149,25 +155,31 @@
                 continue;
             }
             const ch = (r << 16) + (g << 8) + b;
-            const h = '#' + ch.toString(16);
-            const c = hexColor(h);
-            let dist = 1000.0;
-            let nearest = undefined;
-            for (const colourEntry of colours) {
-                const ref = colourEntry.colour;
-                if (ref) {
-                    // The 4000K light has a slight red bias
-                    // try compensate for that.
-                    const rdist = (c.r * rbias - ref.r) * (c.r * rbias - ref.r);
-                    const gdist = (c.g * gbias - ref.g) * (c.g * gbias - ref.g);
-                    const bdist = (c.b * bbias - ref.b) * (c.b * bbias - ref.b);
-                    const cdist = rdist + gdist + bdist;
-                    if (cdist < dist) {
-                        nearest = colourEntry.value;
-                        dist = cdist;
+            const c = { r: r / 255.0, g: g / 255.0, b: b / 255.0 };
+            let match = nearestCache.get(ch);
+            if (!match) {
+                let dist = 1000.0;
+                let nearest = undefined;
+                for (const colourEntry of colours) {
+                    const ref = colourEntry.colour;
+                    if (ref) {
+                        // The 4000K light has a slight red bias
+                        // try compensate for that.
+                        const rdist = (c.r * rbias - ref.r) * (c.r * rbias - ref.r);
+                        const gdist = (c.g * gbias - ref.g) * (c.g * gbias - ref.g);
+                        const bdist = (c.b * bbias - ref.b) * (c.b * bbias - ref.b);
+                        const cdist = rdist + gdist + bdist;
+                        if (cdist < dist) {
+                            nearest = colourEntry.value;
+                            dist = cdist;
+                        }
                     }
                 }
+                match = { nearest: nearest, dist: dist };
+                nearestCache.set(ch, match);
             }
+            const nearest = match.nearest;
+            const dist = match.dist;
             const reflect = Math.sqrt((c.r * c.r + c.g * c.g + c.b * c.b) / 3.0);
             avg += reflect;
             avg_red += c.r;
@@ -218,14 +230,41 @@
             // TODO: Drop the model detail
         }
         lastFrame = timestamp;
-        renderScene();
-        if (gl) {
-            reportSensor(gl);
+        // While a program runs, the VM reads the sensor on its own clock
+        // (see sample below); only draw here when it hasn't.
+        if (!sampled) {
+            renderScene();
+            if (gl) {
+                reportSensor(gl);
+            }
         }
+        sampled = false;
         if (canRender && enabled) {
             requestAnimationFrame(doRender);
         } else {
             lastFrame = 0;
+        }
+    }
+
+    function sample() {
+        if (!gl || !canRender) {
+            return;
+        }
+        renderScene();
+        reportSensor(gl);
+        sampled = true;
+    }
+
+    function registerSampler(hub: Hub, port: PortType) {
+        unregisterSampler();
+        hub.addSensorSampler(port, sample);
+        registered = { hub: hub, port: port };
+    }
+
+    function unregisterSampler() {
+        if (registered) {
+            registered.hub.removeSensorSampler(registered.port, sample);
+            registered = undefined;
         }
     }
 
@@ -392,8 +431,11 @@
     onMount(() => {
         const canvas = document.getElementById(id);
         if (canvas) {
-            gl = WebGL.create(canvas as HTMLCanvasElement);
+            // No antialiasing: blended edge pixels would be read as colors
+            // or depths that aren't in the scene.
+            gl = WebGL.create(canvas as HTMLCanvasElement, { antialias: false });
             if (gl) {
+                gl.maxPixelRatio = 1;
                 gl.perspectiveAngle = 45;
                 gl.mindist = 0.01;
                 gl.maxdist = 50.0;
@@ -410,6 +452,7 @@
 
     onDestroy(() => {
         canRender = false;
+        unregisterSampler();
         if (mapTexture && gl) {
             gl.deleteTexture(mapTexture.texture);
             mapTexture = null;
@@ -439,6 +482,7 @@
 
     $: cameraMatrix = getCameraMatrix(lightSensorId, $componentStore.robotModel);
     $: checkEnabled(enabled);
+    $: registerSampler(hub, port);
     $: loadMapTexture(scene.map);
     $: setMapSize(scene);
     $: loadSceneItems(scene.objects, false);

@@ -597,6 +597,7 @@
                         {tilt}
                         select="#all"
                         dimMap={true}
+                        interactive={true}
                         {hub}
                     />
                 {:else}
