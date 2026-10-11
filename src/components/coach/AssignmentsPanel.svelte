@@ -139,7 +139,7 @@
         const entry = lessonEntry(name);
         if (!entry?.lesson) return undefined;
         const lesson = entry.lesson;
-        const status = lessonStatus(name, lesson, s.progress.lessons, s.progress.challenges);
+        const status = lessonStatus(name, lesson, s.progress.lessons, s.programs);
         const ticked =
             s.progress.lessons[name]?.steps.filter((i) => i < lesson.steps.length).length ?? 0;
         return { status, ticked, total: lesson.steps.length, handedIn: s.programs[name] };
@@ -173,8 +173,8 @@
             <h2 class="text-lg font-semibold">Assignments</h2>
             <p class="text-gray-600 text-sm">
                 Pick lessons and a due date, and say whether it's practice or prep for the next
-                meeting. A lesson counts as done when the student ticks every step and passes its
-                challenge. Progress shows up once a student signs in with their code.
+                meeting. A lesson counts as done when the student ticks every step, passes its check
+                and hands in a program. Progress shows up once a student signs in with their code.
             </p>
         </div>
         <Button size="sm" color="light" disabled={loading} on:click={refresh}>Refresh</Button>

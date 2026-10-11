@@ -15,6 +15,7 @@
         isOverdue,
         openHandedIn,
         refreshHomework,
+        remindToSignIn,
         timeLabel
     } from '$lib/homework';
     import {
@@ -26,20 +27,27 @@
         programRequest,
         type LibraryEntry
     } from '$lib/library';
-    import { activeChallenge, openChallenge, progressStore } from '$lib/spike/challenges';
+    import {
+        activeChallenge,
+        challengeList,
+        openChallenge,
+        progressStore
+    } from '$lib/spike/challenges';
     import { applyPreset } from '$lib/spike/realism';
     import { requestRuns } from '$lib/spike/runs';
     import {
-        challengeFor,
         groupLessons,
         isPublished,
         lessonCheck,
         lessonProgress,
         lessonStatus,
         missingFiles,
+        relatedFor,
+        requestedLesson,
         toggleStep,
         topicColour
     } from '$lib/lessons';
+    import NotSignedIn from '$components/NotSignedIn.svelte';
 
     export let modalOpen = false;
 
@@ -48,6 +56,7 @@
     let selected: LibraryEntry | undefined = undefined;
     let message = '';
     let busy = false;
+    let detail: HTMLDivElement;
 
     async function setUp() {
         const lesson = selected?.lesson;
@@ -80,11 +89,37 @@
         }
     }
 
-    function showChallenge() {
-        const challenge = challengeFor(selected?.lesson);
-        if (!challenge) return;
+    function showChallenge(id: string) {
         modalOpen = false;
-        openChallenge(challenge.id);
+        openChallenge(id);
+    }
+
+    async function toggle(step: number) {
+        const name = selected?.name;
+        if (!name || !(await remindToSignIn())) return;
+        toggleStep(name, step);
+    }
+
+    // The next lesson: the next one in the same assignment when this lesson is
+    // part of one, otherwise the next one in the list.
+    function nextEntry(current: LibraryEntry | undefined) {
+        if (!current) return undefined;
+        for (const h of homework) {
+            const i = h.entries.findIndex((e) => e.name == current.name);
+            if (i >= 0 && i + 1 < h.entries.length) return h.entries[i + 1];
+        }
+        const i = allEntries.findIndex((e) => e.name == current.name);
+        return i >= 0 ? allEntries[i + 1] : undefined;
+    }
+
+    // Show the Lesson complete banner, which is at the top, the moment the
+    // student finishes (usually by handing in, at the bottom).
+    let last = { name: '', done: false };
+    function finished(name: string | undefined, done: boolean) {
+        if (name && name == last.name && done && !last.done) {
+            detail?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        last = { name: name ?? '', done };
     }
 
     // Load the lesson's field and robot and make its check the active one.
@@ -92,7 +127,7 @@
     async function startCheck() {
         if (!selected?.lesson) return;
         const check = lessonCheck(selected.name, selected.lesson);
-        if (!check) return;
+        if (!check || !(await remindToSignIn())) return;
         busy = true;
         message = '';
         try {
@@ -113,6 +148,7 @@
     function choose(entry: LibraryEntry) {
         selected = entry;
         message = '';
+        detail?.scrollTo({ top: 0 });
     }
 
     async function handInProgram() {
@@ -151,6 +187,14 @@
         if (open) {
             message = '';
             Promise.all([refreshLibrary(), refreshHomework()]).then(([state]) => {
+                const requested = state.index.lessons.find(
+                    (e) => e.name == $requestedLesson && isPublished(e)
+                );
+                requestedLesson.set(undefined);
+                if (requested) {
+                    choose(requested);
+                    return;
+                }
                 if (selected) return;
                 const first =
                     homework[0]?.entries[0] ??
@@ -165,7 +209,7 @@
         assignments: typeof $homeworkStore,
         lessons: LibraryEntry[],
         progress: typeof $lessonProgress,
-        passed: typeof $progressStore
+        handed: Record<string, string> | undefined
     ) {
         return [...assignments]
             .sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999'))
@@ -174,7 +218,7 @@
                     .map((name) => lessons.find((l) => l.name == name))
                     .filter((e): e is LibraryEntry => !!e && isPublished(e));
                 const done = entries.filter(
-                    (e) => e.lesson && lessonStatus(e.name, e.lesson, progress, passed) == 'done'
+                    (e) => e.lesson && lessonStatus(e.name, e.lesson, progress, handed) == 'done'
                 ).length;
                 return { assignment, entries, done };
             })
@@ -185,16 +229,24 @@
     // Drafts are for coaches only.
     $: published = $libraryStore.index.lessons.filter(isPublished);
     $: groups = groupLessons(published);
-    $: homework = homeworkLessons($homeworkStore, published, $lessonProgress, $progressStore);
+    // Hand-in only counts for a signed-in student.
+    $: handed = $studentStore ? $handedIn : undefined;
+    $: homework = homeworkLessons($homeworkStore, published, $lessonProgress, handed);
     $: allEntries = groups.flatMap((g) => g.entries);
     $: lesson = selected?.lesson;
     $: position = selected ? allEntries.findIndex((e) => e.name == selected?.name) + 1 : 0;
     $: ticked = selected ? ($lessonProgress[selected.name]?.steps ?? []) : [];
-    $: challenge = challengeFor(lesson);
+    $: related = relatedFor(lesson, $challengeList);
+    $: next = nextEntry(selected);
     $: missing = lesson ? missingFiles(lesson) : [];
     $: doneCount = allEntries.filter(
-        (e) => e.lesson && lessonStatus(e.name, e.lesson, $lessonProgress, $progressStore) == 'done'
+        (e) => e.lesson && lessonStatus(e.name, e.lesson, $lessonProgress, handed) == 'done'
     ).length;
+    $: finished(
+        selected?.name,
+        !!selected?.lesson &&
+            lessonStatus(selected.name, selected.lesson, $lessonProgress, handed) == 'done'
+    );
 </script>
 
 <Modal
@@ -221,6 +273,7 @@
     {#if !$libraryStore.available}
         <div class="p-6 text-gray-700">This copy of the simulator has no lesson library.</div>
     {:else}
+        <NotSignedIn />
         <div class="flex flex-col md:flex-row h-[70dvh] text-gray-800">
             <!-- Lesson list -->
             <nav
@@ -275,7 +328,7 @@
                                                     entry.name,
                                                     entry.lesson,
                                                     $lessonProgress,
-                                                    $progressStore
+                                                    handed
                                                 )}
                                                 selected={selected?.name == entry.name}
                                                 on:click={() => choose(entry)}
@@ -285,13 +338,6 @@
                                 </div>
                             </div>
                         {/each}
-                        {#if !$studentStore}
-                            <button
-                                class="text-left text-xs text-blue-800 px-2 hover:underline"
-                                on:click={() => studentDialogOpen.set(true)}
-                                >Sign in with your code so your coach sees your progress.</button
-                            >
-                        {/if}
                     </div>
                     <div
                         class="px-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500 -mb-3"
@@ -321,7 +367,7 @@
                                         entry.name,
                                         entry.lesson,
                                         $lessonProgress,
-                                        $progressStore
+                                        handed
                                     )}
                                     selected={selected?.name == entry.name}
                                     on:click={() => choose(entry)}
@@ -334,7 +380,7 @@
 
             <!-- Detail -->
             <section class="flex-1 min-w-0 flex flex-col">
-                <div class="flex-1 overflow-y-auto px-6 py-5">
+                <div class="flex-1 overflow-y-auto px-6 py-5" bind:this={detail}>
                     {#if selected && lesson}
                         <LessonView
                             {lesson}
@@ -343,10 +389,13 @@
                             {ticked}
                             {missing}
                             {busy}
-                            passed={!!(challenge && $progressStore[challenge.id]?.completed)}
+                            {related}
+                            challengeResults={$progressStore}
+                            hasNext={!!next}
                             on:setup={setUp}
-                            on:toggle={(e) => selected && toggleStep(selected.name, e.detail)}
-                            on:challenge={showChallenge}
+                            on:toggle={(e) => toggle(e.detail)}
+                            on:challenge={(e) => showChallenge(e.detail)}
+                            on:next={() => next && choose(next)}
                             on:check={startCheck}
                             checkResult={selected
                                 ? $lessonProgress[selected.name]?.check

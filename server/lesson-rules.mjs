@@ -107,6 +107,21 @@ const textFields = ['topic', 'summary', 'program', 'field', 'robot', 'challenge'
 const isNumber = (/** @type {unknown} */ v) => typeof v === 'number' && Number.isFinite(v);
 
 /**
+ * Ids of the challenges a lesson links to: "challenges", plus the single
+ * "challenge" older lessons have. Students see them once the lesson is done.
+ * @param {Record<string, any> | undefined} lesson
+ * @returns {string[]}
+ */
+export function relatedChallenges(lesson) {
+    const ids = Array.isArray(lesson?.challenges) ? lesson.challenges : [];
+    const all =
+        typeof lesson?.challenge === 'string' && lesson.challenge
+            ? [lesson.challenge, ...ids]
+            : ids;
+    return [...new Set(all.filter((/** @type {unknown} */ id) => typeof id === 'string' && id))];
+}
+
+/**
  * @param {unknown} value
  * @param {string} where
  * @param {MatSize | undefined} mat
@@ -335,8 +350,21 @@ export function lessonProblems(value, context = {}) {
     if (lesson.draft !== undefined && typeof lesson.draft !== 'boolean') {
         errors.push('"draft" must be true or false');
     }
-    if (lesson.challenge && context.challenges && !context.challenges.includes(lesson.challenge)) {
-        errors.push(`There is no challenge called "${lesson.challenge}"`);
+    if (lesson.challenges !== undefined) {
+        if (
+            !Array.isArray(lesson.challenges) ||
+            lesson.challenges.length > 10 ||
+            !lesson.challenges.every((/** @type {unknown} */ c) => typeof c === 'string' && c)
+        ) {
+            errors.push('"challenges" must be a list of up to 10 challenge ids');
+        }
+    }
+    if (context.challenges) {
+        for (const id of relatedChallenges(lesson)) {
+            if (!context.challenges.includes(id)) {
+                errors.push(`There is no challenge called "${id}"`);
+            }
+        }
     }
     if (lesson.check !== undefined) {
         if (!lesson.field)

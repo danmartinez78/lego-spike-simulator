@@ -11,6 +11,10 @@
         type Challenge
     } from '$lib/spike/challenges';
     import { applyPreset, presetLabels } from '$lib/spike/realism';
+    import { remindToSignIn } from '$lib/homework';
+    import { lessonsFor, openLesson } from '$lib/lessons';
+    import NotSignedIn from '$components/NotSignedIn.svelte';
+    import { studentStore } from '$lib/team';
     import {
         libraryStore,
         refreshLibrary,
@@ -58,6 +62,7 @@
     }
 
     async function start(c: Challenge) {
+        if (!(await remindToSignIn())) return;
         busy = true;
         message = '';
         try {
@@ -102,7 +107,14 @@
         }
     }
 
+    function showLesson(name: string) {
+        modalOpen = false;
+        openLesson(name);
+    }
+
     $: opened(modalOpen);
+    // Lessons that list this challenge as related.
+    $: practisedIn = selected ? lessonsFor(selected.id, $libraryStore.index.lessons) : [];
 </script>
 
 <Modal
@@ -119,6 +131,7 @@
             >
         </div>
     </svelte:fragment>
+    <div class="-mx-4 -mt-4 md:-mx-5 md:-mt-5"><NotSignedIn /></div>
     <div class="flex flex-col md:flex-row gap-4 text-sm max-h-[70dvh]">
         <div class="md:w-72 shrink-0 overflow-y-auto flex flex-col gap-2 pr-1">
             {#each challenges as c}
@@ -162,6 +175,18 @@
                     {/if}
                 </div>
                 <p class="text-base text-gray-900 mt-2">{selected.goal}</p>
+                {#if practisedIn.length > 0}
+                    <p class="text-gray-700 mt-1">
+                        Practised in:
+                        {#each practisedIn as entry, i}
+                            {i > 0 ? ', ' : ''}<button
+                                class="text-blue-700 hover:underline"
+                                on:click={() => showLesson(entry.name)}
+                                >{entry.lesson?.title ?? entry.name}</button
+                            >
+                        {/each}
+                    </p>
+                {/if}
                 <div class="grid grid-cols-2 gap-2 mt-3">
                     <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
                         <div class="text-xs text-gray-500">Field</div>
@@ -242,8 +267,10 @@
                     <p class="mt-2">{message}</p>
                 {/if}
                 <p class="text-xs text-gray-500 mt-4">
-                    Your progress is saved in this browser. The target is checked against the centre
-                    of the robot where it stops.
+                    {$studentStore
+                        ? 'Your progress is saved to your account.'
+                        : 'Your progress is saved in this browser.'} The target is checked against the
+                    centre of the robot where it stops.
                 </p>
             </div>
         {/if}

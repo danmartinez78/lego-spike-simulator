@@ -58,9 +58,15 @@
             "type": "string",
             "description": "Robot to use: a .mpd or .ldr name in the library (or in robots/ in the zip)."
         },
+        "challenges": {
+            "type": "array",
+            "maxItems": 10,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Related challenges (their ids, for example first-square). Students see them once they finish the lesson. They aren't needed to finish it."
+        },
         "challenge": {
             "type": "string",
-            "description": "Older lessons: id of a built-in challenge card, for example first-square. New lessons use check."
+            "description": "Older lessons: one related challenge id. Treated the same as an entry in challenges."
         },
         "draft": {
             "type": "boolean",

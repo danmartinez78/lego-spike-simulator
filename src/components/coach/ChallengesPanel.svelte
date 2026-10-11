@@ -13,7 +13,7 @@
         type LibraryEntry
     } from '$lib/library';
     import { challengeFromFile, type ChallengeFile } from '$lib/spike/challenges';
-    import { challengeProblems } from '../../../server/lesson-rules.mjs';
+    import { challengeProblems, relatedChallenges } from '../../../server/lesson-rules.mjs';
 
     const levels = ['', 'Starter', 'Getting there', 'Tricky'];
 
@@ -35,7 +35,8 @@
                 a.c.title.localeCompare(b.c.title)
         );
     $: skills = [...new Set(entries.map((x) => x.c.skill).filter((s): s is string => !!s))];
-    $: lessonsFor = (id: string) => index.lessons.filter((l) => l.lesson?.challenge == id);
+    $: lessonsFor = (id: string) =>
+        index.lessons.filter((l) => relatedChallenges(l.lesson).includes(id));
 
     function say(text: string, error = false) {
         message = text;
@@ -105,7 +106,7 @@
         const lessons = lessonsFor(id);
         const extra =
             lessons.length > 0
-                ? ` ${lessons.length} lesson${lessons.length == 1 ? ' ends' : 's end'} with it.`
+                ? ` ${lessons.length} lesson${lessons.length == 1 ? ' links' : 's link'} to it.`
                 : '';
         if (
             !(await askConfirm(
@@ -269,7 +270,7 @@
                             </p>
                             {#if lessons.length > 0}
                                 <p class="text-sm text-gray-500">
-                                    Ends {lessons.length == 1 ? 'the lesson' : 'the lessons'}
+                                    Related to {lessons.length == 1 ? 'the lesson' : 'the lessons'}
                                     {lessons.map((l) => l.lesson?.title ?? l.name).join(', ')}
                                 </p>
                             {/if}

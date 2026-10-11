@@ -18,6 +18,7 @@
     import { askConfirm } from '$lib/confirm';
     import { ClipboardCheckOutline } from 'flowbite-svelte-icons';
     import { allChallenges } from '$lib/spike/challenges';
+    import { relatedChallenges } from '../../server/lesson-rules.mjs';
     import {
         exportLessonPackage,
         installLessonPackage,
@@ -783,15 +784,16 @@
                                             {/if}
                                             {size(entry.size)} · changed {changed(entry.modified)}
                                         </div>
-                                        {#if entry.lesson && (entry.lesson.program || entry.lesson.field || entry.lesson.robot || entry.lesson.challenge)}
+                                        {#if entry.lesson && (entry.lesson.program || entry.lesson.field || entry.lesson.robot || relatedChallenges(entry.lesson).length > 0)}
                                             <div class="text-sm text-gray-500">
                                                 Uses {[
                                                     entry.lesson.program,
                                                     entry.lesson.field,
                                                     entry.lesson.robot,
-                                                    entry.lesson.challenge
-                                                        ? `the challenge "${$allChallenges.find((c) => c.id == entry.lesson?.challenge)?.title ?? entry.lesson.challenge}"`
-                                                        : ''
+                                                    ...relatedChallenges(entry.lesson).map(
+                                                        (id) =>
+                                                            `the challenge "${$allChallenges.find((c) => c.id == id)?.title ?? id}"`
+                                                    )
                                                 ]
                                                     .filter((x) => x)
                                                     .join(', ')}

@@ -2,10 +2,11 @@
 // challenge results and handed-in programs with the server (server/homework.mjs).
 
 import { get, writable } from 'svelte/store';
-import { currentProgram, programRequest } from '$lib/library';
+import { askConfirm } from '$lib/confirm';
+import { currentProgram, libraryStore, programRequest } from '$lib/library';
 import { lessonProgress, type LessonProgress } from '$lib/lessons';
 import { progressStore as challengeProgress, type Progress } from '$lib/spike/challenges';
-import { studentStore } from '$lib/team';
+import { studentDialogOpen, studentStore } from '$lib/team';
 
 // What an assignment is for. Older assignments have no type and show no badge.
 export type AssignmentType = 'practice' | 'prep';
@@ -113,16 +114,55 @@ function schedulePush() {
 
 let started = false;
 
-// Called once at startup. Signing in uploads this device's progress and
-// brings back the student's progress from other devices; signing out clears
-// it from this device so the next person starts fresh.
+// Lessons and challenges this browser has progress on.
+function localWork() {
+    const lessons = Object.values(get(lessonProgress)).filter(
+        (p) => p.steps.length > 0 || p.check
+    ).length;
+    const challenges = Object.values(get(challengeProgress)).filter(
+        (p) => p.best > 0 || p.completed
+    ).length;
+    return { lessons, challenges };
+}
+
+function count(n: number, one: string) {
+    return `${n} ${one}${n == 1 ? '' : 's'}`;
+}
+
+// A student just signed in. Work done on this computer before that may belong
+// to someone else (a shared computer), so ask before adding it to their account.
+async function signedIn(switched: boolean) {
+    const work = localWork();
+    if (switched) {
+        // Another student was signed in here: their work isn't this student's.
+        apply({ lessons: {}, challenges: {}, programs: {} });
+    } else if (work.lessons + work.challenges > 0) {
+        const parts = [
+            work.lessons ? count(work.lessons, 'lesson') : '',
+            work.challenges ? count(work.challenges, 'challenge') : ''
+        ].filter((x) => x);
+        const mine = await askConfirm(
+            `This computer has work on ${parts.join(' and ')} from before you signed in. ` +
+                'Is it yours? If it is, it gets added to your account.',
+            { confirmLabel: "Yes, it's mine", cancelLabel: "No, it isn't mine" }
+        );
+        // The student may have signed out while the question was open.
+        if (!get(studentStore)) return;
+        if (!mine) apply({ lessons: {}, challenges: {}, programs: {} });
+    }
+    await push();
+}
+
+// Called once at startup. Signing in uploads this device's progress (after
+// asking) and brings back the student's progress from other devices; signing
+// out clears it from this device so the next person starts fresh.
 export function startProgressSync() {
     if (started) return;
     started = true;
     let previous = get(studentStore)?.code;
     studentStore.subscribe((student) => {
         if (student && student.code != previous) {
-            push();
+            signedIn(!!previous);
         } else if (!student && previous) {
             apply({ lessons: {}, challenges: {}, programs: {} });
         }
@@ -131,6 +171,26 @@ export function startProgressSync() {
     if (previous) push();
     lessonProgress.subscribe(schedulePush);
     challengeProgress.subscribe(schedulePush);
+}
+
+// ---- Reminding students to sign in -------------------------------------------
+
+let reminded = false;
+
+// The first time a student who isn't signed in starts real work (ticks a step,
+// runs a check, starts a challenge), ask once per visit whether they want to
+// sign in. Returns true to go ahead, false when they chose to sign in first.
+// Visitors and demos can say "Just trying it out" and carry on.
+export async function remindToSignIn() {
+    if (reminded || get(studentStore) || !get(libraryStore).available) return true;
+    reminded = true;
+    const signIn = await askConfirm(
+        "You're not signed in, so your coach can't see this work and it stays on this " +
+            'computer only. Sign in with your code first?',
+        { confirmLabel: 'Sign in', cancelLabel: 'Just trying it out' }
+    );
+    if (signIn) studentDialogOpen.set(true);
+    return !signIn;
 }
 
 // ---- Handing in -------------------------------------------------------------
