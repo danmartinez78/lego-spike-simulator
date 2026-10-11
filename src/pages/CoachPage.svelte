@@ -5,6 +5,7 @@
     import { Button, Input, Spinner } from 'flowbite-svelte';
     import ConfirmDialog from '$components/ConfirmDialog.svelte';
     import SceneThumb from '$components/coach/SceneThumb.svelte';
+    import PreviewDialog from '$components/coach/PreviewDialog.svelte';
     import LessonCardEditor from '$components/coach/LessonCardEditor.svelte';
     import LessonEditor from '$components/coach/LessonEditor.svelte';
     import TeamPanel from '$components/coach/TeamPanel.svelte';
@@ -313,6 +314,8 @@
     }
 
     let renaming = '';
+    let viewingRobot = '';
+    let robotOpen = false;
     let newName = '';
 
     function startRename(entry: LibraryEntry) {
@@ -694,6 +697,20 @@
                                 <li class="flex flex-row flex-wrap items-center gap-3 px-4 py-3">
                                     {#if active == 'scenes'}
                                         <SceneThumb name={entry.name} modified={entry.modified} />
+                                    {:else if active == 'robots'}
+                                        <button
+                                            type="button"
+                                            class="w-24 h-16 shrink-0 rounded-md border border-gray-200 bg-gray-100 flex flex-col items-center justify-center gap-0.5 text-xs text-gray-600 hover:ring-2 hover:ring-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            title="Show the robot in 3D"
+                                            aria-label="Show {entry.name} in 3D"
+                                            on:click={() => {
+                                                viewingRobot = entry.name;
+                                                robotOpen = true;
+                                            }}
+                                        >
+                                            <img src="icons/Robot.svg" alt="" class="w-7 h-7" />
+                                            View 3D
+                                        </button>
                                     {/if}
                                     <div class="flex-1 min-w-[12rem]">
                                         {#if renaming == entry.name}
@@ -940,4 +957,7 @@
     section={guideSection}
     on:go={(e) => e.detail != 'start' && showView(e.detail)}
 />
+{#if robotOpen}
+    <PreviewDialog bind:open={robotOpen} kind="robots" name={viewingRobot} />
+{/if}
 <ConfirmDialog />
