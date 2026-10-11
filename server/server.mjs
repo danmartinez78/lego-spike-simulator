@@ -8,13 +8,15 @@
 //   /api/library/{robots|scenes}/<file>   download one entry
 //   /api/admin/...     write operations (upload, delete, rename, set default, roster)
 //   /api/student/...   student sign-in with a roster code (TEAM_DIR)
+//   /mcp               MCP server for coaches' AI assistants (same sign-in as /api/admin)
 //   /api/lessons/...   lesson authoring guide, schema and checker (read-only)
 //
 // Writes are accepted from:
 //   - clients whose address starts with one of LAN_WRITE_PREFIXES
 //     (e.g. "192.168.0.") when they connect directly, not through a proxy;
 //   - requests carrying a valid Cloudflare Access token
-//     (CF_ACCESS_TEAM_DOMAIN + CF_ACCESS_AUD);
+//     (CF_ACCESS_TEAM_DOMAIN + CF_ACCESS_AUD, a comma-separated list when
+//     more than one Access application covers the site);
 //   - anyone, when ALLOW_UNAUTHENTICATED_WRITES=1 (only sensible on a private LAN).
 
 import http from 'node:http';
@@ -27,6 +29,7 @@ import { createTeam } from './team.mjs';
 import { createHomework } from './homework.mjs';
 import { lessonProblems } from './lesson-rules.mjs';
 import { createLessonsApi } from './lessons-api.mjs';
+import { createMcp } from './mcp.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +(process.env.PORT ?? 8080);
@@ -40,6 +43,9 @@ const CF_TEAM = (process.env.CF_ACCESS_TEAM_DOMAIN ?? '')
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '');
 const CF_AUD = process.env.CF_ACCESS_AUD ?? '';
+const CF_AUDS = CF_AUD.split(',')
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
 const ALLOW_OPEN_WRITES = process.env.ALLOW_UNAUTHENTICATED_WRITES === '1';
 const LAN_PREFIXES = (process.env.LAN_WRITE_PREFIXES ?? '')
     .split(',')
@@ -209,9 +215,10 @@ async function verifyAccessToken(token) {
     if (payload.exp && payload.exp < now) return undefined;
     if (payload.nbf && payload.nbf > now + 60) return undefined;
     const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-    if (!aud.includes(CF_AUD)) return undefined;
+    if (!aud.some((a) => CF_AUDS.includes(a))) return undefined;
     if (payload.iss && payload.iss !== `https://${CF_TEAM}`) return undefined;
-    return payload.email ?? payload.sub ?? 'unknown';
+    // People have an email; service tokens only have their client id (common_name).
+    return payload.email || payload.common_name || payload.sub || 'unknown';
 }
 
 function cookie(req, name) {
@@ -502,6 +509,10 @@ async function handle(req, res) {
         await homework.handleStudent(req, res, parts.slice(2), student);
         return;
     }
+    if (parts[0] === 'mcp' && parts.length === 1) {
+        await mcp.handle(req, res);
+        return;
+    }
     if (parts[0] === 'api' && parts[1] === 'lessons') {
         await lessonsApi.handle(req, res, parts.slice(2));
         return;
@@ -566,6 +577,18 @@ const lessonsApi = createLessonsApi({
     libraryDir: LIBRARY_DIR,
     docsDir: path.join(here, '..', 'docs'),
     schemaFile: path.join(here, '..', 'schemas', 'lesson-v1.json'),
+    sendJson,
+    send,
+    readBody
+});
+const mcp = createMcp({
+    libraryDir: LIBRARY_DIR,
+    schemaFile: path.join(here, '..', 'schemas', 'lesson-v1.json'),
+    writer,
+    listLibrary,
+    lessonsApi,
+    lessonProblems,
+    safeName,
     sendJson,
     send,
     readBody

@@ -62,6 +62,13 @@
     plus the live fields with mat sizes and robot starts, robots, programs),
     `GET /api/lessons/schema`, and `POST /api/lessons/check` (validate a
     lesson.json or package, nothing saved). These are public and read-only.
+-   MCP server for coaches' AI assistants at `/mcp` (`server/mcp.mjs`, setup and
+    tools in `docs/mcp.md`): lesson guide, library listing, check and save
+    lessons as drafts stamped with the coach's identity (`"author"`). Same
+    sign-in as `/api/admin`; for people it needs a separate Access app on
+    `/mcp` with Managed OAuth, whose AUD is added to `CF_ACCESS_AUD`
+    (comma-separated). Next: homework and asset tools, then challenges stored
+    on the server.
 -   Students (coach page, Students tab): paste names, each gets a random code
     (`WORD-WORD-NN`); print cut-out code cards with a sign-in QR, copy one
     student's link, or export a CSV for a mail merge. Stored in plain text in
