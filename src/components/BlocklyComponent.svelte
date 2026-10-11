@@ -9,6 +9,7 @@
     import { openGuide, openBlockHelp } from '$lib/help';
     import { helpFor, tooltipFor } from '$lib/blockly/blockhelp';
     import { programRequest, setProgramBuilder, type ProgramRequest } from '$lib/library';
+    import { restoreProgram, startAutosave } from '$lib/blockly/autosave';
     import { BookOpenOutline } from 'flowbite-svelte-icons';
     import ExamplesDialog from '$components/ExamplesDialog.svelte';
     import ChallengesDialog from '$components/ChallengesDialog.svelte';
@@ -180,10 +181,18 @@
         const zoomToFit = new ZoomToFitControl(workspace);
         zoomToFit.init();
         observer.observe(element);
-        workspace.createVariable('message1', 'broadcast');
+        // Bring back the program from last time, if there is one.
+        restoreProgram(workspace);
+        if (!Blockly.Variables.nameUsedWithAnyType('message1', workspace)) {
+            workspace.createVariable('message1', 'broadcast');
+        }
+        stopAutosave = startAutosave(workspace);
     });
 
+    let stopAutosave: (() => void) | undefined;
+
     onDestroy(() => {
+        stopAutosave?.();
         if (zoomToFit) {
             zoomToFit.dispose();
         }
