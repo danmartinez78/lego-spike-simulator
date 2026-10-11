@@ -99,6 +99,33 @@ header, because the server refuses coach changes that come from another site.
 | `MAX_UPLOAD_MB`                | Largest upload in MB (default 25)                                             |
 | `LDRAW_URL`                    | Where to download the parts library; empty asks visitors for `complete.zip`   |
 
+### Try a branch in a test container
+
+Changes go to a test container before the live site. Every push to a
+`claude/**` or `feature/**` branch publishes
+`ghcr.io/danmartinez78/lego-spike-simulator:branch-<name>`, where `<name>` is
+the branch name with `/` replaced by `-` (for example
+`branch-feature-camera`). Run it next to the live container, on another port
+and with its own data folder so the live library and team are untouched:
+
+```
+docker run -d --name lego-spike-simulator-test --restart unless-stopped \
+    -p 8094:8080 -v /path/to/test-data:/data \
+    -e LAN_WRITE_PREFIXES=192.168.0. \
+    ghcr.io/danmartinez78/lego-spike-simulator:branch-<name>
+```
+
+1. Push to the branch and wait for the Docker image Action to finish.
+2. Update only the test container so it pulls the new image (on Unraid:
+   Docker tab, Force update). To try a different branch, remove the test
+   container and run it again with that branch's tag.
+3. Open `http://<host>:8094`, hard-refresh, and try the change on the
+   devices students use.
+4. When it works, merge to `master`, wait for `:latest`, and update the live
+   container the same way.
+
+The first start of a new test container downloads the LDraw parts library.
+
 ### Without Docker
 
 ```

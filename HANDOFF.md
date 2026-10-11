@@ -13,8 +13,9 @@
     `/data` on a volume, set `LAN_WRITE_PREFIXES` for the home network, and put
     `/coach`, `/api/admin` and `/mcp` behind Cloudflare Access with
     `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` set (see the README and
-    `docs/mcp.md`). Deploy = push to `master`, wait for the Action, then pull
-    the new `:latest` on the server.
+    `docs/mcp.md`). Deploy = try the branch in the test container first
+    (README, "Try a branch in a test container"), then merge to `master`, wait
+    for the Action, and pull the new `:latest` on the server.
 
 ## Built so far
 
@@ -158,3 +159,6 @@ A reader-facing summary of everything the fork adds is in
     rollouts against hand-worked geometry, the Realistic/Challenging spread, and
     the colour sensor examples on a drawn mat. Run it after touching `vm.ts` or
     `realism.ts`.
+-   Sensors are read from `VM.step` every 10 ms of simulated time through
+    `Hub.addSensorSampler`; the sensor components register themselves. Depth
+    is packed into red and green (`WebGL.depthAt`), so read it through that.
