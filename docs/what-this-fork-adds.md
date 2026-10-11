@@ -96,8 +96,9 @@ assignments, and a coach page to run it all.
     "Realistic" and "Challenging" add start position errors, wheel size
     mismatch, wheel slip, motor overshoot, gyro drift and sensor noise, so
     programs that only count rotations drift and programs that check sensors
-    stay on target. Each value can be tuned, a fixed seed makes runs
-    repeatable, and a link such as `/?realism=realistic` picks a level.
+    stay on target. The Mode button in the simulator toolbar picks a level and
+    shows what to expect in each, and a link such as `/?realism=realistic`
+    picks a level.
 
 ### Tools on the mat
 

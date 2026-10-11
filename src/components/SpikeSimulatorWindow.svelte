@@ -27,6 +27,7 @@
     import SpikeSimulator from '$components/SpikeSimulator.svelte';
     import SaveSimulation from '$components/SaveSimulation.svelte';
     import SimulatorSettings from '$components/SimulatorSettings.svelte';
+    import ModeDialog from '$components/ModeDialog.svelte';
     import PortConnector from '$components/PortConnector.svelte';
     import WheelConnector from '$components/WheelConnector.svelte';
     import LoadScene from '$components/LoadScene.svelte';
@@ -64,6 +65,7 @@
     let saveOpen = false;
     let sceneOpen = false;
     let settingsOpen = false;
+    let modeOpen = false;
     let libraryOpen = false;
     let libraryKind: 'robots' | 'scenes' = 'scenes';
     let measureOpen = false;
@@ -268,6 +270,7 @@
 <SaveSimulation bind:modalOpen={saveOpen} bind:hub />
 <LoadScene bind:modalOpen={sceneOpen} />
 <SimulatorSettings bind:modalOpen={settingsOpen} />
+<ModeDialog bind:modalOpen={modeOpen} running={runSimulation} />
 <LibraryDialog bind:modalOpen={libraryOpen} kind={libraryKind} />
 <RunOverlay />
 <MeasureDialog bind:modalOpen={measureOpen} />
@@ -423,7 +426,7 @@
                         ? ''
                         : '!bg-amber-100 !text-amber-900 hover:!bg-amber-200 !border-amber-300'}"
                     aria-label="Mode: {realismName($realismStore.preset)}"
-                    on:click={openSettings}
+                    on:click={() => (modeOpen = true)}
                 >
                     <span
                         class="text-[11px] leading-none font-normal uppercase tracking-wide opacity-70"
@@ -435,8 +438,8 @@
                 </Button>
                 <Tooltip
                     >{$realismStore.preset == 'ideal'
-                        ? 'Ideal: a perfect robot with no real-world errors.'
-                        : 'Real-world errors are on.'} Change the mode in Settings.</Tooltip
+                        ? 'A perfect robot with no real-world errors.'
+                        : 'Real-world errors are on.'} Click to change the mode.</Tooltip
                 >
                 {#if $libraryStore.available}
                     <ToolButton

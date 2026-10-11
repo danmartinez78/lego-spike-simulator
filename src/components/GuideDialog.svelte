@@ -81,7 +81,7 @@
         },
         {
             component: CogOutline,
-            text: 'Settings: simulation speed, boundary and realism.'
+            text: 'Settings: simulation speed, boundary and frame rate.'
         },
         {
             component: ChartLineUpOutline,
@@ -473,8 +473,8 @@
                     </li>
                 </ol>
                 <p class="mt-2">
-                    A fixed random seed in Settings makes every run repeat the same errors, which
-                    helps when tracking down one odd run. A teacher can share a link ending in
+                    The <b>Mode</b> button in the toolbar also changes the mode, and shows what
+                    errors to expect in each one. A teacher can share a link ending in
                     <code>?realism=realistic</code> or <code>?realism=challenging</code> to set the mode
                     for a class.
                 </p>
