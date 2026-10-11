@@ -320,6 +320,59 @@ async function sendFile(req, res, file, cache = 'no-cache') {
     }
 }
 
+// The app page names its link preview image by path; chat apps that show
+// previews want a full address, so fill in this site's own when serving it.
+let pageCache;
+
+function siteOrigin(req) {
+    let scheme = 'http';
+    try {
+        scheme = JSON.parse(String(req.headers['cf-visitor'] ?? '{}')).scheme ?? scheme;
+    } catch {
+        // keep the default
+    }
+    const forwarded = String(req.headers['x-forwarded-proto'] ?? '')
+        .split(',')[0]
+        .trim();
+    if (!req.headers['cf-visitor'] && forwarded) scheme = forwarded;
+    if (scheme !== 'https') scheme = 'http';
+    const host = String(req.headers['x-forwarded-host'] ?? req.headers.host ?? '')
+        .split(',')[0]
+        .trim();
+    return /^[A-Za-z0-9.-]+(:\d+)?$/.test(host) ? `${scheme}://${host}` : undefined;
+}
+
+async function sendPage(req, res) {
+    const file = path.join(DIST_DIR, 'index.html');
+    try {
+        const stat = await fsp.stat(file);
+        if (pageCache?.mtimeMs !== stat.mtimeMs) {
+            pageCache = { mtimeMs: stat.mtimeMs, html: await fsp.readFile(file, 'utf8') };
+        }
+        const origin = siteOrigin(req);
+        const html = origin
+            ? pageCache.html.replace('content="/preview.png"', `content="${origin}/preview.png"`)
+            : pageCache.html;
+        const body = Buffer.from(html);
+        const etag = `W/"${body.length.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+        if (req.headers['if-none-match'] === etag) {
+            res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' });
+            res.end();
+            return;
+        }
+        res.writeHead(200, {
+            'Content-Type': MIME['.html'],
+            'Content-Length': body.length,
+            'Cache-Control': 'no-cache',
+            ETag: etag,
+            'Last-Modified': stat.mtime.toUTCString()
+        });
+        res.end(req.method === 'HEAD' ? undefined : body);
+    } catch {
+        send(res, 404, 'Not found');
+    }
+}
+
 function within(root, relative) {
     const file = path.resolve(root, '.' + path.posix.normalize('/' + relative));
     return file.startsWith(root + path.sep) || file === root ? file : undefined;
@@ -674,7 +727,7 @@ async function handle(req, res) {
     }
     // The privacy page is the same app too, at a plain address to give families.
     if (parts[0] === 'privacy' && parts.length === 1) {
-        await sendFile(req, res, path.join(DIST_DIR, 'index.html'));
+        await sendPage(req, res);
         return;
     }
     // The coach page is the same single-file app; it picks the page from the path.
@@ -684,7 +737,7 @@ async function handle(req, res) {
             res.writeHead(301, { Location: '/coach' });
             res.end();
         } else {
-            await sendFile(req, res, path.join(DIST_DIR, 'index.html'));
+            await sendPage(req, res);
         }
         return;
     }
@@ -698,7 +751,9 @@ async function handle(req, res) {
         return;
     }
     const file = within(DIST_DIR, parts.length === 0 ? 'index.html' : parts.join('/'));
-    if (file) {
+    if (file === path.join(DIST_DIR, 'index.html')) {
+        await sendPage(req, res);
+    } else if (file) {
         await sendFile(req, res, file);
     } else {
         send(res, 404, 'Not found');

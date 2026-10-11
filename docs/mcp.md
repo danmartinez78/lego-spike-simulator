@@ -59,9 +59,9 @@ default. Fields drawn with `save_field` keep their description in the `.spk`
 ## For coaches: connecting
 
 -   **Claude (web, desktop, mobile):** Settings, Connectors, Add custom connector.
-    Name it "SPIKE Simulator" and use the URL `https://spike.robodan.dev/mcp`.
+    Name it "SPIKE Simulator" and use the URL `https://<your-site>/mcp`.
     Claude opens the coach sign-in page; enter your email and the code it sends.
--   **Claude Code:** `claude mcp add --transport http spike https://spike.robodan.dev/mcp`,
+-   **Claude Code:** `claude mcp add --transport http spike https://<your-site>/mcp`,
     then `/mcp` in Claude Code to sign in.
 -   **ChatGPT, Meta Muse and others:** add a custom connector (or MCP server)
     with the same URL in the assistant's settings, then sign in the same way.
@@ -77,7 +77,7 @@ one-time PIN into a browser redirect, so `/mcp` uses Access's **Managed OAuth**,
 which turns the Access login into an OAuth sign-in that MCP clients understand.
 
 1. Zero Trust, Access controls, Applications, Add an application, Self-hosted.
-   Name "spike MCP", public hostname `spike.robodan.dev`, path `mcp`.
+   Name "spike MCP", public hostname `<your-site>`, path `mcp`.
 2. Attach the same email policy as the coach page, so one list of coaches
    covers both.
 3. Advanced settings: turn on **Managed OAuth**, turn on **Allow localhost

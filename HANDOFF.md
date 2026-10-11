@@ -7,29 +7,19 @@
 -   **Image:** every push to `master` runs `.github/workflows/docker.yml`, which
     builds `Dockerfile` and publishes `ghcr.io/danmartinez78/lego-spike-simulator:latest`
     (public package).
--   **Live site:** https://spike.robodan.dev (LAN: http://192.168.0.228:8093).
-
-## Hosting (Unraid "T640", 192.168.0.228)
-
--   Container `lego-spike-simulator`, image `ghcr.io/danmartinez78/lego-spike-simulator:latest`,
-    bridge network, port 8093 -> 8080, path `/data` -> `/mnt/user/appdata/lego-spike-simulator`.
--   Variable `LAN_WRITE_PREFIXES=192.168.0.`: devices on the home LAN that connect
-    directly (not through the public URL) can save to the shared library.
--   `/data/library` = shared robots/scenes/programs; `/data/ldraw` = LDraw parts
-    library (downloaded on first start; delete it to refresh).
--   Deploy = push to `master`, wait for the Action, then update the container
-    (Unraid Docker tab, or the unraid MCP `update_container`).
--   Nginx Proxy Manager proxy host `spike.robodan.dev` -> 192.168.0.228:8093
-    (robodan cert). Cloudflare CNAME `spike` -> robodan.dev.
--   Cloudflare Access (Zero Trust team `aged-glitter-854f.cloudflareaccess.com`)
-    guards `spike.robodan.dev/coach` and `/api/admin` with the One-time PIN login
-    and an email allowlist (policy "spike access"; add coaches' emails there).
-    The container has `CF_ACCESS_TEAM_DOMAIN` and
-    `CF_ACCESS_AUD` set, so the server checks the Access token on writes.
--   Unraid "Apply" reuses the image it already has; use Check for Updates /
-    apply update (or Force Update in Advanced View) to pull a new `:latest`.
+-   **Live site and hosting:** the details of the team's own server (address,
+    proxy, Cloudflare Access team and policy) are kept out of this public repo,
+    in the project's private notes. In general: run the Docker image with
+    `/data` on a volume, set `LAN_WRITE_PREFIXES` for the home network, and put
+    `/coach`, `/api/admin` and `/mcp` behind Cloudflare Access with
+    `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` set (see the README and
+    `docs/mcp.md`). Deploy = push to `master`, wait for the Action, then pull
+    the new `:latest` on the server.
 
 ## Built so far
+
+A reader-facing summary of everything the fork adds is in
+`docs/what-this-fork-adds.md`; keep it and the README up to date with new features.
 
 -   `server/server.mjs`: serves the app, the parts library and the shared library
     API (robots `.mpd`, scenes `.spk`, programs `.llsp3` + lesson card `.json`).

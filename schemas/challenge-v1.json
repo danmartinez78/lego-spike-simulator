@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://spike.robodan.dev/schemas/challenge-v1.json",
+    "$id": "https://github.com/danmartinez78/lego-spike-simulator/blob/master/schemas/challenge-v1.json",
     "title": "LEGO SPIKE Simulator challenge",
     "description": "A short goal students try from the Challenges window: a field, a check over 5 runs and a few hints, with no steps. See docs/lessons.md or /api/lessons/guide.",
     "type": "object",

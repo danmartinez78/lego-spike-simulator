@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://spike.robodan.dev/schemas/lesson-v1.json",
+    "$id": "https://github.com/danmartinez78/lego-spike-simulator/blob/master/schemas/lesson-v1.json",
     "title": "LEGO SPIKE Simulator lesson",
     "description": "A lesson students work through in the simulator's Lessons window, with an optional check of their runs. See docs/lessons.md or /api/lessons/guide.",
     "type": "object",
