@@ -748,12 +748,12 @@
                                                         >Draft</span
                                                     >
                                                 {/if}
-                                                {#if entry.lesson?.author}
+                                                {#if entry.lesson?.author ?? entry.author}
                                                     <span
                                                         class="text-xs font-medium rounded-full px-2 py-0.5 bg-purple-100 text-purple-800"
                                                         title="Saved by an AI assistant for this coach"
                                                         >From an assistant · {entry.lesson
-                                                            .author}</span
+                                                            ?.author ?? entry.author}</span
                                                     >
                                                 {/if}
                                                 {#if entry.lesson?.check}

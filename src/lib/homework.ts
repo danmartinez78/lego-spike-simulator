@@ -14,6 +14,9 @@ export interface Assignment {
     due?: string;
     lessons: string[];
     created: string;
+    // Saved by an AI assistant and not yet published: students don't see it.
+    draft?: boolean;
+    author?: string;
 }
 
 export interface ServerProgress {
@@ -190,7 +193,7 @@ async function adminJson<T>(method: string, path: string, body?: unknown): Promi
     return (await response.json()) as T;
 }
 
-export type AssignmentInput = Pick<Assignment, 'title' | 'note' | 'due' | 'lessons'>;
+export type AssignmentInput = Pick<Assignment, 'title' | 'note' | 'due' | 'lessons' | 'draft'>;
 
 export const getHomework = () => adminJson<{ assignments: Assignment[] }>('GET', 'homework');
 export const addAssignment = (a: AssignmentInput) =>

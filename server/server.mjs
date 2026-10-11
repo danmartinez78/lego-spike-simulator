@@ -31,6 +31,7 @@ import { createHomework } from './homework.mjs';
 import { challengeProblems, lessonProblems } from './lesson-rules.mjs';
 import { createLessonsApi } from './lessons-api.mjs';
 import { createMcp } from './mcp.mjs';
+import { createAuthors } from './authors.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +(process.env.PORT ?? 8080);
@@ -156,6 +157,7 @@ async function listLibrary() {
         challenges: [],
         defaults: await readDefaults()
     };
+    const added = await authors.load();
     for (const kind of Object.keys(KINDS)) {
         const dir = path.join(LIBRARY_DIR, kind);
         const names = fs.existsSync(dir) ? await fsp.readdir(dir) : [];
@@ -182,6 +184,8 @@ async function listLibrary() {
                     // no lesson card
                 }
             }
+            const author = added[`${kind}/${name}`]?.author;
+            if (author) entry.author = author;
             result[kind].push(entry);
         }
     }
@@ -407,6 +411,7 @@ async function handleAdmin(req, res, parts) {
                 }
             }
         }
+        await authors.rename(kind, from, to);
         console.log(`${who} renamed ${kind}/${from} to ${to}`);
         sendJson(res, 200, { name: to });
         return;
@@ -474,6 +479,8 @@ async function handleAdmin(req, res, parts) {
         }
         await fsp.writeFile(file + '.tmp', body);
         await fsp.rename(file + '.tmp', file);
+        // A coach's own upload takes it over from any assistant.
+        await authors.remove(kind, name);
         console.log(`${who} saved ${kind}/${name} (${body.length} bytes)`);
         sendJson(res, 200, { name });
     } else if (req.method === 'DELETE') {
@@ -487,6 +494,7 @@ async function handleAdmin(req, res, parts) {
             delete defaults[field];
             await writeDefaults(defaults);
         }
+        await authors.remove(kind, name);
         console.log(`${who} deleted ${kind}/${name}`);
         sendJson(res, 200, { deleted: name });
     } else {
@@ -533,8 +541,20 @@ async function handle(req, res) {
             sendJson(res, 405, { error: 'Method not allowed' });
             return;
         }
+        // Coaches' emails (who saved what) are for coaches only.
+        const coach = !!(await writer(req));
         if (parts.length === 2) {
-            sendJson(res, 200, await listLibrary());
+            const library = await listLibrary();
+            if (!coach) {
+                for (const kind of Object.keys(KINDS)) {
+                    for (const entry of library[kind]) {
+                        delete entry.author;
+                        delete entry.lesson?.author;
+                        delete entry.challenge?.author;
+                    }
+                }
+            }
+            sendJson(res, 200, library);
             return;
         }
         const name = safeName(parts[2], parts[3] ?? '');
@@ -542,7 +562,18 @@ async function handle(req, res) {
             send(res, 404, 'Not found');
             return;
         }
-        await sendFile(res, path.join(LIBRARY_DIR, parts[2], name));
+        const file = path.join(LIBRARY_DIR, parts[2], name);
+        if (!coach && (parts[2] === 'lessons' || parts[2] === 'challenges')) {
+            try {
+                const json = JSON.parse(await fsp.readFile(file, 'utf8'));
+                delete json.author;
+                sendJson(res, 200, json);
+            } catch {
+                send(res, 404, 'Not found');
+            }
+            return;
+        }
+        await sendFile(res, file);
         return;
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -583,6 +614,7 @@ const team = createTeam({
     readBody,
     onRemove: (id) => homework.removeStudent(id)
 });
+const authors = createAuthors(LIBRARY_DIR);
 const homework = createHomework({ teamDir: TEAM_DIR, team, sendJson, send, readBody });
 const lessonsApi = createLessonsApi({
     libraryDir: LIBRARY_DIR,
@@ -601,6 +633,9 @@ const mcp = createMcp({
     lessonProblems,
     challengeProblems,
     safeName,
+    homework,
+    authors,
+    readDefaults,
     sendJson,
     send,
     readBody

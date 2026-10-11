@@ -122,7 +122,13 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
                     .slice(0, 1000),
                 due: input.due || undefined,
                 lessons: [...new Set(lessons)],
-                created: old?.created ?? new Date().toISOString()
+                created: old?.created ?? new Date().toISOString(),
+                // Homework from an AI assistant is a draft until a coach publishes it.
+                draft:
+                    typeof input?.draft === 'boolean'
+                        ? input.draft || undefined
+                        : old?.draft || undefined,
+                author: old?.author
             }
         };
     }
@@ -205,7 +211,9 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
     // /api/student/homework, /progress, /programs/<lesson>.json (signed in)
     async function handleStudent(req, res, parts, student) {
         if (parts[0] === 'homework' && parts.length === 1 && req.method === 'GET') {
-            sendJson(res, 200, await loadHomework());
+            const homework = await loadHomework();
+            homework.assignments = homework.assignments.filter((a) => !a.draft);
+            sendJson(res, 200, homework);
             return;
         }
         if (!student) {
@@ -269,5 +277,86 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
         await fsp.rm(studentDir(id), { recursive: true, force: true });
     }
 
-    return { handleAdmin, handleStudent, removeStudent };
+    // For the MCP server: an assistant's homework is always a draft stamped with
+    // its coach, and it can only change or delete its own drafts.
+    async function saveDraft(input, who, id) {
+        const homework = await loadHomework();
+        const index = id ? homework.assignments.findIndex((a) => a.id === id) : -1;
+        if (id && index < 0) return { error: `There is no homework with id ${id}` };
+        const old = index >= 0 ? homework.assignments[index] : undefined;
+        if (old && (!old.draft || old.author !== who)) {
+            return {
+                error: 'You can only change your own draft homework. A coach can edit the rest on the coach page.'
+            };
+        }
+        const result = cleanAssignment({ ...input, draft: true }, old);
+        if (result.error) return result;
+        result.assignment.author = who;
+        if (old) homework.assignments[index] = result.assignment;
+        else homework.assignments.push(result.assignment);
+        await writeJson(homeworkFile, homework);
+        console.log(`${who} saved draft homework "${result.assignment.title}" through MCP`);
+        return result;
+    }
+
+    async function deleteDraft(id, who) {
+        const homework = await loadHomework();
+        const index = homework.assignments.findIndex((a) => a.id === id);
+        if (index < 0) return { error: `There is no homework with id ${id}` };
+        const old = homework.assignments[index];
+        if (!old.draft || old.author !== who) {
+            return {
+                error: 'You can only delete your own draft homework. Use the coach page for anything else.'
+            };
+        }
+        homework.assignments.splice(index, 1);
+        await writeJson(homeworkFile, homework);
+        console.log(`${who} deleted draft homework "${old.title}" through MCP`);
+        return { deleted: id };
+    }
+
+    // Each student's status on each lesson of each assignment, worked out the
+    // same way as lessonStatus() in src/lib/lessons.ts. `lessons` maps a lesson
+    // file name to its JSON.
+    async function report(lessons) {
+        const homework = await loadHomework();
+        const roster = await team.load();
+        const students = [];
+        for (const s of roster.students) {
+            students.push({
+                name: s.name,
+                progress: await loadProgress(s.id),
+                programs: await listPrograms(s.id)
+            });
+        }
+        function status(student, name) {
+            const lesson = lessons[name];
+            if (!lesson) return { status: 'lesson missing' };
+            const mine = student.progress.lessons[name];
+            const steps = Array.isArray(lesson.steps) ? lesson.steps.length : 0;
+            const ticked = (mine?.steps ?? []).filter((n) => n < steps).length;
+            const checkDone = !lesson.check || !!mine?.check?.passed;
+            const challenge = lesson.challenge
+                ? student.progress.challenges[lesson.challenge]
+                : undefined;
+            const challengeDone = !lesson.challenge || !!challenge?.completed;
+            const done = ticked >= steps && checkDone && challengeDone;
+            const started = ticked > 0 || !!mine?.check || !!challenge;
+            return {
+                status: done ? 'done' : started ? 'started' : 'not started',
+                steps: `${ticked}/${steps}`,
+                ...(lesson.check ? { checkPassed: !!mine?.check?.passed } : {}),
+                ...(student.programs[name] ? { handedIn: student.programs[name] } : {})
+            };
+        }
+        return homework.assignments.map((a) => ({
+            ...a,
+            students: students.map((s) => ({
+                name: s.name,
+                lessons: Object.fromEntries(a.lessons.map((l) => [l, status(s, l)]))
+            }))
+        }));
+    }
+
+    return { handleAdmin, handleStudent, removeStudent, saveDraft, deleteDraft, report };
 }

@@ -6,17 +6,24 @@
 // a service token) or a direct LAN connection. What an assistant saves is
 // stamped with that coach's identity and starts as a draft, so publishing stays
 // a click on the coach page, and an assistant can only replace or delete its
-// own coach's drafts. Lessons and challenges work the same way.
+// own coach's drafts. Lessons, challenges and homework work the same way.
+// Robots and fields (maps) have no drafts: they go straight into the library
+// for everyone, so an assistant can only add new ones and replace or delete
+// the ones its coach's assistant added (server/authors.mjs keeps track).
 
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { buildField, fieldProblems } from './fields.mjs';
+import { readZip } from './zip.mjs';
 
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
 const INSTRUCTIONS = `Tools for coaches using the LEGO SPIKE simulator.
 Lessons are step-by-step activities; challenges are short goals with hints and no steps. Both can have a check that the simulator runs over five runs.
-To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).`;
+To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).
+Homework: list_homework shows each assignment with every student's progress; save_homework makes a draft assignment of published lessons that a coach publishes on the Homework tab.
+Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models. These are available to everyone as soon as they are saved.`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
 const object = (properties, required = []) => ({ type: 'object', properties, required });
@@ -121,6 +128,125 @@ const TOOLS = [
     ...kindTools
 ];
 
+const ASSET_TOOLS = [
+    {
+        name: 'list_homework',
+        description:
+            "List homework assignments (title, due date, lessons, draft state, author) with each student's progress on each lesson: not started, started (steps ticked) or done, whether the lesson's check passed, and when they handed in a program.",
+        inputSchema: object({}),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: 'save_homework',
+        description:
+            "Save a homework assignment as a draft: a title, one or more published lessons (file names from list_library), an optional due date (YYYY-MM-DD) and a note for students. Students don't see it until a coach publishes it on the coach page, Homework tab. Pass id to update one of your own drafts (send the whole assignment again; it replaces the old one).",
+        inputSchema: object(
+            {
+                homework: object(
+                    {
+                        title: { type: 'string' },
+                        lessons: {
+                            type: 'array',
+                            items: { type: 'string' },
+                            description:
+                                'Lesson file names, e.g. "Sample lesson - Drive a square.json"'
+                        },
+                        due: { type: 'string', description: 'Due date, YYYY-MM-DD (optional)' },
+                        note: { type: 'string', description: 'Note for students (optional)' }
+                    },
+                    ['title', 'lessons']
+                ),
+                id: { type: 'string', description: 'Id of your own draft to update (optional)' }
+            },
+            ['homework']
+        )
+    },
+    {
+        name: 'delete_homework',
+        description: 'Delete a draft homework assignment you saved, by its id from list_homework.',
+        inputSchema: object({ id: { type: 'string' } }, ['id']),
+        annotations: { destructiveHint: true }
+    },
+    {
+        name: 'get_field_guide',
+        description:
+            'How to describe a field (a practice mat with the robot start and objects) as JSON for check_field and save_field (Markdown). Read this before making a field.',
+        inputSchema: object({}),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: 'check_field',
+        description:
+            'Check a field description without saving it. Returns errors (must be fixed) and warnings.',
+        inputSchema: object({ field: { type: 'object', description: 'The field JSON' } }, [
+            'field'
+        ]),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: 'save_field',
+        description:
+            "Draw a field from its description and save it to the library as a .spk scene, for lessons, challenges and students to use. The file name comes from the title unless given. Set replace to true to update a field your coach's assistant made; it never replaces anyone else's.",
+        inputSchema: object(
+            {
+                field: { type: 'object', description: 'The field JSON (spike-field/1)' },
+                name: { type: 'string', description: 'File name, e.g. "Line maze.spk" (optional)' },
+                replace: { type: 'boolean', description: 'Replace your own field with this name' }
+            },
+            ['field']
+        )
+    },
+    {
+        name: 'get_field',
+        description:
+            'Describe a field in the library: its mat size, robot start and objects, plus the JSON description it was made from when it was made with save_field (so you can change it and save it again).',
+        inputSchema: object({ name: { type: 'string', description: 'Scene file name' } }, ['name']),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: 'upload_field',
+        description:
+            "Add an existing .spk scene file (from the simulator's Save → Save scene, or another team) to the library, base64-encoded.",
+        inputSchema: object(
+            {
+                name: { type: 'string', description: 'File name ending in .spk' },
+                content_base64: { type: 'string', description: 'The .spk file, base64' },
+                replace: { type: 'boolean', description: 'Replace your own field with this name' }
+            },
+            ['name', 'content_base64']
+        )
+    },
+    {
+        name: 'upload_robot',
+        description:
+            "Add a robot model to the library: an LDraw .mpd or .ldr file (for example exported from BrickLink Studio), as text or base64. It appears in everyone's Robot picker.",
+        inputSchema: object(
+            {
+                name: { type: 'string', description: 'File name ending in .mpd or .ldr' },
+                content: { type: 'string', description: 'The model as LDraw text' },
+                content_base64: { type: 'string', description: 'Or the file, base64' },
+                replace: { type: 'boolean', description: 'Replace your own robot with this name' }
+            },
+            ['name']
+        )
+    },
+    {
+        name: 'delete_field',
+        description:
+            "Delete a field your coach's assistant added, if no lesson, challenge or example uses it and it isn't the default.",
+        inputSchema: object({ name: { type: 'string' } }, ['name']),
+        annotations: { destructiveHint: true }
+    },
+    {
+        name: 'delete_robot',
+        description:
+            "Delete a robot your coach's assistant added, if no lesson or challenge uses it and it isn't the default.",
+        inputSchema: object({ name: { type: 'string' } }, ['name']),
+        annotations: { destructiveHint: true }
+    }
+];
+TOOLS.push(...ASSET_TOOLS);
+
 class ToolError extends Error {}
 
 /** A file name from a title. Lessons keep the title, like libraryFileName() in
@@ -152,10 +278,14 @@ export function createMcp({
     lessonProblems,
     challengeProblems,
     safeName,
+    homework,
+    authors,
+    readDefaults,
     sendJson,
     send,
     readBody
 }) {
+    const MAX_ASSET = 15 * 1024 * 1024;
     const problems = { lessons: lessonProblems, challenges: challengeProblems };
 
     async function readItem(kind, name) {
@@ -261,8 +391,8 @@ export function createMcp({
             return {
                 lessons: library.lessons.map((e) => summary('lessons', e)),
                 challenges: library.challenges.map((e) => summary('challenges', e)),
-                scenes: library.scenes.map((e) => e.name),
-                robots: library.robots.map((e) => e.name),
+                scenes: library.scenes.map((e) => ({ name: e.name, author: e.author })),
+                robots: library.robots.map((e) => ({ name: e.name, author: e.author })),
                 programs: library.programs.map((e) => ({ name: e.name, title: e.card?.title })),
                 defaults: library.defaults
             };
@@ -299,6 +429,267 @@ export function createMcp({
         tools[`save_${one}`] = async (args, who) =>
             save(kind, args[one], args.name, args.replace, who);
         tools[`delete_${one}`] = async (args, who) => remove(kind, args.name, who);
+    }
+
+    // ---- Homework --------------------------------------------------------
+
+    async function lessonsByName() {
+        const library = await listLibrary();
+        return Object.fromEntries(library.lessons.map((e) => [e.name, e.lesson]));
+    }
+
+    tools.list_homework = async () => ({
+        assignments: await homework.report(await lessonsByName())
+    });
+
+    tools.save_homework = async ({ homework: input, id }, who) => {
+        if (!input || typeof input !== 'object') throw new ToolError('homework must be an object');
+        const lessons = await lessonsByName();
+        const names = Array.isArray(input.lessons) ? input.lessons.map(String) : [];
+        const missing = names.filter((n) => !lessons[n]);
+        if (missing.length > 0) {
+            throw new ToolError(
+                `No lesson called ${missing.join(', ')}. Use file names from list_library.`
+            );
+        }
+        const warnings = names
+            .filter((n) => lessons[n]?.draft)
+            .map(
+                (n) => `${n} is a draft: publish it too, or students won't see it in their homework`
+            );
+        const result = await homework.saveDraft(input, who, id);
+        if (result.error) throw new ToolError(result.error);
+        return {
+            saved: true,
+            homework: result.assignment,
+            warnings,
+            next: 'A coach can review it and press Publish on the coach page, Homework tab: /coach'
+        };
+    };
+
+    tools.delete_homework = async ({ id }, who) => {
+        const result = await homework.deleteDraft(String(id ?? ''), who);
+        if (result.error) throw new ToolError(result.error);
+        return result;
+    };
+
+    // ---- Fields and robots -----------------------------------------------
+
+    tools.get_field_guide = async () =>
+        fsp.readFile(path.join(schemasDir, '..', 'docs', 'fields.md'), 'utf8');
+
+    tools.check_field = async ({ field }) => {
+        const { errors, warnings } = fieldProblems(field);
+        return { ok: errors.length === 0, errors, warnings };
+    };
+
+    // What uses a field or robot, so it isn't deleted from under them.
+    async function usersOf(kind, name) {
+        const library = await listLibrary();
+        const key = kind === 'scenes' ? 'field' : 'robot';
+        const users = [
+            ...library.lessons
+                .filter((e) => e.lesson?.[key] === name)
+                .map((e) => `lesson ${e.name}`),
+            ...library.challenges
+                .filter((e) => e.challenge?.[key] === name)
+                .map((e) => `challenge ${e.name}`)
+        ];
+        if (kind === 'scenes') {
+            users.push(
+                ...library.programs
+                    .filter((e) => e.card?.scene === name)
+                    .map((e) => `example ${e.name}`)
+            );
+        }
+        const defaults = await readDefaults();
+        if (defaults[kind === 'scenes' ? 'scene' : 'robot'] === name) users.push('the default');
+        return users;
+    }
+
+    // May this coach's assistant write `name`? New names are fine; existing
+    // files only if its coach's assistant added them and replace is set.
+    async function checkWrite(kind, name, replace, who) {
+        const file = path.join(libraryDir, kind, name);
+        if (!fs.existsSync(file)) return;
+        const author = await authors.get(kind, name);
+        const what = kind === 'scenes' ? 'field' : 'robot';
+        if (author !== who) {
+            throw new ToolError(
+                `There is already a ${what} called ${name}. Save under another name; a coach can replace it on the coach page.`
+            );
+        }
+        if (!replace) {
+            throw new ToolError(
+                `You already added a ${what} called ${name}. Set replace to true to update it, or pick another name.`
+            );
+        }
+    }
+
+    async function writeAsset(kind, name, data, who) {
+        await fsp.mkdir(path.join(libraryDir, kind), { recursive: true });
+        const file = path.join(libraryDir, kind, name);
+        await fsp.writeFile(file + '.tmp', data);
+        await fsp.rename(file + '.tmp', file);
+        await authors.set(kind, name, who);
+        console.log(`${who} saved ${kind}/${name} through MCP (${data.length} bytes)`);
+    }
+
+    // A safe file name: robots keep a given .mpd or .ldr, anything else
+    // becomes "<cleaned name>.spk" or ".mpd".
+    function assetName(kind, raw, fallbackTitle) {
+        const given = String(raw || fallbackTitle || '').trim();
+        let name = given;
+        if (!(kind === 'robots' && /\.(mpd|ldr)$/i.test(given))) {
+            name = given
+                .replace(/\.(spk|mpd|ldr)$/i, '')
+                .replace(/[^\w .()+-]/g, '_')
+                .slice(0, 90);
+            if (!/^\w/.test(name)) name = (kind === 'scenes' ? 'Field ' : 'Robot ') + name;
+            name += kind === 'scenes' ? '.spk' : '.mpd';
+        }
+        const safe = safeName(kind, name);
+        if (!safe) throw new ToolError(`Can't use "${given}" as a file name`);
+        return safe;
+    }
+
+    function decode(base64) {
+        const data = Buffer.from(String(base64 ?? ''), 'base64');
+        if (data.length === 0) throw new ToolError('content_base64 is empty or not base64');
+        if (data.length > MAX_ASSET) throw new ToolError('That file is too large (15 MB at most)');
+        return data;
+    }
+
+    tools.save_field = async ({ field, name, replace }, who) => {
+        const { errors, warnings } = fieldProblems(field);
+        if (errors.length > 0) return { saved: false, errors, warnings };
+        const file = assetName('scenes', name, field.title || 'Field');
+        await checkWrite('scenes', file, replace, who);
+        await writeAsset('scenes', file, buildField(field, { author: who }), who);
+        return {
+            saved: true,
+            name: file,
+            warnings,
+            next: `Use "${file}" as the field of a lesson or challenge. A coach can see it on the coach page, Robots and maps tab, and open it in the simulator from the Field button.`
+        };
+    };
+
+    tools.get_field = async ({ name }) => {
+        const file = safeName('scenes', name);
+        if (!file || !fs.existsSync(path.join(libraryDir, 'scenes', file))) {
+            throw new ToolError(`There is no field called ${name}`);
+        }
+        let files;
+        try {
+            files = readZip(await fsp.readFile(path.join(libraryDir, 'scenes', file)));
+        } catch {
+            throw new ToolError(`${file} isn't a readable scene`);
+        }
+        const scene = JSON.parse(files.get('scene.json')?.toString('utf8') ?? '{}');
+        const heading = (((180 - (scene.robot?.rotation ?? 180)) % 360) + 360) % 360;
+        const result = {
+            name: file,
+            author: await authors.get('scenes', file),
+            width: scene.matWidth ?? 2360,
+            height: scene.matHeight ?? 1140,
+            start: {
+                x: Math.round(scene.robot?.position?.x ?? 0),
+                z: Math.round(scene.robot?.position?.z ?? 0),
+                heading
+            },
+            objects: (scene.objects ?? []).map((o) => ({
+                name: o.name,
+                x: Math.round(o.position?.x ?? 0),
+                z: Math.round(o.position?.z ?? 0),
+                anchored: !!o.anchored
+            }))
+        };
+        const spec = files.get('field.json');
+        if (spec) {
+            const description = JSON.parse(spec.toString('utf8'));
+            delete description.author;
+            result.description = description;
+        } else {
+            result.note =
+                'This field was not made with save_field, so there is no description to edit; its mat is a picture.';
+        }
+        return result;
+    };
+
+    tools.upload_field = async ({ name, content_base64, replace }, who) => {
+        const data = decode(content_base64);
+        let files;
+        try {
+            files = readZip(data);
+        } catch {
+            throw new ToolError("That isn't a .spk scene (it isn't a zip file)");
+        }
+        let scene;
+        try {
+            scene = JSON.parse(files.get('scene.json')?.toString('utf8') ?? '');
+        } catch {
+            throw new ToolError("That isn't a .spk scene: it has no readable scene.json");
+        }
+        if (!scene?.robot?.position)
+            throw new ToolError("That scene's scene.json has no robot start");
+        const file = assetName('scenes', name);
+        await checkWrite('scenes', file, replace, who);
+        await writeAsset('scenes', file, data, who);
+        return {
+            saved: true,
+            name: file,
+            warnings: files.has('mat.jpg') ? [] : ['The scene has no mat picture (mat.jpg)']
+        };
+    };
+
+    tools.upload_robot = async ({ name, content, content_base64, replace }, who) => {
+        let data;
+        if (typeof content === 'string' && content.length > 0) {
+            data = Buffer.from(content, 'utf8');
+            if (data.length > MAX_ASSET)
+                throw new ToolError('That model is too large (15 MB at most)');
+        } else {
+            data = decode(content_base64);
+        }
+        const text = data.toString('utf8');
+        if (text.includes('\0') || !/^\s*1\s/m.test(text)) {
+            throw new ToolError(
+                "That isn't an LDraw model: it has no part lines (lines starting with 1)"
+            );
+        }
+        const file = assetName('robots', name);
+        await checkWrite('robots', file, replace, who);
+        await writeAsset('robots', file, data, who);
+        return {
+            saved: true,
+            name: file,
+            next: 'Open it in the simulator from the Robot button to check its hub, motors and sensors are on the right ports.'
+        };
+    };
+
+    for (const [kind, what] of [
+        ['scenes', 'field'],
+        ['robots', 'robot']
+    ]) {
+        tools[`delete_${what}`] = async ({ name }, who) => {
+            const file = safeName(kind, name);
+            if (!file || !fs.existsSync(path.join(libraryDir, kind, file))) {
+                throw new ToolError(`There is no ${what} called ${name}`);
+            }
+            if ((await authors.get(kind, file)) !== who) {
+                throw new ToolError(
+                    `You can only delete a ${what} your assistant added. Use the coach page for anything else.`
+                );
+            }
+            const users = await usersOf(kind, file);
+            if (users.length > 0) {
+                throw new ToolError(`${file} is used by ${users.join(', ')}. Change those first.`);
+            }
+            await fsp.rm(path.join(libraryDir, kind, file), { force: true });
+            await authors.remove(kind, file);
+            console.log(`${who} deleted ${kind}/${file} through MCP`);
+            return { deleted: file };
+        };
     }
 
     async function callTool(params, who) {
