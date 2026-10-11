@@ -57,7 +57,7 @@
         { icon: 'icons/Brick.svg', text: 'Open or close the simulator.' },
         {
             component: ClipboardCheckOutline,
-            text: 'Lessons: step-by-step activities, and any homework from your coach.'
+            text: 'Lessons: step-by-step activities, and any assignments from your coach.'
         },
         { component: BookOpenOutline, text: 'Examples: programs that explain how they work.' },
         {
@@ -204,14 +204,18 @@
                     ticked and the check has passed. To check again after changing your program,
                     press the green <b>Check</b> button in the simulator. The ✕ next to it stops checking.
                 </p>
-                <p class="mt-3 font-medium">Homework and signing in</p>
+                <p class="mt-3 font-medium">Assignments and signing in</p>
                 <p>
                     If your coach gave you a card with a code, press <b>Sign in</b> and type it. A sign-in
                     link from your coach does this for you. You only do this once on each computer. Once
                     you're signed in:
                 </p>
                 <ul class="list-disc ml-5 flex flex-col gap-1 mt-1">
-                    <li>Homework from your coach shows at the top of the Lessons list.</li>
+                    <li>
+                        Assignments from your coach show at the top of the Lessons list. A badge
+                        says whether it's <b>Practice</b> (going over what you've learned) or
+                        <b>Prep for next meeting</b> (getting ready for what's next).
+                    </li>
                     <li>Your progress follows you to any computer you sign in on.</li>
                     <li>
                         <b>Hand in my program</b> (at the bottom of a lesson) sends your coach the program
@@ -501,7 +505,7 @@
                     >.
                 </p>
                 <p class="mt-2">
-                    This site runs a modified version that adds lessons and homework, challenges,
+                    This site runs a modified version that adds lessons and assignments, challenges,
                     the shared library, realism settings, experiments that compare programs, example
                     programs, and this guide. Its full source code is at
                     <a

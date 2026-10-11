@@ -67,7 +67,7 @@
             </p>
             <p>
                 <b>Got a code card from your coach?</b> Press <b>Sign in</b> and type your code. Then
-                you'll see your homework, and your coach sees your progress.
+                you'll see your assignments, and your coach sees your progress.
             </p>
         </div>
         <p class="text-sm text-gray-600">

@@ -7,6 +7,7 @@
     import LessonListItem from '$components/LessonListItem.svelte';
     import { studentDialogOpen, studentStore } from '$lib/team';
     import {
+        assignmentType,
         dueLabel,
         handIn,
         handedIn,
@@ -159,7 +160,7 @@
         }
     }
 
-    // Homework that names lessons this library has, soonest due first.
+    // Assignments that name lessons this library has, soonest due first.
     function homeworkLessons(
         assignments: typeof $homeworkStore,
         lessons: LibraryEntry[],
@@ -230,7 +231,7 @@
                         <div
                             class="px-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500"
                         >
-                            Homework
+                            Assignments
                         </div>
                         {#each homework as h (h.assignment.id)}
                             <div class="rounded-xl border border-blue-200 bg-blue-50/60 p-2">
@@ -238,6 +239,13 @@
                                     <div class="text-sm font-semibold text-gray-900">
                                         {h.assignment.title}
                                     </div>
+                                    {#if assignmentType(h.assignment.type)}
+                                        {@const t = assignmentType(h.assignment.type)}
+                                        <span
+                                            class="self-start text-[11px] font-medium rounded-full px-2 py-0.5 my-0.5 {t?.badge}"
+                                            >{t?.label}</span
+                                        >
+                                    {/if}
                                     <div class="text-xs flex flex-row flex-wrap gap-x-2">
                                         {#if h.assignment.due}
                                             <span

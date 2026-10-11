@@ -6,7 +6,7 @@
 // a service token) or a direct LAN connection. What an assistant saves is
 // stamped with that coach's identity and starts as a draft, so publishing stays
 // a click on the coach page, and an assistant can only replace or delete its
-// own coach's drafts. Lessons, challenges and homework work the same way.
+// own coach's drafts. Lessons, challenges and assignments work the same way.
 // Robots and fields (maps) have no drafts: they go straight into the library
 // for everyone, so an assistant can only add new ones and replace or delete
 // the ones its coach's assistant added (server/authors.mjs keeps track).
@@ -22,7 +22,7 @@ const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05
 const INSTRUCTIONS = `Tools for coaches using the LEGO SPIKE simulator.
 Lessons are step-by-step activities; challenges are short goals with hints and no steps. Both can have a check that the simulator runs over five runs.
 To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).
-Homework: list_homework shows each assignment with every student's progress; save_homework makes a draft assignment of published lessons that a coach publishes on the Homework tab.
+Assignments: list_assignments shows each assignment with every student's progress; save_assignment makes a draft assignment of published lessons, optionally typed as practice or prep for the next meeting, that a coach publishes on the Assignments tab.
 Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models. These are available to everyone as soon as they are saved.`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
@@ -128,34 +128,66 @@ const TOOLS = [
     ...kindTools
 ];
 
+const ASSIGNMENT_SCHEMA = object(
+    {
+        title: { type: 'string' },
+        lessons: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Lesson file names, e.g. "Sample lesson - Drive a square.json"'
+        },
+        type: {
+            type: 'string',
+            enum: ['practice', 'prep'],
+            description:
+                'What it is for (optional): "practice" (practise what was taught) or "prep" (prepare for the next meeting)'
+        },
+        due: { type: 'string', description: 'Due date, YYYY-MM-DD (optional)' },
+        note: { type: 'string', description: 'Note for students (optional)' }
+    },
+    ['title', 'lessons']
+);
+
 const ASSET_TOOLS = [
     {
-        name: 'list_homework',
+        name: 'list_assignments',
         description:
-            "List homework assignments (title, due date, lessons, draft state, author) with each student's progress on each lesson: not started, started (steps ticked) or done, whether the lesson's check passed, and when they handed in a program.",
+            "List assignments (title, type, due date, lessons, draft state, author) with each student's progress on each lesson: not started, started (steps ticked) or done, whether the lesson's check passed, and when they handed in a program.",
+        inputSchema: object({}),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: 'save_assignment',
+        description:
+            'Save an assignment as a draft: a title, one or more published lessons (file names from list_library), an optional type ("practice" for practising what was taught, "prep" for getting ready for the next meeting), an optional due date (YYYY-MM-DD) and a note for students. Students don\'t see it until a coach publishes it on the coach page, Assignments tab. Pass id to update one of your own drafts (send the whole assignment again; it replaces the old one).',
+        inputSchema: object(
+            {
+                assignment: ASSIGNMENT_SCHEMA,
+                id: { type: 'string', description: 'Id of your own draft to update (optional)' }
+            },
+            ['assignment']
+        )
+    },
+    {
+        name: 'delete_assignment',
+        description: 'Delete a draft assignment you saved, by its id from list_assignments.',
+        inputSchema: object({ id: { type: 'string' } }, ['id']),
+        annotations: { destructiveHint: true }
+    },
+    // The old names, so assistants set up before the rename keep working.
+    {
+        name: 'list_homework',
+        description: 'Old name for list_assignments; does the same thing.',
         inputSchema: object({}),
         annotations: { readOnlyHint: true }
     },
     {
         name: 'save_homework',
         description:
-            "Save a homework assignment as a draft: a title, one or more published lessons (file names from list_library), an optional due date (YYYY-MM-DD) and a note for students. Students don't see it until a coach publishes it on the coach page, Homework tab. Pass id to update one of your own drafts (send the whole assignment again; it replaces the old one).",
+            'Old name for save_assignment; does the same thing, with the assignment under "homework".',
         inputSchema: object(
             {
-                homework: object(
-                    {
-                        title: { type: 'string' },
-                        lessons: {
-                            type: 'array',
-                            items: { type: 'string' },
-                            description:
-                                'Lesson file names, e.g. "Sample lesson - Drive a square.json"'
-                        },
-                        due: { type: 'string', description: 'Due date, YYYY-MM-DD (optional)' },
-                        note: { type: 'string', description: 'Note for students (optional)' }
-                    },
-                    ['title', 'lessons']
-                ),
+                homework: ASSIGNMENT_SCHEMA,
                 id: { type: 'string', description: 'Id of your own draft to update (optional)' }
             },
             ['homework']
@@ -163,7 +195,7 @@ const ASSET_TOOLS = [
     },
     {
         name: 'delete_homework',
-        description: 'Delete a draft homework assignment you saved, by its id from list_homework.',
+        description: 'Old name for delete_assignment; does the same thing.',
         inputSchema: object({ id: { type: 'string' } }, ['id']),
         annotations: { destructiveHint: true }
     },
@@ -431,19 +463,21 @@ export function createMcp({
         tools[`delete_${one}`] = async (args, who) => remove(kind, args.name, who);
     }
 
-    // ---- Homework --------------------------------------------------------
+    // ---- Assignments (homework.mjs) ----------------------------------------
 
     async function lessonsByName() {
         const library = await listLibrary();
         return Object.fromEntries(library.lessons.map((e) => [e.name, e.lesson]));
     }
 
-    tools.list_homework = async () => ({
+    tools.list_assignments = async () => ({
         assignments: await homework.report(await lessonsByName())
     });
 
-    tools.save_homework = async ({ homework: input, id }, who) => {
-        if (!input || typeof input !== 'object') throw new ToolError('homework must be an object');
+    tools.save_assignment = async ({ assignment: input, id }, who) => {
+        if (!input || typeof input !== 'object') {
+            throw new ToolError('assignment must be an object');
+        }
         const lessons = await lessonsByName();
         const names = Array.isArray(input.lessons) ? input.lessons.map(String) : [];
         const missing = names.filter((n) => !lessons[n]);
@@ -455,23 +489,31 @@ export function createMcp({
         const warnings = names
             .filter((n) => lessons[n]?.draft)
             .map(
-                (n) => `${n} is a draft: publish it too, or students won't see it in their homework`
+                (n) =>
+                    `${n} is a draft: publish it too, or students won't see it in their assignments`
             );
         const result = await homework.saveDraft(input, who, id);
         if (result.error) throw new ToolError(result.error);
         return {
             saved: true,
-            homework: result.assignment,
+            assignment: result.assignment,
             warnings,
-            next: 'A coach can review it and press Publish on the coach page, Homework tab: /coach'
+            next: 'A coach can review it and press Publish on the coach page, Assignments tab: /coach'
         };
     };
 
-    tools.delete_homework = async ({ id }, who) => {
+    tools.delete_assignment = async ({ id }, who) => {
         const result = await homework.deleteDraft(String(id ?? ''), who);
         if (result.error) throw new ToolError(result.error);
         return result;
     };
+
+    tools.list_homework = tools.list_assignments;
+    tools.save_homework = async ({ homework: input, assignment, id }, who) => {
+        const result = await tools.save_assignment({ assignment: assignment ?? input, id }, who);
+        return { ...result, homework: result.assignment };
+    };
+    tools.delete_homework = tools.delete_assignment;
 
     // ---- Fields and robots -----------------------------------------------
 

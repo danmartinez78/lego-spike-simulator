@@ -1,12 +1,14 @@
 <script lang="ts">
-    // Coach page: homework assignments and each student's progress on them.
+    // Coach page: assignments and each student's progress on them.
     import { onMount } from 'svelte';
-    import { Button, Input, Label, Spinner, Textarea } from 'flowbite-svelte';
+    import { Button, Input, Label, Select, Spinner, Textarea } from 'flowbite-svelte';
     import { askConfirm } from '$lib/confirm';
     import { libraryStore, type LibraryEntry } from '$lib/library';
     import { groupLessons, lessonStatus, topicColour } from '$lib/lessons';
     import {
         addAssignment,
+        assignmentType,
+        ASSIGNMENT_TYPES,
         deleteAssignment,
         dueLabel,
         getHomework,
@@ -15,6 +17,7 @@
         isOverdue,
         updateAssignment,
         type Assignment,
+        type AssignmentType,
         type StudentProgress
     } from '$lib/homework';
 
@@ -30,7 +33,13 @@
     let title = '';
     let due = '';
     let note = '';
+    let type: AssignmentType | '' = '';
     let picked: string[] = [];
+
+    const typeItems = [
+        { value: '', name: 'No type' },
+        ...ASSIGNMENT_TYPES.map((t) => ({ value: t.value, name: t.label }))
+    ];
 
     onMount(load);
 
@@ -52,6 +61,7 @@
         title = a?.title ?? '';
         due = a?.due ?? '';
         note = a?.note ?? '';
+        type = a?.type ?? '';
         picked = [...(a?.lessons ?? [])];
         message = '';
     }
@@ -63,7 +73,7 @@
     async function save() {
         busy = true;
         message = '';
-        const input = { title, due, note, lessons: picked };
+        const input = { title, due, note, type: type || undefined, lessons: picked };
         try {
             const result =
                 editing == 'new'
@@ -86,7 +96,7 @@
     async function remove(a: Assignment) {
         if (
             !(await askConfirm(
-                `Delete the homework "${a.title}"? Students keep their progress on the lessons.`,
+                `Delete the assignment "${a.title}"? Students keep their progress on the lessons.`,
                 { confirmLabel: 'Delete', danger: true }
             ))
         ) {
@@ -160,11 +170,11 @@
 <section class="flex flex-col gap-3">
     <div class="flex flex-row flex-wrap items-end gap-3">
         <div class="flex-1 min-w-[16rem]">
-            <h2 class="text-lg font-semibold">Homework</h2>
+            <h2 class="text-lg font-semibold">Assignments</h2>
             <p class="text-gray-600 text-sm">
-                Pick lessons and a due date. A lesson counts as done when the student ticks every
-                step and passes its challenge. Progress shows up once a student signs in with their
-                code.
+                Pick lessons and a due date, and say whether it's practice or prep for the next
+                meeting. A lesson counts as done when the student ticks every step and passes its
+                challenge. Progress shows up once a student signs in with their code.
             </p>
         </div>
         <Button size="sm" color="light" disabled={loading} on:click={refresh}>Refresh</Button>
@@ -172,7 +182,7 @@
             size="sm"
             color="blue"
             disabled={editing != ''}
-            on:click={() => startEdit(undefined)}>New homework</Button
+            on:click={() => startEdit(undefined)}>New assignment</Button
         >
     </div>
 
@@ -192,11 +202,15 @@
             class="bg-white rounded-lg border border-blue-200 p-4 flex flex-col gap-4"
             on:submit|preventDefault={save}
         >
-            <h3 class="font-semibold">{editing == 'new' ? 'New homework' : 'Edit homework'}</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <h3 class="font-semibold">{editing == 'new' ? 'New assignment' : 'Edit assignment'}</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div class="sm:col-span-2">
                     <Label for="hw-title" class="mb-1">Title</Label>
                     <Input id="hw-title" bind:value={title} placeholder="Line following week" />
+                </div>
+                <div>
+                    <Label for="hw-type" class="mb-1">Type (optional)</Label>
+                    <Select id="hw-type" items={typeItems} bind:value={type} placeholder="" />
                 </div>
                 <div>
                     <Label for="hw-due" class="mb-1">Due (optional)</Label>
@@ -248,18 +262,18 @@
             </fieldset>
             <div class="flex flex-row gap-2 justify-end">
                 <Button color="light" on:click={() => (editing = '')}>Cancel</Button>
-                <Button type="submit" color="blue" disabled={busy}>Save homework</Button>
+                <Button type="submit" color="blue" disabled={busy}>Save assignment</Button>
             </div>
         </form>
     {/if}
 
     {#if loading}
         <div class="flex flex-row gap-2 items-center text-gray-600 text-sm">
-            <Spinner size="4" /> Loading homework…
+            <Spinner size="4" /> Loading assignments…
         </div>
     {:else if sorted.length == 0 && !editing}
         <p class="bg-white rounded-lg border border-gray-200 p-6 text-gray-600">
-            No homework yet. Press New homework to assign some lessons.
+            No assignments yet. Press New assignment to assign some lessons.
         </p>
     {/if}
 
@@ -269,6 +283,12 @@
                 <div class="flex-1 min-w-[12rem]">
                     <h3 class="font-semibold flex flex-row flex-wrap items-center gap-2">
                         {a.title}
+                        {#if assignmentType(a.type)}
+                            {@const t = assignmentType(a.type)}
+                            <span class="text-xs font-medium rounded-full px-2 py-0.5 {t?.badge}"
+                                >{t?.label}</span
+                            >
+                        {/if}
                         {#if a.draft}
                             <span
                                 class="text-xs font-medium rounded-full px-2 py-0.5 bg-gray-200 text-gray-700"

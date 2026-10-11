@@ -1,5 +1,5 @@
-// Homework assignments, students' lesson progress and handed-in programs.
-// Stored as JSON and .llsp3 files in TEAM_DIR:
+// Assignments (called homework in the code and files), students' lesson
+// progress and handed-in programs. Stored as JSON and .llsp3 files in TEAM_DIR:
 //   homework.json                          assignments
 //   students/<id>/progress.json            ticked steps and challenge results
 //   students/<id>/programs/<lesson>.llsp3  the program handed in for a lesson
@@ -14,6 +14,10 @@ function lessonBase(name) {
     const base = path.basename(String(name ?? '')).replace(/\.json$/i, '');
     return /^[\w][\w .()+-]{0,100}$/.test(base) ? base : undefined;
 }
+
+// What an assignment is for, shown to students as a badge. Optional: older
+// assignments have none.
+export const ASSIGNMENT_TYPES = ['practice', 'prep'];
 
 function isDate(value) {
     return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -104,7 +108,7 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
             .replace(/[<>]/g, '')
             .trim()
             .slice(0, 80);
-        if (!title) return { error: 'Give the homework a title' };
+        if (!title) return { error: 'Give the assignment a title' };
         const lessons = (Array.isArray(input?.lessons) ? input.lessons : [])
             .map((l) => lessonBase(l))
             .filter((l) => l)
@@ -112,6 +116,10 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
         if (lessons.length === 0) return { error: 'Pick at least one lesson' };
         if (input.due !== undefined && input.due !== '' && !isDate(input.due)) {
             return { error: 'The due date must look like 2026-10-16' };
+        }
+        const type = input?.type || undefined;
+        if (type !== undefined && !ASSIGNMENT_TYPES.includes(type)) {
+            return { error: 'The type must be "practice" or "prep" (or left out)' };
         }
         return {
             assignment: {
@@ -121,9 +129,10 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
                     .trim()
                     .slice(0, 1000),
                 due: input.due || undefined,
+                type,
                 lessons: [...new Set(lessons)],
                 created: old?.created ?? new Date().toISOString(),
-                // Homework from an AI assistant is a draft until a coach publishes it.
+                // An assignment from an AI assistant is a draft until a coach publishes it.
                 draft:
                     typeof input?.draft === 'boolean'
                         ? input.draft || undefined
@@ -182,13 +191,13 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
             }
             homework.assignments.push(result.assignment);
             await writeJson(homeworkFile, homework);
-            console.log(`${who} added homework "${result.assignment.title}"`);
+            console.log(`${who} added assignment "${result.assignment.title}"`);
             sendJson(res, 200, homework);
             return;
         }
         const index = homework.assignments.findIndex((a) => a.id === parts[0]);
         if (index < 0 || parts.length !== 1) {
-            sendJson(res, 404, { error: 'No such homework' });
+            sendJson(res, 404, { error: 'No such assignment' });
             return;
         }
         if (req.method === 'PUT') {
@@ -277,16 +286,16 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
         await fsp.rm(studentDir(id), { recursive: true, force: true });
     }
 
-    // For the MCP server: an assistant's homework is always a draft stamped with
+    // For the MCP server: an assistant's assignment is always a draft stamped with
     // its coach, and it can only change or delete its own drafts.
     async function saveDraft(input, who, id) {
         const homework = await loadHomework();
         const index = id ? homework.assignments.findIndex((a) => a.id === id) : -1;
-        if (id && index < 0) return { error: `There is no homework with id ${id}` };
+        if (id && index < 0) return { error: `There is no assignment with id ${id}` };
         const old = index >= 0 ? homework.assignments[index] : undefined;
         if (old && (!old.draft || old.author !== who)) {
             return {
-                error: 'You can only change your own draft homework. A coach can edit the rest on the coach page.'
+                error: 'You can only change your own draft assignments. A coach can edit the rest on the coach page.'
             };
         }
         const result = cleanAssignment({ ...input, draft: true }, old);
@@ -295,23 +304,23 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
         if (old) homework.assignments[index] = result.assignment;
         else homework.assignments.push(result.assignment);
         await writeJson(homeworkFile, homework);
-        console.log(`${who} saved draft homework "${result.assignment.title}" through MCP`);
+        console.log(`${who} saved draft assignment "${result.assignment.title}" through MCP`);
         return result;
     }
 
     async function deleteDraft(id, who) {
         const homework = await loadHomework();
         const index = homework.assignments.findIndex((a) => a.id === id);
-        if (index < 0) return { error: `There is no homework with id ${id}` };
+        if (index < 0) return { error: `There is no assignment with id ${id}` };
         const old = homework.assignments[index];
         if (!old.draft || old.author !== who) {
             return {
-                error: 'You can only delete your own draft homework. Use the coach page for anything else.'
+                error: 'You can only delete your own draft assignments. Use the coach page for anything else.'
             };
         }
         homework.assignments.splice(index, 1);
         await writeJson(homeworkFile, homework);
-        console.log(`${who} deleted draft homework "${old.title}" through MCP`);
+        console.log(`${who} deleted draft assignment "${old.title}" through MCP`);
         return { deleted: id };
     }
 

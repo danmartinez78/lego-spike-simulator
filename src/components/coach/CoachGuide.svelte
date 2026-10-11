@@ -4,7 +4,7 @@
         | 'lessons'
         | 'challenges'
         | 'examples'
-        | 'homework'
+        | 'assignments'
         | 'students'
         | 'assets'
         | 'agents';
@@ -27,7 +27,7 @@
         { id: 'lessons', label: 'Lessons', tab: 'Lessons' },
         { id: 'challenges', label: 'Challenges', tab: 'Challenges' },
         { id: 'examples', label: 'Example programs', tab: 'Example programs' },
-        { id: 'homework', label: 'Homework', tab: 'Homework' },
+        { id: 'assignments', label: 'Assignments', tab: 'Assignments' },
         { id: 'students', label: 'Students', tab: 'Students' },
         { id: 'assets', label: 'Robots and maps', tab: 'Robots and maps' },
         { id: 'agents', label: 'AI assistants', tab: 'AI assistants' }
@@ -94,14 +94,15 @@
                         own, and press Publish on the ones students should see.
                     </li>
                     <li>
-                        <b>Homework:</b> pick lessons and a due date. Students see it at the top of their
-                        Lessons window, and you see who is done.
+                        <b>Assignments:</b> pick lessons and a due date, and mark it as practice or as
+                        prep for the next meeting. Students see it at the top of their Lessons window,
+                        and you see who is done.
                     </li>
                 </ol>
                 <p class="font-medium text-gray-900">Drafts and publishing</p>
                 <p>
                     New and imported lessons and challenges, and anything an AI assistant writes or
-                    sets as homework, start as a <b>draft</b>, marked with a grey Draft badge.
+                    sets as an assignment, start as a <b>draft</b>, marked with a grey Draft badge.
                     Students can't see drafts. Press
                     <b>Publish</b> when it's ready, and <b>Unpublish</b> to hide it again without losing
                     it.
@@ -187,27 +188,36 @@
                 >
             </section>
 
-            <section data-section="homework" class="flex flex-col gap-2">
-                <h3 class="text-base font-semibold text-gray-900">Homework</h3>
+            <section data-section="assignments" class="flex flex-col gap-2">
+                <h3 class="text-base font-semibold text-gray-900">Assignments</h3>
                 <p>
-                    <b>New homework</b> picks one or more published lessons, an optional due date and
+                    <b>New assignment</b> picks one or more published lessons, an optional due date and
                     a note. Students who are signed in see it at the top of their Lessons window.
                 </p>
                 <p>
-                    Under each piece of homework there's a row for every student: <b>Not started</b
-                    >, how many steps they've ticked, or <b>Done</b>. When a student presses Hand
-                    in, a link to their program appears so you can download it and look at it.
+                    <b>Type</b> tells students what it's for: <b>Practice</b> to go over what you've
+                    already covered, or <b>Prep for next meeting</b> to get ready for what's next. It
+                    shows as a badge on their list. Leave it as No type if neither fits.
+                </p>
+                <p>
+                    Under each assignment there's a row for every student: <b>Not started</b>, how
+                    many steps they've ticked, or <b>Done</b>. When a student presses Hand in, a
+                    link to their program appears so you can download it and look at it.
                 </p>
                 <p>
                     Progress only reaches you if the student is signed in. Without a code it stays
                     in their browser.
                 </p>
                 <p>
-                    Homework an AI assistant sets is a draft until you press <b>Publish</b> on it. An
-                    assistant can also read this progress, so you can ask it who still has work to do.
+                    An assignment an AI assistant sets is a draft until you press <b>Publish</b> on it.
+                    An assistant can also read this progress, so you can ask it who still has work to
+                    do.
                 </p>
-                <Button size="xs" color="light" class="self-start" on:click={() => go('homework')}
-                    >Go to Homework</Button
+                <Button
+                    size="xs"
+                    color="light"
+                    class="self-start"
+                    on:click={() => go('assignments')}>Go to Assignments</Button
                 >
             </section>
 
@@ -271,16 +281,16 @@
                 <h3 class="text-base font-semibold text-gray-900">AI assistants</h3>
                 <p>
                     An AI assistant such as Claude, ChatGPT or Copilot can write lessons and
-                    challenges (checks included), set homework, check on students' progress, and add
-                    robots and fields. Connect it to this site with the connector address on the AI
-                    assistants tab and it can read the library and save straight here. Or have any
-                    chatbot make a lesson or challenge file and import it.
+                    challenges (checks included), set assignments, check on students' progress, and
+                    add robots and fields. Connect it to this site with the connector address on the
+                    AI assistants tab and it can read the library and save straight here. Or have
+                    any chatbot make a lesson or challenge file and import it.
                 </p>
                 <p>
                     Everything an assistant saves has your email on it, shown with a purple "From an
-                    assistant" badge. Lessons, challenges and homework are drafts: look them over,
-                    especially the check on the mat, then publish them. Robots and fields are ready
-                    to use as soon as they're saved.
+                    assistant" badge. Lessons, challenges and assignments are drafts: look them
+                    over, especially the check on the mat, then publish them. Robots and fields are
+                    ready to use as soon as they're saved.
                 </p>
                 <Button size="xs" color="light" class="self-start" on:click={() => go('agents')}
                     >Go to AI assistants</Button
