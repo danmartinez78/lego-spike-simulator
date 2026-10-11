@@ -96,6 +96,15 @@
     `src/lib/homework.ts`, `AssignmentsPanel.svelte`. The MCP tools are
     `list_assignments`, `save_assignment` and `delete_assignment`; the old
     `*_homework` names still work as aliases.
+-   Before going public (pre-release): `/api/admin` refuses writes whose
+    `Origin` is another site (it compares with `Host` or `X-Forwarded-Host`, so
+    the proxy must pass the original host); drafts are left out of the public
+    `/api/library` and a draft file returns 404 unless a coach asks; static files
+    carry an ETag so browsers revalidate the 2.5 MB page instead of downloading
+    it again. The Students tab has Download backup (`GET /api/admin/backup`, a
+    zip of `team/` and `library/`; to restore, unzip it into `/data`) and New
+    codes for everyone (`POST /api/admin/roster/codes`), and asks before adding
+    names that look like full surnames. The guide's About tab has a privacy note.
 -   The code panel autosaves the program in the browser (`src/lib/blockly/autosave.ts`,
     localStorage key `spike-sim-program`) and restores it on the next visit.
 -   Welcome screen, guide (? button) with block reference, About/credits.

@@ -528,6 +528,15 @@
                     Coaches manage the shared library on the
                     <a class="text-blue-700 underline" href="coach" target="_blank">coach page</a>.
                 </p>
+                <h4 class="font-medium mt-3">Privacy</h4>
+                <p>
+                    You don't need an account to use the simulator, and the site has no ads or
+                    tracking. Your program is kept in this browser. If your coach gives you a code
+                    card, the site keeps the name your coach typed (a first name and last initial),
+                    your progress on lessons and challenges, and the programs you hand in. Only your
+                    coaches can see them, and they're deleted when a coach removes you from the
+                    team.
+                </p>
                 <h4 class="font-medium mt-3">Also uses</h4>
                 <ul class="list-disc ml-5">
                     <li>

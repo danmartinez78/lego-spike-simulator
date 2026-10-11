@@ -19,6 +19,16 @@ export default tseslint.config(
         }
     },
     {
+        rules: {
+            // Leading underscore: unused on purpose (an op name a handler ignores,
+            // a block argument evaluated for its side effects).
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+            ]
+        }
+    },
+    {
         files: ['**/*.svelte'],
         languageOptions: {
             parserOptions: {

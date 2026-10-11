@@ -70,6 +70,12 @@
                 you'll see your assignments, and your coach sees your progress.
             </p>
         </div>
+        <p
+            class="sm:hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        >
+            Building programs works best on a laptop, Chromebook or tablet. On a phone you can look
+            around, but the blocks are hard to drag.
+        </p>
         <p class="text-sm text-gray-600">
             This browser keeps your program for you, even if you close the page. You can reopen this
             help any time with the <b>Help</b> button.

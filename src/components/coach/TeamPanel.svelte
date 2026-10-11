@@ -5,7 +5,10 @@
     import { askConfirm } from '$lib/confirm';
     import {
         addStudents,
+        backupUrl,
+        fullNames,
         getRoster,
+        newCodesForEveryone,
         newCode,
         removeStudent,
         renameStudent,
@@ -52,6 +55,16 @@
         if (list.length == 0) {
             failed = true;
             message = 'Type at least one name, one per line.';
+            return;
+        }
+        const full = fullNames(list);
+        if (
+            full.length > 0 &&
+            !(await askConfirm(
+                `${full.join(', ')} ${full.length == 1 ? 'looks like a full name' : 'look like full names'}. The site only needs a first name and last initial, like "Maya R.". Add ${full.length == 1 ? 'it' : 'them'} anyway?`,
+                { confirmLabel: 'Add anyway' }
+            ))
+        ) {
             return;
         }
         await run(
@@ -119,6 +132,21 @@
             'Downloaded the codes as a spreadsheet for a mail merge. It holds every code, so keep it private.';
     }
 
+    async function newSeason() {
+        if (
+            await askConfirm(
+                `Give all ${students.length} students new codes? Every old code, card and link stops working, so you'll need to hand out new cards. Their progress stays.`,
+                { confirmLabel: 'New codes for everyone', danger: true }
+            )
+        ) {
+            await run(
+                'season',
+                newCodesForEveryone,
+                'Everyone has a new code. Print new cards or send new links.'
+            );
+        }
+    }
+
     function toggleShown(id: string) {
         const next = new Set(shown);
         if (next.has(id)) next.delete(id);
@@ -135,6 +163,11 @@
         <p class="text-gray-600 text-sm">
             Each student gets their own random code. Hand out the printed cards, or send each
             student only their own link. Students without a code can still use the simulator.
+        </p>
+        <p class="text-gray-600 text-sm mt-1">
+            Only signed-in coaches can see this list. The site keeps each student's name, code,
+            progress and handed-in programs, and nothing else. Removing a student deletes all of it.
+            Download a backup now and then: it holds the team and the shared library.
         </p>
     </div>
 
@@ -173,6 +206,10 @@
                 >Print code cards</Button
             >
             <Button size="sm" color="light" on:click={exportCsv}>Export CSV</Button>
+            <Button size="sm" color="light" href={backupUrl}>Download backup</Button>
+            <Button size="sm" color="light" disabled={busy != ''} on:click={newSeason}
+                >New codes for everyone</Button
+            >
             <label class="flex flex-row items-center gap-2 text-sm text-gray-700 ml-auto">
                 <input type="checkbox" bind:checked={showCodes} class="rounded" />
                 Show all codes

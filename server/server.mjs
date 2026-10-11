@@ -32,6 +32,7 @@ import { challengeProblems, lessonProblems } from './lesson-rules.mjs';
 import { createLessonsApi } from './lessons-api.mjs';
 import { createMcp } from './mcp.mjs';
 import { createAuthors } from './authors.mjs';
+import { writeZip } from './zip.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +(process.env.PORT ?? 8080);
@@ -247,6 +248,20 @@ function lanClient(req) {
     return LAN_PREFIXES.some((prefix) => address.startsWith(prefix)) ? `lan ${address}` : undefined;
 }
 
+// Browsers send Origin on writes. A page on another site must not be able to
+// use a signed-in coach's Access cookie to change the library or the team.
+function crossSite(req) {
+    const origin = req.headers.origin;
+    if (!origin) return false;
+    let host;
+    try {
+        host = new URL(String(origin)).host;
+    } catch {
+        return true;
+    }
+    return host !== req.headers.host && host !== req.headers['x-forwarded-host'];
+}
+
 async function writer(req) {
     const lan = lanClient(req);
     if (lan) return lan;
@@ -275,17 +290,28 @@ function sendJson(res, status, value) {
     send(res, status, JSON.stringify(value), MIME['.json'], { 'Cache-Control': 'no-store' });
 }
 
-async function sendFile(res, file, cache = 'no-cache') {
+async function sendFile(req, res, file, cache = 'no-cache') {
     try {
         const stat = await fsp.stat(file);
         if (!stat.isFile()) throw new Error('not a file');
         const type = MIME[path.extname(file).toLowerCase()] ?? 'application/octet-stream';
+        // A validator lets browsers keep their copy (the app is one 2.5 MB page)
+        // and only check it is still current.
+        const etag = `W/"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+        if (req.headers['if-none-match'] === etag) {
+            res.writeHead(304, { ETag: etag, 'Cache-Control': cache });
+            res.end();
+            return;
+        }
         res.writeHead(200, {
             'Content-Type': type,
             'Content-Length': stat.size,
-            'Cache-Control': cache
+            'Cache-Control': cache,
+            ETag: etag,
+            'Last-Modified': stat.mtime.toUTCString()
         });
-        fs.createReadStream(file).pipe(res);
+        if (req.method === 'HEAD') res.end();
+        else fs.createReadStream(file).pipe(res);
     } catch {
         send(res, 404, 'Not found');
     }
@@ -314,10 +340,31 @@ function readBody(req) {
     });
 }
 
+// Every file under root, as paths relative to it with forward slashes.
+async function listFiles(root, sub = '') {
+    const result = [];
+    let entries = [];
+    try {
+        entries = await fsp.readdir(path.join(root, sub), { withFileTypes: true });
+    } catch {
+        return result;
+    }
+    for (const entry of entries) {
+        const name = sub ? `${sub}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) result.push(...(await listFiles(root, name)));
+        else if (entry.isFile()) result.push(name);
+    }
+    return result;
+}
+
 // ---------------------------------------------------------------------------
 // Routes
 
 async function handleAdmin(req, res, parts) {
+    if (req.method !== 'GET' && req.method !== 'HEAD' && crossSite(req)) {
+        sendJson(res, 403, { error: 'Cross-site requests are not allowed' });
+        return;
+    }
     const who = await writer(req);
     // Visiting /api/admin/login in a browser goes through Cloudflare Access,
     // then lands back on the app (or the coach page, with ?to=coach) signed in.
@@ -336,6 +383,30 @@ async function handleAdmin(req, res, parts) {
         return;
     }
 
+    if (parts[0] === 'backup' && req.method === 'GET') {
+        // Everything coaches can't get back otherwise: the roster, students'
+        // progress and handed-in programs, assignments and the shared library.
+        const files = [];
+        for (const [prefix, root] of [
+            ['team', TEAM_DIR],
+            ['library', LIBRARY_DIR]
+        ]) {
+            for (const name of await listFiles(root)) {
+                if (name.endsWith('.tmp')) continue;
+                files.push({
+                    name: `${prefix}/${name}`,
+                    data: await fsp.readFile(path.join(root, name))
+                });
+            }
+        }
+        const stamp = new Date().toISOString().slice(0, 10);
+        console.log(`${who} downloaded a backup (${files.length} files)`);
+        send(res, 200, writeZip(files), 'application/zip', {
+            'Cache-Control': 'no-store',
+            'Content-Disposition': `attachment; filename="spike-backup-${stamp}.zip"`
+        });
+        return;
+    }
     if (parts[0] === 'roster') {
         await team.handleAdmin(req, res, parts.slice(1), who);
         return;
@@ -504,7 +575,13 @@ async function handleAdmin(req, res, parts) {
 
 async function handle(req, res) {
     const url = new URL(req.url ?? '/', 'http://localhost');
-    const pathname = decodeURI(url.pathname);
+    let pathname;
+    try {
+        pathname = decodeURI(url.pathname);
+    } catch {
+        send(res, 404, 'Not found');
+        return;
+    }
     const parts = pathname.split('/').filter((x) => x.length > 0);
 
     if (parts[0] === 'api' && parts[1] === 'admin') {
@@ -546,6 +623,9 @@ async function handle(req, res) {
         if (parts.length === 2) {
             const library = await listLibrary();
             if (!coach) {
+                // Drafts are for coaches until they're published.
+                library.lessons = library.lessons.filter((e) => !e.lesson?.draft);
+                library.challenges = library.challenges.filter((e) => !e.challenge?.draft);
                 for (const kind of Object.keys(KINDS)) {
                     for (const entry of library[kind]) {
                         delete entry.author;
@@ -566,6 +646,7 @@ async function handle(req, res) {
         if (!coach && (parts[2] === 'lessons' || parts[2] === 'challenges')) {
             try {
                 const json = JSON.parse(await fsp.readFile(file, 'utf8'));
+                if (json.draft) throw new Error('draft');
                 delete json.author;
                 sendJson(res, 200, json);
             } catch {
@@ -573,7 +654,7 @@ async function handle(req, res) {
             }
             return;
         }
-        await sendFile(res, file);
+        await sendFile(req, res, file);
         return;
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -587,14 +668,14 @@ async function handle(req, res) {
             res.writeHead(301, { Location: '/coach' });
             res.end();
         } else {
-            await sendFile(res, path.join(DIST_DIR, 'index.html'));
+            await sendFile(req, res, path.join(DIST_DIR, 'index.html'));
         }
         return;
     }
     if (parts[0] === 'ldraw') {
         const file = within(LDRAW_DIR, parts.slice(1).join('/'));
         if (file) {
-            await sendFile(res, file, 'public, max-age=604800');
+            await sendFile(req, res, file, 'public, max-age=604800');
         } else {
             send(res, 404, 'Not found');
         }
@@ -602,7 +683,7 @@ async function handle(req, res) {
     }
     const file = within(DIST_DIR, parts.length === 0 ? 'index.html' : parts.join('/'));
     if (file) {
-        await sendFile(res, file);
+        await sendFile(req, res, file);
     } else {
         send(res, 404, 'Not found');
     }

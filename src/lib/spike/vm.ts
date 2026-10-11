@@ -251,7 +251,7 @@ export class ActionStatement extends Statement {
         this.arguments = args;
     }
 
-    *execute_bargraphmonitor(thread: Thread, op: string): Generator<VMTask> {
+    *execute_bargraphmonitor(thread: Thread, _op: string): Generator<VMTask> {
         yield* super._execute(thread);
     }
 
@@ -322,7 +322,7 @@ export class ActionStatement extends Statement {
         }
     }
 
-    *execute_displaymonitor(thread: Thread, op: string): Generator<VMTask> {
+    *execute_displaymonitor(thread: Thread, _op: string): Generator<VMTask> {
         yield* super._execute(thread);
     }
 
@@ -538,12 +538,12 @@ export class ActionStatement extends Statement {
             yield new CompleteAllTask(promises);
         } else if (op == 'motorSetAcceleration') {
             // ignore this
-            const ports = this.arguments[0].evaluate(thread).getString();
-            const acceleration = this.arguments[1].evaluate(thread).getString();
+            const _ports = this.arguments[0].evaluate(thread).getString();
+            const _acceleration = this.arguments[1].evaluate(thread).getString();
         } else if (op == 'motorSetStopMethod') {
             // ignore this, we can't coast without physics
-            const ports = this.arguments[0].evaluate(thread).getString();
-            const method = this.arguments[1].evaluate(thread).getString();
+            const _ports = this.arguments[0].evaluate(thread).getString();
+            const _method = this.arguments[1].evaluate(thread).getString();
         } else if (op == 'motorSetDegreeCounted') {
             const ports = this.arguments[0].evaluate(thread).getString();
             const degree = this.arguments[1].evaluate(thread).getNumber();
@@ -580,7 +580,7 @@ export class ActionStatement extends Statement {
     *execute_flippermoremove(thread: Thread, op: string): Generator<VMTask> {
         if (op == 'movementSetStopMethod') {
             // ignore this, we stop abruptly
-            const method = this.arguments[0].evaluate(thread).getString();
+            const _method = this.arguments[0].evaluate(thread).getString();
         } else if (op == 'startDualSpeed') {
             let left = this.arguments[0].evaluate(thread).getNumber();
             let right = this.arguments[1].evaluate(thread).getNumber();
@@ -634,7 +634,7 @@ export class ActionStatement extends Statement {
             }
         } else if (op == 'movementSetAcceleration') {
             // ignore this, we start abruptly
-            const acceleration = this.arguments[0].evaluate(thread).getString();
+            const _acceleration = this.arguments[0].evaluate(thread).getString();
         } else {
             yield* super._execute(thread);
         }
@@ -642,7 +642,7 @@ export class ActionStatement extends Statement {
 
     *execute_flippermoresensors(thread: Thread, op: string): Generator<VMTask> {
         if (op == 'setOrientation') {
-            const up = this.arguments[0].evaluate(thread).getString();
+            const _up = this.arguments[0].evaluate(thread).getString();
             yield* super._execute(thread);
         } else {
             yield* super._execute(thread);
@@ -1147,7 +1147,7 @@ export class ActionStatement extends Statement {
         }
     }
 
-    *execute_flippermusic(thread: Thread, op: string): Generator<VMTask> {
+    *execute_flippermusic(thread: Thread, _op: string): Generator<VMTask> {
         yield* super._execute(thread);
     }
 
@@ -1220,7 +1220,7 @@ export class ActionStatement extends Statement {
         }
     }
 
-    *execute_linegraphmonitor(thread: Thread, op: string): Generator<VMTask> {
+    *execute_linegraphmonitor(thread: Thread, _op: string): Generator<VMTask> {
         yield* super._execute(thread);
     }
 
@@ -1240,7 +1240,7 @@ export class ActionStatement extends Statement {
         }
     }
 
-    *execute_weather(thread: Thread, op: string): Generator<VMTask> {
+    *execute_weather(thread: Thread, _op: string): Generator<VMTask> {
         yield* super._execute(thread);
     }
 
@@ -1792,10 +1792,10 @@ export class FunctionExpression extends Expression {
             const attachment = thread.vm.hub.ports[port];
             return new NumberValue(attachment.measure.reflected * 100);
         } else if (this.opcode == 'flippermoresensors_acceleration') {
-            const axis = this.arguments[0].evaluate(thread).getString();
+            const _axis = this.arguments[0].evaluate(thread).getString();
             return super.evaluate(thread);
         } else if (this.opcode == 'flippermoresensors_angularVelocity') {
-            const axis = this.arguments[0].evaluate(thread).getString();
+            const _axis = this.arguments[0].evaluate(thread).getString();
             return super.evaluate(thread);
         } else if (this.opcode == 'flippermoresensors_orientation') {
             return super.evaluate(thread);
@@ -2978,7 +2978,7 @@ export class VM {
     stopNote() {
         try {
             this.oscillator.stop();
-        } catch (e) {
+        } catch {
             // Do nothing
         }
     }
