@@ -48,6 +48,13 @@
     `library/lessons/*.json`; imported and exported on the coach page as zip
     packages, or written with the New lesson form (live student preview). Format: `docs/lessons.md`, `schemas/lesson-v1.json`. Starter
     lessons come from `tools/examples/make_lessons.py`. Progress is per browser.
+-   Students (coach page, Students tab): paste names, each gets a random code
+    (`WORD-WORD-NN`); print cut-out code cards with a sign-in QR, copy one
+    student's link, or export a CSV for a mail merge. Stored in plain text in
+    `/data/team/roster.json` (`server/team.mjs`). Students sign in with the
+    Sign in button in the code panel or a `/#code=...` link; `/api/student` is
+    deliberately outside Cloudflare Access and limits wrong codes to 10 per
+    address per 10 minutes. Progress is not synced to the server yet.
 -   Welcome screen, guide (? button) with block reference, About/credits.
 -   Block help: hover tooltips, right-click "Explain this block".
 -   Sensor graph, measure/route tool, top-down Place view.
