@@ -156,8 +156,8 @@
             `default ${entry.name}`,
             () => setDefault(kind, value),
             value
-                ? `${entry.name} now loads when the simulator opens.`
-                : `${entry.name} no longer loads when the simulator opens.`
+                ? `${entry.name} is now the default ${kind == 'robots' ? 'robot' : 'scene'}. It loads when the simulator opens.`
+                : `There is no default ${kind == 'robots' ? 'robot' : 'scene'} now.`
         );
     }
 
@@ -338,8 +338,9 @@
                 <div>
                     <h2 class="text-lg font-semibold">Shared library</h2>
                     <p class="text-gray-600 text-sm">
-                        What students see in the simulator's Library and Examples windows. The
-                        default robot and scene load when someone opens the simulator.
+                        What students see in the simulator's Library and Examples windows. There is
+                        one default robot and one default scene; they load when someone opens the
+                        simulator.
                     </p>
                 </div>
 
@@ -447,7 +448,9 @@
                                                 {#if isDefault(active, entry.name)}
                                                     <span
                                                         class="text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800"
-                                                        >Loads on open</span
+                                                        >{active == 'robots'
+                                                            ? 'Default robot'
+                                                            : 'Default scene'}</span
                                                     >
                                                 {/if}
                                                 {#if active == 'programs' && !entry.card}
@@ -500,8 +503,8 @@
                                                     disabled={busy != ''}
                                                     on:click={() => toggleDefault(active, entry)}
                                                     >{isDefault(active, entry.name)
-                                                        ? "Don't load on open"
-                                                        : 'Load on open'}</Button
+                                                        ? 'Clear default'
+                                                        : 'Make default'}</Button
                                                 >
                                             {/if}
                                             <Button

@@ -217,6 +217,9 @@ export function checkRun(challenge: Challenge, path: RunPath): RunCheck {
 
 export const activeChallenge = writable<Challenge | undefined>(undefined);
 
+// Whether the Challenges window is open, so either panel can open it.
+export const challengesOpen = writable(false);
+
 const progressKey = 'spike-sim-challenges';
 
 export interface Progress {
