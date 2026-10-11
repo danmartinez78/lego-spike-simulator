@@ -3,7 +3,7 @@
 Coaches can connect Claude, or any other assistant that speaks MCP, to the
 simulator at `https://<site>/mcp`. The assistant can then read the lesson guide,
 look through the library, check lessons and challenges and save them as drafts,
-set homework and read students' progress, and add robots and fields (including
+set assignments and read students' progress, and add robots and fields (including
 drawing a new mat from a description). Each coach signs in as themselves, so
 everything an assistant saves is stamped with that coach's email.
 
@@ -24,9 +24,9 @@ everything an assistant saves is stamped with that coach's email.
 | `check_challenge`      | Errors and warnings for a challenge, without saving                                |
 | `save_challenge`       | Save a challenge as a draft; its id is the file name without `.json`               |
 | `delete_challenge`     | Delete one of your own draft challenges                                            |
-| `list_homework`        | Homework assignments with each student's status on each lesson                     |
-| `save_homework`        | Save homework (title, lessons, due date, note) as a draft; `id` updates your own   |
-| `delete_homework`      | Delete one of your own draft homework assignments                                  |
+| `list_assignments`     | Assignments with each student's status on each lesson                              |
+| `save_assignment`      | Save an assignment (title, lessons, type, due date, note) as a draft               |
+| `delete_assignment`    | Delete one of your own draft assignments                                           |
 | `get_field_guide`      | How to describe a field as JSON (`docs/fields.md`)                                 |
 | `check_field`          | Errors and warnings for a field description, without saving                        |
 | `save_field`           | Draw the mat and save the field as a `.spk` scene                                  |
@@ -36,10 +36,16 @@ everything an assistant saves is stamped with that coach's email.
 | `delete_field`         | Delete a field your assistant added, if nothing uses it                            |
 | `delete_robot`         | Delete a robot your assistant added, if nothing uses it                            |
 
-Rules: saved lessons, challenges and homework are always drafts, so students
+Rules: saved lessons, challenges and assignments are always drafts, so students
 only see them after a coach presses **Publish** on the coach page. An assistant
 can't replace a published one or another coach's draft, and can only delete its
 own coach's drafts.
+
+An assignment's optional `type` is `practice` (going over what was taught) or
+`prep` (getting ready for the next meeting); students see it as a badge.
+`save_assignment` takes an `id` to update your own draft. The tools used to be
+called `list_homework`, `save_homework` (assignment under `homework`) and
+`delete_homework`; those names still work.
 
 Robots and fields have no drafts: they are in everyone's Robot and Field
 pickers as soon as they're saved, marked "From an assistant" on the coach page.

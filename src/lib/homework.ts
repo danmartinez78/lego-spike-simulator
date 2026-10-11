@@ -1,4 +1,4 @@
-// Homework from the coach, and syncing a signed-in student's lesson progress,
+// Assignments from the coach (called homework in the code), and syncing a signed-in student's lesson progress,
 // challenge results and handed-in programs with the server (server/homework.mjs).
 
 import { get, writable } from 'svelte/store';
@@ -7,11 +7,24 @@ import { lessonProgress, type LessonProgress } from '$lib/lessons';
 import { progressStore as challengeProgress, type Progress } from '$lib/spike/challenges';
 import { studentStore } from '$lib/team';
 
+// What an assignment is for. Older assignments have no type and show no badge.
+export type AssignmentType = 'practice' | 'prep';
+
+export const ASSIGNMENT_TYPES: { value: AssignmentType; label: string; badge: string }[] = [
+    { value: 'practice', label: 'Practice', badge: 'bg-teal-100 text-teal-800' },
+    { value: 'prep', label: 'Prep for next meeting', badge: 'bg-indigo-100 text-indigo-800' }
+];
+
+export function assignmentType(type: string | undefined) {
+    return ASSIGNMENT_TYPES.find((t) => t.value == type);
+}
+
 export interface Assignment {
     id: string;
     title: string;
     note?: string;
     due?: string;
+    type?: AssignmentType;
     lessons: string[];
     created: string;
     // Saved by an AI assistant and not yet published: students don't see it.
@@ -35,7 +48,7 @@ export async function refreshHomework() {
         const response = await fetch('api/student/homework', { cache: 'no-store' });
         if (response.ok) homeworkStore.set((await response.json()).assignments ?? []);
     } catch {
-        // offline or no server: no homework shown
+        // offline or no server: no assignments shown
     }
 }
 
@@ -186,14 +199,17 @@ async function adminJson<T>(method: string, path: string, body?: unknown): Promi
         try {
             message = (await response.json()).error ?? message;
         } catch {
-            message = 'Sign in to manage homework';
+            message = 'Sign in to manage assignments';
         }
         throw new Error(message);
     }
     return (await response.json()) as T;
 }
 
-export type AssignmentInput = Pick<Assignment, 'title' | 'note' | 'due' | 'lessons' | 'draft'>;
+export type AssignmentInput = Pick<
+    Assignment,
+    'title' | 'note' | 'due' | 'type' | 'lessons' | 'draft'
+>;
 
 export const getHomework = () => adminJson<{ assignments: Assignment[] }>('GET', 'homework');
 export const addAssignment = (a: AssignmentInput) =>

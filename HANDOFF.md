@@ -39,7 +39,7 @@
     ▶×5 results window with A vs B comparison.
 -   Example programs with lesson cards (book button), coach-only saving.
 -   Coach tools page at `/coach` (`src/pages/CoachPage.svelte`), with tabs Lessons,
-    Challenges, Example programs, Homework,
+    Challenges, Example programs, Assignments,
     Students, Robots and maps, and AI assistants: upload, rename,
     download and delete robots, scenes and programs, choose what loads on open,
     mat previews for scenes, and a lesson card form. Roadmap for the next steps
@@ -70,7 +70,7 @@
     sign-in as `/api/admin`; for people it needs a separate Access app on
     `/mcp` with Managed OAuth, whose AUD is added to `CF_ACCESS_AUD`
     (comma-separated). The coach page's AI assistants tab explains connecting an
-    assistant and the package-and-import route for chatbots without MCP. It also sets homework as
+    assistant and the package-and-import route for chatbots without MCP. It also sets assignments as
     drafts (`draft` on the assignment; students' `/api/student/homework` skips
     them) and reads progress, and adds robots and fields: `save_field` draws a
     mat from a JSON description (`server/fields.mjs`, format in
@@ -84,14 +84,18 @@
     Sign in button in the code panel or a `/#code=...` link; `/api/student` is
     deliberately outside Cloudflare Access and limits wrong codes to 10 per
     address per 10 minutes.
--   Homework (coach page, Homework tab): pick lessons and an optional due date;
-    students see it at the top of their Lessons window. Signed-in students'
+-   Assignments (coach page, Assignments tab; called homework in the code, files
+    and API paths): pick lessons, an optional due date and an optional `type`,
+    `practice` or `prep` (prep for next meeting), shown to students as a badge;
+    no type means no badge. Students see them at the top of their Lessons window. Signed-in students'
     ticked steps, check results and challenge results sync to `/data/team/students/<id>/progress.json`
     (newer lesson wins, challenge results only improve), and Hand in saves the
     current program as `students/<id>/programs/<lesson>.llsp3`. The coach grid
     shows each student's status per lesson with a download link for the program.
     Signing out clears the browser's copy of the progress. Code: `server/homework.mjs`,
-    `src/lib/homework.ts`, `HomeworkPanel.svelte`.
+    `src/lib/homework.ts`, `AssignmentsPanel.svelte`. The MCP tools are
+    `list_assignments`, `save_assignment` and `delete_assignment`; the old
+    `*_homework` names still work as aliases.
 -   The code panel autosaves the program in the browser (`src/lib/blockly/autosave.ts`,
     localStorage key `spike-sim-program`) and restores it on the next visit.
 -   Welcome screen, guide (? button) with block reference, About/credits.

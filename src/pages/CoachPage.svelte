@@ -8,7 +8,7 @@
     import LessonCardEditor from '$components/coach/LessonCardEditor.svelte';
     import LessonEditor from '$components/coach/LessonEditor.svelte';
     import TeamPanel from '$components/coach/TeamPanel.svelte';
-    import HomeworkPanel from '$components/coach/HomeworkPanel.svelte';
+    import AssignmentsPanel from '$components/coach/AssignmentsPanel.svelte';
     import AgentsPanel from '$components/coach/AgentsPanel.svelte';
     import ChallengesPanel from '$components/coach/ChallengesPanel.svelte';
     import CodeCards from '$components/coach/CodeCards.svelte';
@@ -88,7 +88,7 @@
         | 'lessons'
         | 'challenges'
         | 'examples'
-        | 'homework'
+        | 'assignments'
         | 'students'
         | 'assets'
         | 'agents';
@@ -98,7 +98,7 @@
         { id: 'lessons', label: 'Lessons' },
         { id: 'challenges', label: 'Challenges' },
         { id: 'examples', label: 'Example programs' },
-        { id: 'homework', label: 'Homework' },
+        { id: 'assignments', label: 'Assignments' },
         { id: 'students', label: 'Students' },
         { id: 'assets', label: 'Robots and maps' },
         { id: 'agents', label: 'AI assistants' }
@@ -589,8 +589,8 @@
         {/if}
         {#if !loading && $libraryStore.available && $libraryStore.writer && view == 'students'}
             <TeamPanel on:print={(e) => printCards(e.detail)} />
-        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'homework'}
-            <HomeworkPanel />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'assignments'}
+            <AssignmentsPanel />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'agents'}
             <AgentsPanel on:lessons={() => showView('lessons')} />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'challenges'}
