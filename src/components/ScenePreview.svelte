@@ -17,6 +17,9 @@
     export let rotate = false;
     export let unresolved: string[] = [];
     export let dimMap = false;
+    // Let the viewer drag to orbit, right-drag or shift-drag to pan, scroll or
+    // pinch to zoom, and double-click to reset.
+    export let interactive = false;
 
     let canRender = false;
     let gl: WebGL | undefined;
@@ -26,6 +29,87 @@
     let mapTexture: MapTexture | null = null;
     let brown = brickColour('86');
     let red = brickColour('4');
+    // The viewer's own camera moves, on top of the chosen camera.
+    let orbitYaw = 0;
+    let orbitPitch = 0;
+    let zoom = 1;
+    let panX = 0;
+    let panY = 0;
+    const pointers = new Map<number, { x: number; y: number }>();
+    let pinchDistance = 0;
+    $: viewChanged = orbitYaw != 0 || orbitPitch != 0 || zoom != 1 || panX != 0 || panY != 0;
+
+    function resetView() {
+        orbitYaw = 0;
+        orbitPitch = 0;
+        zoom = 1;
+        panX = 0;
+        panY = 0;
+    }
+
+    function zoomBy(factor: number) {
+        zoom = Math.min(4, Math.max(0.1, zoom * factor));
+    }
+
+    function pointerDown(event: PointerEvent) {
+        if (!interactive) {
+            return;
+        }
+        (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        pinchDistance = currentPinchDistance();
+    }
+
+    function pointerUp(event: PointerEvent) {
+        pointers.delete(event.pointerId);
+        pinchDistance = currentPinchDistance();
+    }
+
+    function currentPinchDistance() {
+        if (pointers.size != 2) {
+            return 0;
+        }
+        const [a, b] = [...pointers.values()];
+        return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function pointerMove(event: PointerEvent) {
+        const last = pointers.get(event.pointerId);
+        if (!interactive || !last) {
+            return;
+        }
+        const dx = event.clientX - last.x;
+        const dy = event.clientY - last.y;
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (pointers.size == 2) {
+            const distance = currentPinchDistance();
+            if (pinchDistance > 0 && distance > 0) {
+                zoomBy(pinchDistance / distance);
+            }
+            pinchDistance = distance;
+            return;
+        }
+        const canvas = event.currentTarget as HTMLElement;
+        if (event.shiftKey || (event.buttons & 2) != 0) {
+            // Pan by the same fraction of the view as the pointer moved.
+            const height = Math.max(1, canvas.clientHeight);
+            const viewHeight = 2 * (robotFocus ? 3 : 30) * zoom * Math.tan((22.5 * Math.PI) / 180);
+            panX += (dx / height) * viewHeight;
+            panY -= (dy / height) * viewHeight;
+        } else {
+            orbitYaw += dx * 0.4;
+            orbitPitch = Math.min(60, Math.max(-45, orbitPitch + dy * 0.3));
+        }
+    }
+
+    function wheel(event: WheelEvent) {
+        if (!interactive) {
+            return;
+        }
+        event.preventDefault();
+        zoomBy(Math.exp(event.deltaY * 0.0015));
+    }
+
     // Frame rate, counted over each second.
     let fps = 0;
     let frameMs = 0;
@@ -93,19 +177,19 @@
         gl.clearColour(0.0, 0.0, 0.0);
         gl.clear();
         if (robotFocus) {
-            gl.translate(0, 0, -3);
+            gl.translate(panX, panY, -3 * zoom);
         } else {
-            gl.translate(0, 0, -30);
+            gl.translate(panX, panY, -30 * zoom);
         }
         // Make unit meters
         gl.scale(0.01);
 
+        let pitch = orbitPitch;
         if (tilt) {
-            if (robotFocus) {
-                gl.rotate(30, 1.0, 0.0, 0.0);
-            } else {
-                gl.rotate(45, 1.0, 0.0, 0.0);
-            }
+            pitch += robotFocus ? 30 : 45;
+        }
+        if (pitch != 0) {
+            gl.rotate(pitch, 1.0, 0.0, 0.0);
         }
         if (camera == 'adaptive') {
             if (gl.getCanvasAspect() >= 1.0) {
@@ -126,6 +210,9 @@
         }
         if (rotate) {
             gl.rotate(angle, 0.0, 1.0, 0.0);
+        }
+        if (orbitYaw != 0) {
+            gl.rotate(orbitYaw, 0.0, 1.0, 0.0);
         }
         if (scene.robot && scene.robot.compiled && mapTexture) {
             const w = mapTexture.width / 2;
@@ -422,7 +509,26 @@
 </script>
 
 <div class="relative {$$props.class}">
-    <canvas {id} class="h-full w-full"></canvas>
+    <canvas
+        {id}
+        class="h-full w-full {interactive ? 'touch-none cursor-grab active:cursor-grabbing' : ''}"
+        on:pointerdown={pointerDown}
+        on:pointermove={pointerMove}
+        on:pointerup={pointerUp}
+        on:pointercancel={pointerUp}
+        on:wheel={wheel}
+        on:dblclick={() => interactive && resetView()}
+        on:contextmenu={(e) => interactive && e.preventDefault()}
+    ></canvas>
+    {#if interactive && viewChanged}
+        <button
+            class="absolute right-2 bottom-2 rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
+            title="Or double-click the view"
+            on:click={resetView}
+        >
+            Reset view
+        </button>
+    {/if}
     {#if $showFps}
         <div
             class="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 font-mono text-xs text-white pointer-events-none"
