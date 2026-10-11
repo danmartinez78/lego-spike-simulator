@@ -90,7 +90,10 @@
             component: RulerCombinedOutline,
             text: 'Measure: click points on the mat to see distances and turns for a route, then copy the steps.'
         },
-        { icon: 'icons/Eye.svg', text: 'Camera: top view, side views, or follow the robot.' },
+        {
+            icon: 'icons/Eye.svg',
+            text: 'Camera: top view, side views, or follow the robot. While the robot runs you can also move the view yourself: drag to look around, scroll or pinch to zoom, and right-drag, Shift-drag or drag with two fingers to slide the view. Double-click or press Reset view to go back.'
+        },
         { icon: 'icons/GenericPlayIcon.svg', text: 'Run the program in the code panel.' }
     ];
 

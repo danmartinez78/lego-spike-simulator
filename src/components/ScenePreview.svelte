@@ -5,7 +5,7 @@
     import { brickColour, type Quad } from '$lib/ldraw/components';
     import { type SceneStore, type SceneObject } from '$lib/spike/scene';
     import * as m4 from '$lib/ldraw/m4';
-    import { showFps } from '$lib/debug';
+    import { showFps, cameraHintSeen, setCameraHintSeen } from '$lib/debug';
 
     export let id: string;
     export let scene: SceneStore;
@@ -51,9 +51,16 @@
         zoom = Math.min(4, Math.max(0.1, zoom * factor));
     }
 
+    // Touch screens get touch wording in the camera hint.
+    const coarsePointer =
+        typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+
     function pointerDown(event: PointerEvent) {
         if (!interactive) {
             return;
+        }
+        if (!$cameraHintSeen) {
+            setCameraHintSeen();
         }
         (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -114,6 +121,9 @@
             return;
         }
         event.preventDefault();
+        if (!$cameraHintSeen) {
+            setCameraHintSeen();
+        }
         zoomBy(Math.exp(event.deltaY * 0.0015));
     }
 
@@ -527,6 +537,27 @@
         on:dblclick={() => interactive && resetView()}
         on:contextmenu={(e) => interactive && e.preventDefault()}
     ></canvas>
+    {#if interactive && !$cameraHintSeen}
+        <div
+            class="absolute left-1/2 top-2 flex -translate-x-1/2 items-center gap-2 rounded bg-black/60 px-2 py-1 text-xs text-white"
+        >
+            <span class="pointer-events-none">
+                {#if coarsePointer}
+                    Drag to look around · Pinch to zoom · Two fingers to slide
+                {:else}
+                    Drag to look around · Scroll to zoom · Right-drag to slide
+                {/if}
+            </span>
+            <button
+                class="rounded px-1 hover:bg-white/20"
+                title="Hide this tip"
+                aria-label="Hide this tip"
+                on:click={setCameraHintSeen}
+            >
+                ✕
+            </button>
+        </div>
+    {/if}
     {#if interactive && viewChanged}
         <button
             class="absolute right-2 bottom-2 rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/80"
