@@ -216,9 +216,18 @@ export function libraryFileName(kind: LibraryKind, name: string) {
     return clean;
 }
 
+// Name of the library robot loaded last, so the robot picker can show it.
+export const currentRobotName = writable<string | undefined>(undefined);
+
 export async function loadRobotFromLibrary(name: string) {
     const blob = await fetchEntry('robots', name);
     robotRequest.set({ name, blob });
+    currentRobotName.set(name);
+}
+
+// A library file name without its extension, for showing to students.
+export function entryTitle(name: string) {
+    return name.replace(/\.(mpd|ldr|spk|llsp3|json)$/i, '');
 }
 
 // Name of the library scene loaded last, so it can be saved back.

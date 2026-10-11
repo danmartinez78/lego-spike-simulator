@@ -187,11 +187,21 @@
             workspace.createVariable('message1', 'broadcast');
         }
         stopAutosave = startAutosave(workspace);
+        document.addEventListener('pointerdown', closeMenusOutside, true);
     });
 
     let stopAutosave: (() => void) | undefined;
 
+    // Blockly only closes its right-click menu and dropdowns for clicks inside
+    // the code area, so close them for clicks anywhere else on the page too.
+    function closeMenusOutside(event: PointerEvent) {
+        const target = event.target as Element | null;
+        if (target?.closest('#blocklyDiv, .blocklyWidgetDiv, .blocklyDropDownDiv')) return;
+        Blockly.hideChaff();
+    }
+
     onDestroy(() => {
+        document.removeEventListener('pointerdown', closeMenusOutside, true);
         stopAutosave?.();
         if (zoomToFit) {
             zoomToFit.dispose();

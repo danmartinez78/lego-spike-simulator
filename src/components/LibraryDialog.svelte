@@ -1,46 +1,41 @@
 <script lang="ts">
-    import { Button, Modal } from 'flowbite-svelte';
+    // Pick a robot or a field from the shared library.
+    import { Modal } from 'flowbite-svelte';
+    import CheckMap from '$components/CheckMap.svelte';
     import {
         libraryStore,
         refreshLibrary,
         loadRobotFromLibrary,
         loadSceneFromLibrary,
-        type LibraryKind
+        currentRobotName,
+        currentSceneName,
+        entryTitle
     } from '$lib/library';
 
     export let modalOpen = false;
+    export let kind: 'robots' | 'scenes' = 'scenes';
 
     let message = '';
+    let busy = '';
 
-    const sections: { kind: LibraryKind; title: string; icon: string }[] = [
-        { kind: 'robots', title: 'Robots', icon: 'icons/Robot.svg' },
-        { kind: 'scenes', title: 'Scenes and maps', icon: 'icons/Scene.svg' }
-    ];
+    $: entries = $libraryStore.index[kind];
+    $: current = kind == 'robots' ? $currentRobotName : $currentSceneName;
 
-    function isDefault(kind: LibraryKind, name: string) {
-        const defaults = $libraryStore.index.defaults;
-        return kind === 'robots' ? defaults.robot === name : defaults.scene === name;
-    }
-
-    async function run(action: () => Promise<void>, done: string) {
+    async function load(name: string) {
         message = '';
+        busy = name;
         try {
-            await action();
-            message = done;
-        } catch (e) {
-            message = (e as Error).message;
-        }
-    }
-
-    function load(kind: LibraryKind, name: string) {
-        run(async () => {
             if (kind === 'robots') {
                 await loadRobotFromLibrary(name);
             } else {
                 await loadSceneFromLibrary(name);
             }
             modalOpen = false;
-        }, `Loaded ${name}`);
+        } catch (e) {
+            message = `Couldn't load ${entryTitle(name)}: ${(e as Error).message}`;
+        } finally {
+            busy = '';
+        }
     }
 
     function openDialog(open: boolean) {
@@ -56,54 +51,78 @@
 <Modal
     backdropClass="fixed inset-0 z-[80] bg-gray-900 bg-opacity-50 dark:bg-opacity-80"
     dialogClass="fixed top-0 start-0 end-0 h-modal md:inset-0 md:h-full z-[90] w-full p-4 flex"
-    title="Shared library"
+    title={kind == 'robots' ? 'Choose a robot' : 'Choose a field'}
+    size={kind == 'robots' ? 'md' : 'xl'}
     bind:open={modalOpen}
 >
     {#if !$libraryStore.available}
         <div>This copy of the simulator has no shared library.</div>
     {:else}
-        <div class="flex flex-col gap-4">
-            {#each sections as section}
-                <div class="flex flex-col gap-1">
-                    <h3 class="font-medium flex flex-row gap-2 items-center">
-                        <img alt={section.kind} width="24" height="24" src={section.icon} />
-                        {section.title}
-                    </h3>
-                    {#if $libraryStore.index[section.kind].length == 0}
-                        <div class="text-sm text-gray-500">Nothing saved yet.</div>
-                    {/if}
-                    {#each $libraryStore.index[section.kind] as entry}
-                        <div class="flex flex-row gap-2 items-center">
-                            <span class="flex-1 truncate">
-                                {entry.name}
-                                {#if isDefault(section.kind, entry.name)}
-                                    <span class="text-xs text-green-700 ml-1">(default)</span>
+        <div class="flex flex-col gap-3 text-gray-800">
+            {#if entries.length == 0}
+                <div class="text-sm text-gray-500">
+                    There are no {kind == 'robots' ? 'robots' : 'fields'} here yet. Ask your coach to
+                    add some.
+                </div>
+            {/if}
+            {#if kind == 'scenes'}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {#each entries as entry (entry.name)}
+                        <button
+                            class="flex flex-col gap-2 rounded-xl border p-2 text-left hover:border-blue-500 hover:bg-blue-50 disabled:opacity-60 {current ==
+                            entry.name
+                                ? 'border-blue-600 ring-2 ring-blue-200'
+                                : 'border-gray-200'}"
+                            disabled={busy != ''}
+                            on:click={() => load(entry.name)}
+                        >
+                            <CheckMap
+                                field={entry.name}
+                                check={undefined}
+                                maxHeight={200}
+                                lighten={0}
+                            />
+                            <span class="font-medium text-sm flex flex-row gap-2 items-center">
+                                <span class="flex-1">{entryTitle(entry.name)}</span>
+                                {#if busy == entry.name}
+                                    <span class="text-xs text-gray-500">Loading...</span>
+                                {:else if current == entry.name}
+                                    <span class="text-xs text-blue-700">Loaded</span>
                                 {/if}
                             </span>
-                            <Button
-                                size="xs"
-                                color="blue"
-                                on:click={() => load(section.kind, entry.name)}>Load</Button
-                            >
-                        </div>
+                        </button>
                     {/each}
                 </div>
-            {/each}
-            <div class="text-sm text-gray-600">
-                {#if $libraryStore.writer}
-                    Signed in as {$libraryStore.writer}. Save the current robot or scene to the
-                    library from the save button, and change the default or delete entries on the
+            {:else}
+                <div class="flex flex-col gap-2">
+                    {#each entries as entry (entry.name)}
+                        <button
+                            class="flex flex-row gap-3 items-center rounded-xl border p-3 text-left hover:border-blue-500 hover:bg-blue-50 disabled:opacity-60 {current ==
+                            entry.name
+                                ? 'border-blue-600 ring-2 ring-blue-200'
+                                : 'border-gray-200'}"
+                            disabled={busy != ''}
+                            on:click={() => load(entry.name)}
+                        >
+                            <img alt="" width="32" height="32" src="icons/Robot.svg" />
+                            <span class="flex-1 font-medium">{entryTitle(entry.name)}</span>
+                            {#if busy == entry.name}
+                                <span class="text-xs text-gray-500">Loading...</span>
+                            {:else if current == entry.name}
+                                <span class="text-xs text-blue-700">Loaded</span>
+                            {/if}
+                        </button>
+                    {/each}
+                </div>
+            {/if}
+            {#if $libraryStore.writer}
+                <p class="text-xs text-gray-500">
+                    Coaches add, remove and choose the default robots and fields on the
                     <a class="text-blue-700 underline" href="coach" target="_blank">coach page</a>.
-                {:else}
-                    Coaches: sign in on the <a
-                        class="text-blue-700 underline"
-                        href="coach"
-                        target="_blank">coach page</a
-                    > to add robots and maps.
-                {/if}
-            </div>
+                </p>
+            {/if}
             {#if message}
-                <div class="text-sm">{message}</div>
+                <div class="text-sm text-red-700" role="alert">{message}</div>
             {/if}
         </div>
     {/if}
