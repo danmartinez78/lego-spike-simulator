@@ -7,6 +7,7 @@ export const lego_vertex_shader = `
       uniform float brightness;
       varying vec4 v_colour;
       varying vec4 v;
+      varying vec3 v_eye;
      
       // all shaders have a main function
       void main() {
@@ -14,7 +15,9 @@ export const lego_vertex_shader = `
         // gl_Position is a special variable a vertex shader
         // is responsible for setting
         v_colour = vec4(a_colour.rgb * brightness, a_colour.a);
-        v = projection_matrix * model_matrix * a_vertex;
+        vec4 eye = model_matrix * a_vertex;
+        v_eye = eye.xyz;
+        v = projection_matrix * eye;
         gl_Position = v;
       }
       `;
@@ -70,6 +73,8 @@ export const lego_fragment_shader_df = `#extension GL_OES_standard_derivatives :
       varying vec4 v_colour;
       varying vec4 v;
       uniform bool renderDepth;
+      uniform bool lighting;
+      varying vec3 v_eye;
 
       // Store depth as 16 bits, high byte in red and low byte in green, so
       // the distance sensor isn't limited to 256 steps. Readers that only
@@ -94,6 +99,17 @@ export const lego_fragment_shader_df = `#extension GL_OES_standard_derivatives :
             } else {
                 gl_FragColor = packDepth(depth);
             }
+        } else if (lighting) {
+            // Flat shading from the face's own slope, so no normals are
+            // needed in the vertex data. Lit from above and to the left of
+            // the camera, from both sides since LDraw winding varies.
+            vec3 normal = normalize(cross(dFdx(v_eye), dFdy(v_eye)));
+            if (normal.z < 0.0) {
+                normal = -normal;
+            }
+            vec3 light = normalize(vec3(-0.4, 0.8, 0.6));
+            float shade = 0.55 + 0.45 * max(dot(normal, light), 0.0);
+            gl_FragColor = vec4(v_colour.rgb * shade, 1.0);
         } else {
             gl_FragColor = vec4(v_colour.rgb, 1.0);
         }

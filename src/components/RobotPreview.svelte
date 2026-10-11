@@ -91,6 +91,7 @@
         if (canvas) {
             gl = WebGL.create(canvas as HTMLCanvasElement);
             if (gl) {
+                gl.lighting = true;
                 gl.mindist = 0.01;
                 gl.maxdist = 50.0;
                 compiledRobot = doCompile(robotModel, select);

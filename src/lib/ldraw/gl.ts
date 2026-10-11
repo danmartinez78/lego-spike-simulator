@@ -57,6 +57,7 @@ export interface PipeLine {
     nearUniform: WebGLUniformLocation | null;
     farUniform: WebGLUniformLocation | null;
     renderDepthUniform: WebGLUniformLocation | null;
+    lightingUniform: WebGLUniformLocation | null;
 }
 
 export interface MapTexture {
@@ -885,6 +886,9 @@ export class WebGL extends WebGLCompiler {
     // Caps the canvas resolution on high-DPI screens; school laptops and
     // Chromebooks can't fill 2x or 3x the pixels every frame.
     maxPixelRatio: number;
+    // Shade brick faces so they read as 3D. Off for sensor views, which
+    // need the exact brick colors.
+    lighting: boolean;
 
     static create(
         canvas: HTMLCanvasElement,
@@ -913,6 +917,7 @@ export class WebGL extends WebGLCompiler {
         this.mindist = 0.1;
         this.maxdist = 1000.0;
         this.maxPixelRatio = 1.5;
+        this.lighting = false;
         this.setupPipeline();
         this.fragmentDerivative = false;
         this.modelBuffers = new Map<number, ModelBuffer>();
@@ -1705,7 +1710,15 @@ export class WebGL extends WebGLCompiler {
             0
         );
         this.gl.drawArrays(this.gl.LINES, model.lineOffset, model.lines * 2);
+        // Only the derivatives shader has the lighting uniform.
+        const shade = this.lighting && this.brickPipeline.lightingUniform !== null;
+        if (shade) {
+            this.gl.uniform1i(this.brickPipeline.lightingUniform, 1);
+        }
         this.gl.drawArrays(this.gl.TRIANGLES, model.triangleOffset, model.triangles * 3);
+        if (shade) {
+            this.gl.uniform1i(this.brickPipeline.lightingUniform, 0);
+        }
     }
 
     drawDepthQuad(texture: MapTexture) {
@@ -1920,7 +1933,8 @@ export class WebGL extends WebGLCompiler {
                     brightnessUniform: brightnessUniform,
                     nearUniform: nearUniform,
                     farUniform: farUniform,
-                    renderDepthUniform: renderDepthUniform
+                    renderDepthUniform: renderDepthUniform,
+                    lightingUniform: this.gl.getUniformLocation(legoProgram, 'lighting')
                 };
                 this.pipeline = this.brickPipeline;
                 if (modelMatrixUniform) {
@@ -1973,7 +1987,8 @@ export class WebGL extends WebGLCompiler {
                     brightnessUniform: brightnessUniform,
                     nearUniform: null,
                     farUniform: null,
-                    renderDepthUniform: null
+                    renderDepthUniform: null,
+                    lightingUniform: null
                 };
                 if (modelMatrixUniform) {
                     this.gl.uniformMatrix4fv(modelMatrixUniform, false, this.modelMatrix);
@@ -1998,6 +2013,9 @@ export class WebGL extends WebGLCompiler {
         this.texcoordBuffer = this.gl.createBuffer();
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.depthFunc(this.gl.LESS);
+        // Push faces back a little so the edge lines on them don't flicker.
+        this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
+        this.gl.polygonOffset(1.0, 1.0);
         if (this.brickPipeline) {
             this.gl.useProgram(this.brickPipeline.program);
         }

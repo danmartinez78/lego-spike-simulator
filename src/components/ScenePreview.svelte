@@ -5,6 +5,7 @@
     import { brickColour, type Quad } from '$lib/ldraw/components';
     import { type SceneStore, type SceneObject } from '$lib/spike/scene';
     import * as m4 from '$lib/ldraw/m4';
+    import { showFps } from '$lib/debug';
 
     export let id: string;
     export let scene: SceneStore;
@@ -25,6 +26,12 @@
     let mapTexture: MapTexture | null = null;
     let brown = brickColour('86');
     let red = brickColour('4');
+    // Frame rate, counted over each second.
+    let fps = 0;
+    let frameMs = 0;
+    let fpsFrames = 0;
+    let fpsStart = 0;
+    let renderMs = 0;
 
     function doRender(timestamp: number) {
         const frameTime = timestamp - lastFrame;
@@ -35,11 +42,33 @@
             // TODO: Drop the model detail
         }
         lastFrame = timestamp;
+        const started = performance.now();
         renderScene();
+        renderMs += performance.now() - started;
+        countFrame(timestamp);
         if (canRender && enabled) {
             requestAnimationFrame(doRender);
         } else {
             lastFrame = 0;
+            fpsStart = 0;
+        }
+    }
+
+    function countFrame(timestamp: number) {
+        if (fpsStart == 0) {
+            fpsStart = timestamp;
+            fpsFrames = 0;
+            renderMs = 0;
+            return;
+        }
+        fpsFrames++;
+        const elapsed = timestamp - fpsStart;
+        if (elapsed >= 1000) {
+            fps = Math.round((fpsFrames * 1000) / elapsed);
+            frameMs = renderMs / fpsFrames;
+            fpsStart = timestamp;
+            fpsFrames = 0;
+            renderMs = 0;
         }
     }
 
@@ -358,6 +387,7 @@
         if (canvas) {
             gl = WebGL.create(canvas as HTMLCanvasElement);
             if (gl) {
+                gl.lighting = true;
                 loadSceneItems(scene.objects, false, unresolved);
                 loadRobot(scene.robot, false, unresolved);
                 loadMapTexture(scene.map);
@@ -391,4 +421,15 @@
     $: loadRobot(scene.robot, false, unresolved);
 </script>
 
-<canvas {id} class={$$props.class}></canvas>
+<div class="relative {$$props.class}">
+    <canvas {id} class="h-full w-full"></canvas>
+    {#if $showFps}
+        <div
+            class="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 font-mono text-xs text-white pointer-events-none"
+        >
+            {fps} FPS · {frameMs.toFixed(1)} ms draw · {gl
+                ? `${gl.getCanvasWidth()}×${gl.getCanvasHeight()}`
+                : ''}
+        </div>
+    {/if}
+</div>
