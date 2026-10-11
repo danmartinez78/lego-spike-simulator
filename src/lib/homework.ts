@@ -3,10 +3,10 @@
 
 import { get, writable } from 'svelte/store';
 import { askConfirm } from '$lib/confirm';
-import { currentProgram, libraryStore, programRequest } from '$lib/library';
+import { clearProgram, currentProgram, libraryStore, programRequest } from '$lib/library';
 import { lessonProgress, type LessonProgress } from '$lib/lessons';
 import { progressStore as challengeProgress, type Progress } from '$lib/spike/challenges';
-import { studentDialogOpen, studentStore } from '$lib/team';
+import { signOut, studentDialogOpen, studentStore } from '$lib/team';
 
 // What an assignment is for. Older assignments have no type and show no badge.
 export type AssignmentType = 'practice' | 'prep';
@@ -80,6 +80,14 @@ function studentHeaders(): Record<string, string> {
 let applying = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
 
+// Whether a signed-in student's progress has reached the server, for the
+// student card: saved (with when), saving, or offline (it retries on the next change).
+export type SaveState =
+    | { state: 'saved'; at?: string }
+    | { state: 'saving' }
+    | { state: 'offline' };
+export const saveState = writable<SaveState>({ state: 'saved' });
+
 function apply(progress: ServerProgress) {
     applying = true;
     lessonProgress.set(progress.lessons ?? {});
@@ -90,6 +98,7 @@ function apply(progress: ServerProgress) {
 
 async function push() {
     if (!get(studentStore)) return;
+    saveState.set({ state: 'saving' });
     try {
         const response = await fetch('api/student/progress', {
             method: 'PUT',
@@ -100,16 +109,43 @@ async function push() {
             }),
             cache: 'no-store'
         });
-        if (response.ok) apply(await response.json());
+        if (response.ok) {
+            apply(await response.json());
+            saveState.set({ state: 'saved', at: new Date().toISOString() });
+        } else {
+            saveState.set({ state: 'offline' });
+        }
     } catch {
         // offline: the next change or sign-in tries again
+        saveState.set({ state: 'offline' });
     }
+}
+
+// Upload any change still waiting, so nothing is lost when signing out.
+export async function flushProgress() {
+    if (!timer) return;
+    clearTimeout(timer);
+    timer = undefined;
+    await push();
+}
+
+// Sign out after the last changes are uploaded, optionally clearing the code
+// panel so the next person on this computer starts with an empty program.
+export async function signOutStudent(clearCode: boolean) {
+    await flushProgress();
+    if (clearCode) clearProgram.set(true);
+    signOut();
+    saveState.set({ state: 'saved' });
 }
 
 function schedulePush() {
     if (applying || !get(studentStore)) return;
     if (timer) clearTimeout(timer);
-    timer = setTimeout(push, 1500);
+    saveState.set({ state: 'saving' });
+    timer = setTimeout(() => {
+        timer = undefined;
+        push();
+    }, 1500);
 }
 
 let started = false;

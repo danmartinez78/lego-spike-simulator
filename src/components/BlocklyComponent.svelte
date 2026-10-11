@@ -8,13 +8,19 @@
     import { QuestionCircleOutline } from 'flowbite-svelte-icons';
     import { openGuide, openBlockHelp } from '$lib/help';
     import { helpFor, tooltipFor } from '$lib/blockly/blockhelp';
-    import { programRequest, setProgramBuilder, type ProgramRequest } from '$lib/library';
+    import {
+        clearProgram,
+        programRequest,
+        setProgramBuilder,
+        type ProgramRequest
+    } from '$lib/library';
     import { restoreProgram, startAutosave } from '$lib/blockly/autosave';
     import { BookOpenOutline } from 'flowbite-svelte-icons';
     import ExamplesDialog from '$components/ExamplesDialog.svelte';
     import ChallengesDialog from '$components/ChallengesDialog.svelte';
     import LessonsDialog from '$components/LessonsDialog.svelte';
     import StudentDialog from '$components/StudentDialog.svelte';
+    import StudentCard from '$components/StudentCard.svelte';
     import { studentDialogOpen, studentStore } from '$lib/team';
     import { UserCircleOutline } from 'flowbite-svelte-icons';
     import { lessonsOpen } from '$lib/lessons';
@@ -93,6 +99,8 @@
     }
 
     let examplesOpen = false;
+    let studentCardOpen = false;
+    let studentButton: HTMLElement | undefined;
 
     function handleProgramRequest(request: ProgramRequest | undefined) {
         if (request) {
@@ -107,6 +115,19 @@
     }
 
     $: handleProgramRequest($programRequest);
+
+    // Empty the code panel, as a fresh visit has it.
+    function handleClear(clear: boolean) {
+        if (!clear) return;
+        clearProgram.set(false);
+        if (!workspace) return;
+        workspace.clear();
+        if (!Blockly.Variables.nameUsedWithAnyType('message1', workspace)) {
+            workspace.createVariable('message1', 'broadcast');
+        }
+    }
+
+    $: handleClear($clearProgram);
 
     // Replace the internal block names used as tooltips with plain-English help.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -486,6 +507,11 @@
 <PrintDialog bind:modalOpen={printDialogOpen} callback={printCallback} />
 <ExamplesDialog bind:modalOpen={examplesOpen} />
 <StudentDialog bind:modalOpen={$studentDialogOpen} />
+<StudentCard
+    open={studentCardOpen && !!$studentStore}
+    anchor={studentButton}
+    on:close={() => (studentCardOpen = false)}
+/>
 <LessonsDialog bind:modalOpen={$lessonsOpen} on:setup={() => (simulatorOpen = true)} />
 <ChallengesDialog bind:modalOpen={$challengesOpen} on:started={() => (simulatorOpen = true)} />
 
@@ -545,18 +571,32 @@
                 <QuestionCircleOutline class="w-7 h-7" />
             </ToolButton>
             <Tooltip>How to use the simulator</Tooltip>
-            <ToolButton
-                label={$studentStore ? $studentStore.name.split(' ')[0] : 'Sign in'}
-                color={$studentStore ? 'green' : 'light'}
-                on:click={() => studentDialogOpen.set(true)}
-            >
-                <UserCircleOutline class="w-7 h-7" />
-            </ToolButton>
-            <Tooltip
-                >{$studentStore
-                    ? `Signed in as ${$studentStore.name}`
-                    : 'Sign in with the code from your coach'}</Tooltip
-            >
+            <span class="inline-flex" bind:this={studentButton}>
+                <ToolButton
+                    label={$studentStore ? $studentStore.name.split(' ')[0] : 'Sign in'}
+                    aria-expanded={$studentStore ? studentCardOpen : undefined}
+                    on:click={() =>
+                        $studentStore
+                            ? (studentCardOpen = !studentCardOpen)
+                            : studentDialogOpen.set(true)}
+                >
+                    {#if $studentStore}
+                        <span
+                            class="w-7 h-7 rounded-full bg-green-600 text-white text-sm font-semibold flex items-center justify-center"
+                            >{$studentStore.name.charAt(0).toUpperCase()}</span
+                        >
+                    {:else}
+                        <UserCircleOutline class="w-7 h-7" />
+                    {/if}
+                </ToolButton>
+            </span>
+            {#if !studentCardOpen}
+                <Tooltip
+                    >{$studentStore
+                        ? `Signed in as ${$studentStore.name}. Press to see your work or sign out.`
+                        : 'Sign in with the code from your coach'}</Tooltip
+                >
+            {/if}
             {#if !simulatorOpen}
                 <div class="flex-1" />
                 <a href="https://developers.google.com/blockly" target="_blank">

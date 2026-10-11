@@ -1,7 +1,8 @@
 <script lang="ts">
     // Student sign-in with the code from the coach's card.
     import { Button, Input, Label, Modal } from 'flowbite-svelte';
-    import { pendingCode, signIn, signOut, studentStore } from '$lib/team';
+    import { pendingCode, signIn, studentStore } from '$lib/team';
+    import { signOutStudent } from '$lib/homework';
 
     export let modalOpen = false;
 
@@ -53,10 +54,12 @@
             </p>
             <p class="text-sm text-gray-600">
                 Not you? Sign out, then sign in with your own code. Keep your code to yourself, like
-                a password.
+                a password. Later, press your name in the toolbar to see your work or sign out.
             </p>
             <div class="flex flex-row gap-2 justify-end">
-                <Button color="light" on:click={signOut}>Not you? Sign out</Button>
+                <Button color="light" on:click={() => signOutStudent(false)}
+                    >Not you? Sign out</Button
+                >
                 <Button color="blue" on:click={() => (modalOpen = false)}>Done</Button>
             </div>
         </div>

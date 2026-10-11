@@ -223,8 +223,10 @@
                     </li>
                 </ul>
                 <p class="mt-2">
-                    Keep your code to yourself, like a password. If someone else is signed in on
-                    this computer, press their name and choose <b>Not you? Sign out</b>.
+                    Keep your code to yourself, like a password. Press your name in the toolbar to
+                    see your progress, check your work is saved, or <b>Sign out</b> when you're done
+                    on a shared computer. If someone else is signed in, press their name and sign them
+                    out.
                 </p>
             </TabItem>
             <TabItem

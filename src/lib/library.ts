@@ -346,6 +346,9 @@ export interface ProgramRequest {
 
 export const programRequest = writable<ProgramRequest | undefined>(undefined);
 
+// Set to true to empty the code panel (for example when a student signs out).
+export const clearProgram = writable(false);
+
 // Set by the code panel so other windows can save the current program.
 let programBuilder: (() => Promise<Blob | undefined>) | undefined = undefined;
 
