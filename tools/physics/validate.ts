@@ -51,7 +51,7 @@ export default async function (h: H) {
     expect('move 50 cm: distance (mm, 17.5 cm per rotation)', r.end.z, (500 / 175) * circ, 0.5);
     expect('move 50 cm: heading', wrap(r.end.rotation), 0, 0.01);
     r = run(P.program(pair, P.move('forward', 10, 'cm')));
-    expect('move 10 cm with no speed set (hub default 50%)', r.end.z, (100 / 175) * circ, 0.5);
+    expect('move 10 cm with no speed set (stays put)', r.end.z, 0, 0.01);
     r = run(P.program(pair, P.speed(100), P.move('forward', 2, 'rotations')));
     expect('move 2 rotations: distance', r.end.z, 2 * circ, 0.3);
     r = run(P.program(pair, P.speed(50), P.steer(100, 180, 'degrees')));
