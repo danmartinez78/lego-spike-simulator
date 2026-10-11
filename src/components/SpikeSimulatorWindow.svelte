@@ -9,7 +9,8 @@
         AwardOutline,
         ClipboardCheckOutline,
         EditOutline,
-        ToolsOutline
+        ToolsOutline,
+        VideoCameraOutline
     } from 'flowbite-svelte-icons';
     import { buildToolsChoice, setBuildTools } from '$lib/buildtools';
     import { activeChallenge, challengesOpen } from '$lib/spike/challenges';
@@ -315,7 +316,7 @@
                 </ToolButton>
                 <Tooltip>Measure distances and angles on the mat to plan a route</Tooltip>
                 <ToolButton label="Camera" id="camera_config_button">
-                    <img alt="" width="28" height="28" src="icons/Eye.svg" />
+                    <VideoCameraOutline class="w-7 h-7" />
                 </ToolButton>
                 <MenuDropdown
                     name="camera"
@@ -421,7 +422,9 @@
                             ? 'Custom realism'
                             : presetLabels[$realismStore.preset]}
                     </span>
-                    <Tooltip>Real-world errors are on. Change them in Experiment or Settings.</Tooltip>
+                    <Tooltip
+                        >Real-world errors are on. Change them in Experiment or Settings.</Tooltip
+                    >
                 {/if}
                 {#if $libraryStore.available}
                     <ToolButton
