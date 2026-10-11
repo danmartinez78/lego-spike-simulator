@@ -38,7 +38,9 @@
 -   Realism presets (Ideal / Realistic / Challenging, `?realism=` links) and the
     ▶×5 results window with A vs B comparison.
 -   Example programs with lesson cards (book button), coach-only saving.
--   Coach tools page at `/coach` (`src/pages/CoachPage.svelte`): upload, rename,
+-   Coach tools page at `/coach` (`src/pages/CoachPage.svelte`), with tabs Lessons,
+    Challenges (built-in cards, read-only for now), Example programs, Homework,
+    Students, Robots and maps, and AI assistants: upload, rename,
     download and delete robots, scenes and programs, choose what loads on open,
     mat previews for scenes, and a lesson card form. Roadmap for the next steps
     (class settings, team progress, homework):

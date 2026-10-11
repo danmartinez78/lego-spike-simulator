@@ -73,7 +73,7 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
         <p class="text-gray-600 text-sm">
             An AI assistant can write lessons for you, checks included. There are two ways to use
             one. Either way, what it makes arrives as a <strong>draft</strong>: students can't see
-            it until you look it over in Library and lessons and press Publish.
+            it until you look it over on the Lessons tab and press Publish.
         </p>
     </div>
 
@@ -146,7 +146,7 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
             <li>Copy the prompt below into your assistant and fill in what the lesson is about.</li>
             <li>Download the file it gives you.</li>
             <li>
-                In <strong>Library and lessons</strong>, Lessons, press
+                On the <strong>Lessons</strong> tab, press
                 <strong>Import a lesson</strong> and pick the file. It's added as a draft.
             </li>
             <li>Open it, check the steps and the check on the mat, then press Publish.</li>
