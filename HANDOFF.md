@@ -55,6 +55,8 @@
     Sign in button in the code panel or a `/#code=...` link; `/api/student` is
     deliberately outside Cloudflare Access and limits wrong codes to 10 per
     address per 10 minutes. Progress is not synced to the server yet.
+-   The code panel autosaves the program in the browser (`src/lib/blockly/autosave.ts`,
+    localStorage key `spike-sim-program`) and restores it on the next visit.
 -   Welcome screen, guide (? button) with block reference, About/credits.
 -   Block help: hover tooltips, right-click "Explain this block".
 -   Sensor graph, measure/route tool, top-down Place view.
