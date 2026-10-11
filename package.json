@@ -46,7 +46,6 @@
         "flowbite-svelte": "^0.47.3",
         "flowbite-svelte-icons": "^1.6.2",
         "jszip": "^3.10.1",
-        "qrcode-generator": "^1.4.4",
         "scratch-parser": "^5.2.1"
     }
 }

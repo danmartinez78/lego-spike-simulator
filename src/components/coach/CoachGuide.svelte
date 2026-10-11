@@ -238,8 +238,8 @@
                 </p>
                 <ul class="list-disc ml-5 flex flex-col gap-1">
                     <li>
-                        <b>Print code cards</b> makes cut-out cards with a QR code that signs the student
-                        in when scanned.
+                        <b>Print code cards</b> makes cut-out cards with the site address and each student's
+                        code, to type in with the Sign in button.
                     </li>
                     <li>
                         <b>Copy link</b> gives one student's sign-in link to send them.
