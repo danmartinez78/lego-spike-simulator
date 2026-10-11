@@ -10,6 +10,7 @@
     const mcpUrl = `${origin}/mcp`;
     const guideUrl = `${origin}/api/lessons/guide`;
     const checkUrl = `${origin}/api/lessons/check`;
+    const challengeCheckUrl = `${origin}/api/challenges/check`;
 
     const assistants: { name: string; steps: string }[] = [
         {
@@ -31,12 +32,15 @@
     ];
 
     const tools: [string, string][] = [
-        ['get_lesson_guide', "The lesson format, plus this site's fields with their sizes"],
-        ['list_library', 'Lessons, fields, robots and example programs'],
-        ['get_lesson', 'Read an existing lesson, to copy or improve it'],
-        ['check_lesson', 'Check a lesson for mistakes without saving it'],
-        ['save_lesson', 'Save a lesson as a draft, with your name on it'],
-        ['delete_lesson', 'Delete one of your own drafts']
+        [
+            'get_lesson_guide',
+            "The lesson and challenge formats, plus this site's fields with their sizes"
+        ],
+        ['list_library', 'Lessons, challenges, fields, robots and example programs'],
+        ['get_lesson, get_challenge', 'Read an existing one, to copy or improve it'],
+        ['check_lesson, check_challenge', 'Check for mistakes without saving'],
+        ['save_lesson, save_challenge', 'Save as a draft, with your name on it'],
+        ['delete_lesson, delete_challenge', 'Delete one of your own drafts']
     ];
 
     const claudeCode = `claude mcp add --transport http spike ${mcpUrl}`;
@@ -49,7 +53,9 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
     const examples = [
         'Write a lesson on driving a square with a repeat block, with a check that the robot ends back in the start box.',
         'Look at the "Sample lesson - Drive a square" lesson and make a harder version that uses a My Block.',
-        'Make three short lessons on the colour sensor for beginners, using the colour stops field.'
+        'Make three short lessons on the colour sensor for beginners, using the colour stops field.',
+        'Make a tricky challenge on the mini missions field: drive through P1, avoid the walls and park in P2 within 20 seconds.',
+        'Look at the "Hit target A" challenge and make an easier version for beginners.'
     ];
 
     let copied = '';
@@ -71,9 +77,9 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
     <div>
         <h2 class="text-lg font-semibold">AI assistants</h2>
         <p class="text-gray-600 text-sm">
-            An AI assistant can write lessons for you, checks included. There are two ways to use
-            one. Either way, what it makes arrives as a <strong>draft</strong>: students can't see
-            it until you look it over on the Lessons tab and press Publish.
+            An AI assistant can write lessons and challenges for you, checks included. There are two
+            ways to use one. Either way, what it makes arrives as a <strong>draft</strong>: students
+            can't see it until you look it over on the Lessons tab and press Publish.
         </p>
     </div>
 
@@ -167,6 +173,11 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
                 >
             </div>
         </div>
+        <p class="text-sm text-gray-700">
+            <strong>For a challenge</strong>, ask for a challenge JSON instead (the guide covers
+            both) and have it checked at <code class="break-all">{challengeCheckUrl}</code>. Then
+            use <strong>Import a challenge</strong> on the Challenges tab.
+        </p>
     </div>
 
     <div class="bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-2">
@@ -177,7 +188,7 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
             {/each}
         </ul>
         <p class="text-sm text-gray-600">
-            Homework, robot and field uploads, and challenges are coming to the connector next.
+            Homework and robot and map uploads are coming to the connector next.
         </p>
     </div>
 </section>

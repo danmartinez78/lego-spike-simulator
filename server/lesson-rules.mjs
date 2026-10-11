@@ -359,3 +359,79 @@ export function lessonProblems(value, context = {}) {
     }
     return { errors, warnings };
 }
+
+/**
+ * Everything wrong with a challenge (schemas/challenge-v1.json): a short goal
+ * on a field, checked over five runs, with hints but no steps.
+ *
+ * @param {unknown} value
+ * @param {LessonContext} [context]
+ * @returns {{ errors: string[], warnings: string[] }}
+ */
+export function challengeProblems(value, context = {}) {
+    /** @type {string[]} */
+    const errors = [];
+    /** @type {string[]} */
+    const warnings = [];
+    const challenge = /** @type {Record<string, any>} */ (value);
+    if (!challenge || typeof challenge !== 'object' || Array.isArray(challenge)) {
+        return { errors: ['A challenge must be a JSON object'], warnings };
+    }
+    if (challenge.schema !== 'spike-challenge/1')
+        errors.push('The challenge needs "schema": "spike-challenge/1"');
+    if (typeof challenge.title !== 'string' || challenge.title.trim() === '') {
+        errors.push('The challenge needs a title');
+    } else if (challenge.title.length > 80) {
+        errors.push('The title must be 80 characters or fewer');
+    }
+    if (typeof challenge.goal !== 'string' || challenge.goal.trim() === '') {
+        errors.push('The challenge needs a goal: one or two sentences saying what to do');
+    }
+    if (typeof challenge.field !== 'string' || challenge.field.trim() === '') {
+        errors.push('The challenge needs a "field" (a .spk scene) for the check to use');
+    }
+    for (const field of ['skill', 'robot', 'example']) {
+        if (challenge[field] !== undefined && typeof challenge[field] !== 'string') {
+            errors.push(`"${field}" must be text`);
+        }
+    }
+    if (challenge.level !== undefined && ![1, 2, 3].includes(challenge.level)) {
+        errors.push('"level" must be 1 (starter), 2 (getting there) or 3 (tricky)');
+    }
+    if (challenge.order !== undefined && !isNumber(challenge.order))
+        errors.push('"order" must be a number');
+    if (challenge.draft !== undefined && typeof challenge.draft !== 'boolean') {
+        errors.push('"draft" must be true or false');
+    }
+    if (challenge.hints !== undefined) {
+        if (
+            !Array.isArray(challenge.hints) ||
+            challenge.hints.length > 10 ||
+            !challenge.hints.every((/** @type {unknown} */ h) => typeof h === 'string' && h.trim())
+        ) {
+            errors.push('"hints" must be a list of up to 10 pieces of text');
+        }
+    }
+    if (challenge.check === undefined) {
+        errors.push('The challenge needs a "check": how the simulator decides it passed');
+    } else {
+        const mat =
+            typeof challenge.field === 'string' ? context.mats?.[challenge.field] : undefined;
+        checkCheck(challenge.check, mat, errors);
+    }
+    if (context.files) {
+        /** @type {[string, 'programs' | 'scenes' | 'robots'][]} */
+        const refs = [
+            ['example', 'programs'],
+            ['field', 'scenes'],
+            ['robot', 'robots']
+        ];
+        for (const [field, kind] of refs) {
+            const name = challenge[field];
+            if (typeof name === 'string' && name && !context.files[kind].includes(name)) {
+                warnings.push(`"${field}": ${name} isn't in the library`);
+            }
+        }
+    }
+    return { errors, warnings };
+}

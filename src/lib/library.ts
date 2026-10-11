@@ -4,6 +4,7 @@
 
 import { get, writable } from 'svelte/store';
 import type { Check } from '$lib/spike/checks';
+import type { ChallengeFile } from '$lib/spike/challenges';
 import JSZip from 'jszip';
 import {
     componentStore,
@@ -13,7 +14,7 @@ import {
 } from '$lib/ldraw/components';
 import { sceneStore, type SceneObject } from '$lib/spike/scene';
 
-export type LibraryKind = 'robots' | 'scenes' | 'programs' | 'lessons';
+export type LibraryKind = 'robots' | 'scenes' | 'programs' | 'lessons' | 'challenges';
 
 export interface LessonCard {
     title: string;
@@ -58,6 +59,7 @@ export interface LibraryEntry {
     modified: string;
     card?: LessonCard;
     lesson?: Lesson;
+    challenge?: ChallengeFile;
 }
 
 export interface LibraryIndex {
@@ -65,6 +67,7 @@ export interface LibraryIndex {
     scenes: LibraryEntry[];
     programs: LibraryEntry[];
     lessons: LibraryEntry[];
+    challenges: LibraryEntry[];
     defaults: { robot?: string; scene?: string };
 }
 
@@ -81,7 +84,7 @@ export interface RobotRequest {
 
 export const libraryStore = writable<LibraryState>({
     available: false,
-    index: { robots: [], scenes: [], programs: [], lessons: [], defaults: {} },
+    index: { robots: [], scenes: [], programs: [], lessons: [], challenges: [], defaults: {} },
     writer: undefined
 });
 
@@ -103,6 +106,7 @@ export async function refreshLibrary(): Promise<LibraryState> {
         const index = (await response.json()) as LibraryIndex;
         index.programs = index.programs ?? [];
         index.lessons = index.lessons ?? [];
+        index.challenges = index.challenges ?? [];
         state = { ...state, available: true, index };
     } catch {
         state = { ...state, available: false };
@@ -187,6 +191,14 @@ export async function saveLesson(name: string, lesson: Lesson) {
     );
 }
 
+export async function saveChallenge(name: string, challenge: ChallengeFile) {
+    await adminRequest(
+        'PUT',
+        `challenges/${encodeURIComponent(name)}`,
+        new Blob([JSON.stringify(challenge, null, 2)], { type: 'application/json' })
+    );
+}
+
 export async function saveProgram(name: string, blob: Blob, card: LessonCard) {
     await adminRequest('PUT', `programs/${encodeURIComponent(name)}`, blob);
     await adminRequest(
@@ -200,7 +212,8 @@ const extensions: Record<LibraryKind, string> = {
     robots: '.mpd',
     scenes: '.spk',
     programs: '.llsp3',
-    lessons: '.json'
+    lessons: '.json',
+    challenges: '.json'
 };
 
 export function libraryFileName(kind: LibraryKind, name: string) {

@@ -203,8 +203,56 @@ start ring facing up, and a repeat block:
 }
 ```
 
+## Challenges
+
+A challenge is a short goal students try from the **Challenges** button in the
+code panel, without steps: a field, a check over five runs, and a few hints
+shown one at a time. Coaches make and edit them on the coach page (Challenges
+tab), where the check is drawn on the mat. New challenges start as drafts until
+a coach publishes them. A challenge is stored as `<id>.json`; the id is the file
+name without `.json`, and it's what a lesson's `"challenge"` points at.
+
+```json
+{
+    "schema": "spike-challenge/1",
+    "title": "Hit target A",
+    "level": 1,
+    "skill": "Driving",
+    "goal": "Stop inside the 6 cm ring of target A, 4 out of 5 times, on Realistic.",
+    "field": "Practice - accuracy targets.spk",
+    "hints": [
+        "Use the measure tool to find how far target A is from the robot.",
+        "If runs spread sideways, try driving straight with the gyro."
+    ],
+    "check": {
+        "realism": "realistic",
+        "needed": 4,
+        "stop": { "zone": { "kind": "circle", "x": -950, "z": -150, "radius": 60, "label": "A" } }
+    }
+}
+```
+
+| Field     | Meaning                                                      |
+| --------- | ------------------------------------------------------------ |
+| `schema`  | always `"spike-challenge/1"`                                 |
+| `title`   | name, up to 80 characters                                    |
+| `goal`    | what to do, how well, how often and on which realism         |
+| `field`   | the `.spk` field; starting the challenge loads it            |
+| `check`   | the same check as a lesson's (above)                         |
+| `level`   | 1 starter, 2 getting there, 3 tricky                         |
+| `skill`   | what it practises: Basics, Driving, Sensors, Gyro, Missions… |
+| `robot`   | a robot other than the default, if the challenge needs one   |
+| `example` | an example program (`.llsp3`) that helps                     |
+| `hints`   | up to 10; nudge rather than give the answer                  |
+| `order`   | position in the list, lowest first                           |
+| `draft`   | `true` hides it from students                                |
+
+Write the goal so it matches the check: if the check needs 4 of 5 runs on
+Realistic, say so. Check a challenge with `POST /api/challenges/check` (the JSON
+as the body; nothing is saved), and see `GET /api/challenges/schema`.
+
 ## Older lessons
 
-Lessons written before checks existed may have `"challenge": "<id>"`, naming one
-of the built-in challenge cards. That still works: the lesson is done once the
-challenge is complete. New lessons should use `check` instead.
+Lessons written before checks existed may have `"challenge": "<id>"`, naming a
+challenge. That still works: the lesson is done once the challenge is complete.
+New lessons should use `check` instead.

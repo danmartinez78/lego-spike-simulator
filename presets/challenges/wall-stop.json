@@ -1,0 +1,29 @@
+{
+    "schema": "spike-challenge/1",
+    "title": "Stop before the wall",
+    "level": 2,
+    "skill": "Sensors",
+    "order": 7,
+    "goal": "Drive towards the wall and stop with the front of the robot about 10 cm away, every time, on Challenging.",
+    "field": "Practice - wall course.spk",
+    "robot": "DrivingBase3 with distance sensor.mpd",
+    "hints": [
+        "This field needs the robot with the distance sensor (port F). Setting up the challenge loads it.",
+        "Start moving, then wait until the distance is less than 10 cm, then stop.",
+        "The sensor is at the front of the robot, so the distance is measured from there."
+    ],
+    "check": {
+        "realism": "challenging",
+        "needed": 5,
+        "stop": {
+            "zone": {
+                "kind": "box",
+                "x1": -1000,
+                "z1": -175,
+                "x2": -900,
+                "z2": -135,
+                "label": "10 cm"
+            }
+        }
+    }
+}

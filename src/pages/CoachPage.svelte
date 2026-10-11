@@ -16,7 +16,7 @@
     import type { Student } from '$lib/team';
     import { askConfirm } from '$lib/confirm';
     import { ClipboardCheckOutline } from 'flowbite-svelte-icons';
-    import { challenges } from '$lib/spike/challenges';
+    import { allChallenges } from '$lib/spike/challenges';
     import {
         exportLessonPackage,
         installLessonPackage,
@@ -166,7 +166,7 @@
 
     // Challenge cards name their field, robot and example program by file name.
     function challengesUsing(kind: LibraryKind, name: string) {
-        return challenges.filter((c) =>
+        return $allChallenges.filter((c) =>
             kind == 'scenes'
                 ? c.field == name
                 : kind == 'robots'
@@ -766,7 +766,7 @@
                                                     entry.lesson.field,
                                                     entry.lesson.robot,
                                                     entry.lesson.challenge
-                                                        ? `the challenge "${challenges.find((c) => c.id == entry.lesson?.challenge)?.title ?? entry.lesson.challenge}"`
+                                                        ? `the challenge "${$allChallenges.find((c) => c.id == entry.lesson?.challenge)?.title ?? entry.lesson.challenge}"`
                                                         : ''
                                                 ]
                                                     .filter((x) => x)

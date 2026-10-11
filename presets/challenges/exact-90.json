@@ -1,0 +1,32 @@
+{
+    "schema": "spike-challenge/1",
+    "title": "A perfect right angle",
+    "level": 2,
+    "skill": "Gyro",
+    "order": 5,
+    "goal": "Turn on the spot to face 90° (right), within 3°, staying within 3 cm of the centre, 4 out of 5 times, on Realistic.",
+    "field": "Practice - turn rose.spk",
+    "example": "06 Turn with the gyro.llsp3",
+    "hints": [
+        "Reset the yaw angle to 0 first.",
+        "Spin with start moving at 20% and -20%, and wait until the yaw angle passes 90.",
+        "The robot keeps turning a little after it stops. Stop a degree or two early."
+    ],
+    "check": {
+        "realism": "realistic",
+        "needed": 4,
+        "stop": {
+            "zone": {
+                "kind": "circle",
+                "x": 0,
+                "z": 60,
+                "radius": 30,
+                "label": "centre"
+            },
+            "heading": {
+                "value": 90,
+                "tolerance": 3
+            }
+        }
+    }
+}

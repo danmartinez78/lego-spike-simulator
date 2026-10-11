@@ -4,7 +4,7 @@
     import { Button, Modal } from 'flowbite-svelte';
     import { StarSolid } from 'flowbite-svelte-icons';
     import {
-        challenges,
+        challengeList,
         activeChallenge,
         progressStore,
         requestedChallenge,
@@ -24,13 +24,16 @@
 
     const dispatch = createEventDispatcher<{ started: Challenge }>();
 
-    let selected: Challenge = challenges[0];
+    let selected: Challenge | undefined = undefined;
     let hintsShown = 0;
     let message = '';
     let busy = false;
 
     $: progress = $progressStore;
+    $: challenges = $challengeList;
     $: done = challenges.filter((c) => progress[c.id]?.completed).length;
+    // Keep the selection on a challenge that still exists.
+    $: if (!selected || !challenges.some((c) => c.id == selected?.id)) selected = challenges[0];
 
     function choose(c: Challenge) {
         selected = c;
@@ -121,7 +124,7 @@
             {#each challenges as c}
                 {@const s = status(c)}
                 <button
-                    class="text-left rounded-lg border px-3 py-2 transition-colors {selected.id ==
+                    class="text-left rounded-lg border px-3 py-2 transition-colors {selected?.id ==
                     c.id
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:bg-gray-50'}"
@@ -135,7 +138,7 @@
                         <span class="flex">
                             {#each [1, 2, 3] as n}
                                 <StarSolid
-                                    class="w-3.5 h-3.5 {n <= c.level
+                                    class="w-3.5 h-3.5 {n <= (c.level ?? 1)
                                         ? 'text-amber-400'
                                         : 'text-gray-200'}"
                                 />
@@ -146,97 +149,103 @@
                 </button>
             {/each}
         </div>
-        <div class="flex-1 overflow-y-auto leading-relaxed pr-1">
-            <div class="flex items-center gap-2">
-                <h3 class="text-xl font-semibold text-gray-900">{selected.title}</h3>
-                {#if $activeChallenge?.id == selected.id}
-                    <span class="text-xs rounded-full px-2 py-0.5 bg-blue-100 text-blue-800"
-                        >In progress</span
+        {#if !selected}
+            <p class="flex-1 text-gray-600">No challenges yet. Your coach can add some.</p>
+        {:else}
+            <div class="flex-1 overflow-y-auto leading-relaxed pr-1">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-xl font-semibold text-gray-900">{selected.title}</h3>
+                    {#if $activeChallenge?.id == selected.id}
+                        <span class="text-xs rounded-full px-2 py-0.5 bg-blue-100 text-blue-800"
+                            >In progress</span
+                        >
+                    {/if}
+                </div>
+                <p class="text-base text-gray-900 mt-2">{selected.goal}</p>
+                <div class="grid grid-cols-2 gap-2 mt-3">
+                    <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
+                        <div class="text-xs text-gray-500">Field</div>
+                        <div class="font-medium first-letter:uppercase">
+                            {selected.field.replace(/^Practice - |\.spk$/g, '')}
+                        </div>
+                    </div>
+                    <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
+                        <div class="text-xs text-gray-500">Realism</div>
+                        <div class="font-medium">{presetLabels[selected.realism]}</div>
+                    </div>
+                    <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
+                        <div class="text-xs text-gray-500">To pass</div>
+                        <div class="font-medium">{selected.needed} of 5 runs</div>
+                    </div>
+                    <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
+                        <div class="text-xs text-gray-500">Robot</div>
+                        <div class="font-medium">
+                            {selected.robot
+                                ? selected.robot.replace(/\.mpd$/, '')
+                                : 'Any driving base'}
+                        </div>
+                    </div>
+                </div>
+                <h4 class="font-medium mt-4">How it works</h4>
+                <ol class="list-decimal ml-5 text-gray-700">
+                    <li>Press <b>Start challenge</b>. It loads the field and sets the realism.</li>
+                    <li>Write your program in the code panel.</li>
+                    <li>
+                        Press the green <b>Check</b> button in the simulator. Your program runs 5 times
+                        and the results show which runs passed.
+                    </li>
+                </ol>
+                <h4 class="font-medium mt-4">Hints</h4>
+                {#if hintsShown == 0}
+                    <p class="text-gray-500">Try it first. Hints are here if you get stuck.</p>
+                {/if}
+                <ol class="list-decimal ml-5 text-gray-700">
+                    {#each selected.hints.slice(0, hintsShown) as hint}
+                        <li>{hint}</li>
+                    {/each}
+                </ol>
+                {#if hintsShown < selected.hints.length}
+                    <button class="mt-1 text-blue-700 hover:underline" on:click={() => hintsShown++}
+                        >Show a hint ({hintsShown + 1} of {selected.hints.length})</button
                     >
                 {/if}
-            </div>
-            <p class="text-base text-gray-900 mt-2">{selected.goal}</p>
-            <div class="grid grid-cols-2 gap-2 mt-3">
-                <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
-                    <div class="text-xs text-gray-500">Field</div>
-                    <div class="font-medium first-letter:uppercase">
-                        {selected.field.replace(/^Practice - |\.spk$/g, '')}
-                    </div>
-                </div>
-                <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
-                    <div class="text-xs text-gray-500">Realism</div>
-                    <div class="font-medium">{presetLabels[selected.realism]}</div>
-                </div>
-                <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
-                    <div class="text-xs text-gray-500">To pass</div>
-                    <div class="font-medium">{selected.needed} of 5 runs</div>
-                </div>
-                <div class="rounded-lg bg-gray-50 border border-gray-200 p-2">
-                    <div class="text-xs text-gray-500">Robot</div>
-                    <div class="font-medium">
-                        {selected.robot ? selected.robot.replace(/\.mpd$/, '') : 'Any driving base'}
-                    </div>
-                </div>
-            </div>
-            <h4 class="font-medium mt-4">How it works</h4>
-            <ol class="list-decimal ml-5 text-gray-700">
-                <li>Press <b>Start challenge</b>. It loads the field and sets the realism.</li>
-                <li>Write your program in the code panel.</li>
-                <li>
-                    Press the green <b>Check</b> button in the simulator. Your program runs 5 times and
-                    the results show which runs passed.
-                </li>
-            </ol>
-            <h4 class="font-medium mt-4">Hints</h4>
-            {#if hintsShown == 0}
-                <p class="text-gray-500">Try it first. Hints are here if you get stuck.</p>
-            {/if}
-            <ol class="list-decimal ml-5 text-gray-700">
-                {#each selected.hints.slice(0, hintsShown) as hint}
-                    <li>{hint}</li>
-                {/each}
-            </ol>
-            {#if hintsShown < selected.hints.length}
-                <button class="mt-1 text-blue-700 hover:underline" on:click={() => hintsShown++}
-                    >Show a hint ({hintsShown + 1} of {selected.hints.length})</button
-                >
-            {/if}
-            <div class="flex flex-row flex-wrap gap-2 mt-5 items-center">
-                <Button
-                    color="blue"
-                    disabled={busy || !available(selected)}
-                    on:click={() => start(selected)}
-                    >{$activeChallenge?.id == selected.id
-                        ? 'Restart challenge'
-                        : 'Start challenge'}</Button
-                >
-                {#if selected.example && $libraryStore.index.programs.some((p) => p.name == selected.example)}
+                <div class="flex flex-row flex-wrap gap-2 mt-5 items-center">
                     <Button
-                        color="light"
-                        on:click={() => selected.example && openExample(selected.example)}
-                        >Open a related example</Button
+                        color="blue"
+                        disabled={busy || !available(selected)}
+                        on:click={() => selected && start(selected)}
+                        >{$activeChallenge?.id == selected.id
+                            ? 'Restart challenge'
+                            : 'Start challenge'}</Button
                     >
+                    {#if selected.example && $libraryStore.index.programs.some((p) => p.name == selected?.example)}
+                        <Button
+                            color="light"
+                            on:click={() => selected?.example && openExample(selected.example)}
+                            >Open a related example</Button
+                        >
+                    {/if}
+                    {#if $activeChallenge}
+                        <Button color="light" on:click={() => activeChallenge.set(undefined)}
+                            >Stop the challenge</Button
+                        >
+                    {/if}
+                </div>
+                {#if !available(selected) && $libraryStore.available}
+                    <p class="text-xs text-red-700 mt-2">
+                        This challenge needs the "{selected.field.replace(/\.spk$/, '')}" field{selected.robot
+                            ? ` and the "${selected.robot.replace(/\.mpd$/, '')}" robot`
+                            : ''} in the shared library.
+                    </p>
                 {/if}
-                {#if $activeChallenge}
-                    <Button color="light" on:click={() => activeChallenge.set(undefined)}
-                        >Stop the challenge</Button
-                    >
+                {#if message}
+                    <p class="mt-2">{message}</p>
                 {/if}
-            </div>
-            {#if !available(selected) && $libraryStore.available}
-                <p class="text-xs text-red-700 mt-2">
-                    This challenge needs the "{selected.field.replace(/\.spk$/, '')}" field{selected.robot
-                        ? ` and the "${selected.robot.replace(/\.mpd$/, '')}" robot`
-                        : ''} in the shared library.
+                <p class="text-xs text-gray-500 mt-4">
+                    Your progress is saved in this browser. The target is checked against the centre
+                    of the robot where it stops.
                 </p>
-            {/if}
-            {#if message}
-                <p class="mt-2">{message}</p>
-            {/if}
-            <p class="text-xs text-gray-500 mt-4">
-                Your progress is saved in this browser. The target is checked against the centre of
-                the robot where it stops.
-            </p>
-        </div>
+            </div>
+        {/if}
     </div>
 </Modal>

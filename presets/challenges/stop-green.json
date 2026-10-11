@@ -1,0 +1,29 @@
+{
+    "schema": "spike-challenge/1",
+    "title": "Stop on green",
+    "level": 2,
+    "skill": "Sensors",
+    "order": 4,
+    "goal": "Drive up lane 1 and stop with the colour sensor on the green patch, every time, on Challenging.",
+    "field": "Practice - colour stops.spk",
+    "example": "03 Stop at a line.llsp3",
+    "hints": [
+        "Start moving, then wait until the colour sensor sees green, then stop.",
+        "Driving a fixed distance will not be reliable on Challenging. Let the sensor decide.",
+        "If the robot overshoots, try a slower speed."
+    ],
+    "check": {
+        "realism": "challenging",
+        "needed": 5,
+        "stop": {
+            "zone": {
+                "kind": "box",
+                "x1": -960,
+                "z1": 170,
+                "x2": -840,
+                "z2": 215,
+                "label": "green"
+            }
+        }
+    }
+}

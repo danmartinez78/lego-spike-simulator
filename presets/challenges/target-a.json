@@ -1,0 +1,27 @@
+{
+    "schema": "spike-challenge/1",
+    "title": "Hit target A",
+    "level": 1,
+    "skill": "Driving",
+    "order": 2,
+    "goal": "Stop inside the 6 cm ring of target A, 4 out of 5 times, on Realistic.",
+    "field": "Practice - accuracy targets.spk",
+    "hints": [
+        "Use the measure tool to find how far target A is from the robot.",
+        "Measure from the centre of the robot to the centre of the target.",
+        "If runs spread sideways, try driving straight with the gyro."
+    ],
+    "check": {
+        "realism": "realistic",
+        "needed": 4,
+        "stop": {
+            "zone": {
+                "kind": "circle",
+                "x": -950,
+                "z": -150,
+                "radius": 60,
+                "label": "A"
+            }
+        }
+    }
+}

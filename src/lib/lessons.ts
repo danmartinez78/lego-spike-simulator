@@ -15,7 +15,7 @@ import {
     type LibraryKind,
     type Lesson
 } from '$lib/library';
-import { challenges, type Challenge } from '$lib/spike/challenges';
+import { allChallenges, findChallenge, type Challenge } from '$lib/spike/challenges';
 import { lessonProblems } from '../../server/lesson-rules.mjs';
 
 export const lessonsOpen = writable(false);
@@ -158,7 +158,7 @@ export function isPublished(entry: LibraryEntry) {
 }
 
 export function challengeFor(lesson: Lesson | undefined) {
-    return lesson?.challenge ? challenges.find((c) => c.id == lesson.challenge) : undefined;
+    return findChallenge(lesson?.challenge);
 }
 
 // ---- Checking a lesson ----------------------------------------------------
@@ -168,7 +168,8 @@ export function lessonProblem(
     value: unknown,
     mats?: Record<string, { width: number; height: number }>
 ) {
-    return lessonProblems(value, { challenges: challenges.map((c) => c.id), mats }).errors[0];
+    return lessonProblems(value, { challenges: get(allChallenges).map((c) => c.id), mats })
+        .errors[0];
 }
 
 // Library files the lesson points at that the library doesn't have.

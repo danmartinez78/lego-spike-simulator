@@ -2,24 +2,29 @@
 
 Coaches can connect Claude, or any other assistant that speaks MCP, to the
 simulator at `https://<site>/mcp`. The assistant can then read the lesson guide,
-look through the library, check lessons and save them as drafts. Each coach
+look through the library, check lessons and challenges and save them as drafts. Each coach
 signs in as themselves, so everything an assistant saves is stamped with that
 coach's email (`"author"` in the lesson).
 
 ## Tools
 
-| Tool                | What it does                                                              |
-| ------------------- | ------------------------------------------------------------------------- |
-| `whoami`            | Which coach the connection is signed in as                                |
-| `get_lesson_guide`  | The lesson guide plus this site's fields (mat sizes), robots and programs |
-| `get_lesson_schema` | The JSON schema for `lesson.json`                                         |
-| `list_library`      | Lessons (title, draft, author), fields, robots and example programs       |
-| `get_lesson`        | One lesson's JSON                                                         |
-| `check_lesson`      | Errors and warnings for a lesson, without saving                          |
-| `save_lesson`       | Save a lesson as a draft; `replace` updates your own draft                |
-| `delete_lesson`     | Delete one of your own drafts                                             |
+| Tool                   | What it does                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `whoami`               | Which coach the connection is signed in as                                         |
+| `get_lesson_guide`     | The lesson guide plus this site's fields (mat sizes), robots and programs          |
+| `get_lesson_schema`    | The JSON schema for `lesson.json`                                                  |
+| `list_library`         | Lessons and challenges (title, draft, author), fields, robots and example programs |
+| `get_lesson`           | One lesson's JSON                                                                  |
+| `check_lesson`         | Errors and warnings for a lesson, without saving                                   |
+| `save_lesson`          | Save a lesson as a draft; `replace` updates your own draft                         |
+| `delete_lesson`        | Delete one of your own drafts                                                      |
+| `get_challenge_schema` | The JSON schema for a challenge                                                    |
+| `get_challenge`        | One challenge's JSON                                                               |
+| `check_challenge`      | Errors and warnings for a challenge, without saving                                |
+| `save_challenge`       | Save a challenge as a draft; its id is the file name without `.json`               |
+| `delete_challenge`     | Delete one of your own draft challenges                                            |
 
-Rules: saved lessons are always drafts, so students only see them after a coach
+Rules: saved lessons and challenges are always drafts, so students only see them after a coach
 presses **Publish** on the coach page. An assistant can't replace a published
 lesson or another coach's draft, and can only delete its own coach's drafts.
 
