@@ -189,7 +189,7 @@ f.save()
 
 # 2. Colour stops -----------------------------------------------------------
 f = Field('Practice - colour stops')
-f.title('COLOUR STOPS')
+f.title('COLOR STOPS')
 f.start_box(-900, 380, 0)
 lane = [(RED, -150), (BLUE, -350), (GREEN, 0), (YELLOW, 150)]
 # Lane 1: coloured patches straight ahead of the start
