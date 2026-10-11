@@ -1,4 +1,4 @@
-// Debug options for the simulator view, remembered in this browser.
+// Options for the simulator view, remembered in this browser.
 
 import { writable } from 'svelte/store';
 

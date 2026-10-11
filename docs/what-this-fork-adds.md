@@ -112,7 +112,9 @@ assignments, and a coach page to run it all.
     positions.
 -   **Camera control.** During a run, drag the 3D view to orbit, right-drag,
     Shift-drag or drag with two fingers to pan, and scroll or pinch to zoom.
-    Double-click or Reset view goes back to the chosen view.
+    Double-click or Reset view goes back to the chosen view. A Camera button in the corner of the view lists these controls. The list
+    opens by itself at the start of each run and closes when the student moves
+    the view, and the guide's Camera entry explains it too.
 
 ### Signing in and assignments
 
