@@ -2,7 +2,9 @@ name: Docker image
 
 on:
     push:
-        branches: [master]
+        # master publishes :latest for the live site. Other branches publish
+        # a :branch-<name> image, so a test container can run them.
+        branches: [master, 'claude/**', 'feature/**']
     workflow_dispatch:
 
 permissions:
@@ -21,11 +23,18 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
             - id: image
-              run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+              run: |
+                  echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+                  branch="${GITHUB_REF_NAME//\//-}"
+                  if [ "$GITHUB_REF_NAME" = "master" ]; then
+                      echo "tag=latest" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "tag=branch-${branch,,}" >> "$GITHUB_OUTPUT"
+                  fi
             - uses: docker/build-push-action@v6
               with:
                   context: .
                   push: true
                   tags: |
-                      ${{ steps.image.outputs.name }}:latest
+                      ${{ steps.image.outputs.name }}:${{ steps.image.outputs.tag }}
                       ${{ steps.image.outputs.name }}:${{ github.sha }}

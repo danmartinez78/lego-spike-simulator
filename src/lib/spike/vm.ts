@@ -12,6 +12,8 @@ export const allPorts: PortType[] = ['A', 'B', 'C', 'D', 'E', 'F'];
 export const fontEmbedsSpace = false;
 let stepSleep = 0;
 let timeFactor = 1.0;
+// Seconds of simulated time between sensor readings (100 per second).
+const sensorInterval = 0.01;
 let startDelay = 1.0;
 
 const colours: Record<string, string> = {
@@ -2365,6 +2367,9 @@ export class Hub {
     movePair2: PortType;
     yaw: number;
     id: string;
+    // Sensor views register here so the VM can read them on its own clock
+    // instead of once per screen frame.
+    sensorSamplers = new Map<PortType, () => void>();
 
     reload() {
         this.leftPressed = false;
@@ -2431,6 +2436,22 @@ export class Hub {
         this.moveDistance = 175;
         this.screenRotate = 0;
         this.yaw = 0;
+    }
+
+    addSensorSampler(port: PortType, sample: () => void) {
+        this.sensorSamplers.set(port, sample);
+    }
+
+    removeSensorSampler(port: PortType, sample: () => void) {
+        if (this.sensorSamplers.get(port) === sample) {
+            this.sensorSamplers.delete(port);
+        }
+    }
+
+    sampleSensors() {
+        for (const sample of this.sensorSamplers.values()) {
+            sample();
+        }
     }
 
     setEventHandler(eventHandler: HubEventHandler) {
@@ -2841,6 +2862,7 @@ export class VM {
     first: boolean;
     // Simulated seconds since the program started, and when the timer was reset.
     simTime: number;
+    sensorClock: number;
     timerStart: number;
     deltaTime: number;
     wait: number;
@@ -2867,6 +2889,7 @@ export class VM {
         this.first = true;
         this.volume = 100;
         this.simTime = 0;
+        this.sensorClock = 0;
         this.timerStart = 0;
         this.audio = new Audio();
         const audioContext = new AudioContext();
@@ -3108,6 +3131,14 @@ export class VM {
                 this.moveRobot(stepTime, scene);
                 this.driftGyro(stepTime);
                 this.simTime += stepTime;
+                // Read the sensors every sensorInterval of simulated time, so
+                // a program sees the same readings on a slow Chromebook as on
+                // a fast desktop, and at any time scale.
+                this.sensorClock += stepTime;
+                if (this.sensorClock >= sensorInterval) {
+                    this.sensorClock -= sensorInterval;
+                    this.hub.sampleSensors();
+                }
                 this.processSleep(stepTime);
                 this.runThreads();
                 duration -= stepTime;

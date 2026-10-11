@@ -274,14 +274,21 @@ export function rollout(
     let idle = 0;
     let run_t = 0;
     const dt = 1 / fps;
-    const sense = () => {
+    const senseAt = (port: PortType, local: { x: number; z: number }) => {
         if (!opts.mat) return;
+        const [mx, mz] = robotToMat(local, scene.robot.position!, scene.robot.rotation ?? 0);
+        hub.measureReflected(port, opts.mat.reflected(mx, mz));
+        hub.measureColour(port, opts.mat.colour(mx, mz));
+    };
+    const sense = () => {
         for (const [port, local] of Object.entries(robot.lightOffsets)) {
-            const [mx, mz] = robotToMat(local, scene.robot.position!, scene.robot.rotation ?? 0);
-            hub.measureReflected(port as PortType, opts.mat.reflected(mx, mz));
-            hub.measureColour(port as PortType, opts.mat.colour(mx, mz));
+            senseAt(port as PortType, local);
         }
     };
+    // Like the app, the VM also reads the sensors on its own clock.
+    for (const [port, local] of Object.entries(robot.lightOffsets)) {
+        hub.addSensorSampler(port as PortType, () => senseAt(port as PortType, local));
+    }
     const snap = (): Sample => {
         const motors: Record<string, number> = {};
         for (const p of ['A', 'B', 'C', 'D', 'E', 'F'] as PortType[]) {

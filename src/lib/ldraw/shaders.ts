@@ -20,21 +20,35 @@ export const lego_vertex_shader = `
       `;
 
 export const lego_fragment_shader = `
-      // fragment shaders don't have a default precision so we need
-      // to pick one. mediump is a good default
+      // Depth needs more than mediump, which is 16 bit on many
+      // Chromebook GPUs.
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
+      precision highp float;
+      #else
       precision mediump float;
+      #endif
       uniform float near;
       uniform float far;
       varying vec4 v_colour;
       varying vec4 v;
       uniform bool renderDepth;
+
+      // Store depth as 16 bits, high byte in red and low byte in green, so
+      // the distance sensor isn't limited to 256 steps. Readers that only
+      // look at red still get the old 8 bit value.
+      vec4 packDepth(float depth) {
+        float scaled = clamp(depth, 0.0, 1.0) * 255.0;
+        float high = floor(scaled);
+        float low = min(floor((scaled - high) * 256.0), 255.0);
+        return vec4(high / 255.0, low / 255.0, 0.0, 1.0);
+      }
      
       void main() {
         // gl_FragColor is a special variable a fragment shader
         // is responsible for setting
         if (renderDepth) {
             float depth = (v.z - near) / (far - near);
-            gl_FragColor = vec4(depth, depth, depth, 1.0);
+            gl_FragColor = packDepth(depth);
         } else {
             gl_FragColor = vec4(v_colour.rgb, 1.0);
         }
@@ -44,14 +58,28 @@ export const lego_fragment_shader = `
 `;
 
 export const lego_fragment_shader_df = `#extension GL_OES_standard_derivatives : enable
-      // fragment shaders don't have a default precision so we need
-      // to pick one. mediump is a good default
+      // Depth needs more than mediump, which is 16 bit on many
+      // Chromebook GPUs.
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
+      precision highp float;
+      #else
       precision mediump float;
+      #endif
       uniform float near;
       uniform float far;
       varying vec4 v_colour;
       varying vec4 v;
       uniform bool renderDepth;
+
+      // Store depth as 16 bits, high byte in red and low byte in green, so
+      // the distance sensor isn't limited to 256 steps. Readers that only
+      // look at red still get the old 8 bit value.
+      vec4 packDepth(float depth) {
+        float scaled = clamp(depth, 0.0, 1.0) * 255.0;
+        float high = floor(scaled);
+        float low = min(floor((scaled - high) * 256.0), 255.0);
+        return vec4(high / 255.0, low / 255.0, 0.0, 1.0);
+      }
      
       void main() {
         // gl_FragColor is a special variable a fragment shader
@@ -64,7 +92,7 @@ export const lego_fragment_shader_df = `#extension GL_OES_standard_derivatives :
             if (angle > 10.0) {
                 gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
             } else {
-                gl_FragColor = vec4(depth, depth, depth, 1.0);
+                gl_FragColor = packDepth(depth);
             }
         } else {
             gl_FragColor = vec4(v_colour.rgb, 1.0);

@@ -25,6 +25,8 @@
     let gl: WebGL | undefined;
     let _droppedFrames = 0;
     let lastFrame: number = 0;
+    let sampled = false;
+    let registered: { hub: Hub; port: PortType } | undefined;
     let mapTexture: MapTexture | null = null;
     let cameraMatrix: m4.Matrix4 = getCameraMatrix(distanceSensorId, $componentStore.robotModel);
     let distance = 0.0;
@@ -44,8 +46,7 @@
         if (gl.fragmentDerivative) {
             for (let y = 0; y < frame.height; y++) {
                 for (let x = 0; x < frame.width; x++) {
-                    let d = frame.buffer[(x + y * frame.width) * 4];
-                    d = (d / 255.0) * range; // remap to maximum range;
+                    const d = gl.depthAt(frame, x, y) * range; // remap to maximum range
                     if (d < closest) {
                         closest = d;
                     }
@@ -59,8 +60,7 @@
                 y++
             ) {
                 for (let x = 0; x < frame.width; x++) {
-                    let d = frame.buffer[(x + y * frame.width) * 4];
-                    d = (d / 255.0) * range; // remap to maximum range;
+                    const d = gl.depthAt(frame, x, y) * range; // remap to maximum range
                     if (d < closest) {
                         closest = d;
                     }
@@ -80,14 +80,41 @@
             // TODO: Drop the model detail
         }
         lastFrame = timestamp;
-        renderScene();
-        if (gl) {
-            reportSensor(gl);
+        // While a program runs, the VM reads the sensor on its own clock
+        // (see sample below); only draw here when it hasn't.
+        if (!sampled) {
+            renderScene();
+            if (gl) {
+                reportSensor(gl);
+            }
         }
+        sampled = false;
         if (canRender && enabled) {
             requestAnimationFrame(doRender);
         } else {
             lastFrame = 0;
+        }
+    }
+
+    function sample() {
+        if (!gl || !canRender) {
+            return;
+        }
+        renderScene();
+        reportSensor(gl);
+        sampled = true;
+    }
+
+    function registerSampler(hub: Hub, port: PortType) {
+        unregisterSampler();
+        hub.addSensorSampler(port, sample);
+        registered = { hub: hub, port: port };
+    }
+
+    function unregisterSampler() {
+        if (registered) {
+            registered.hub.removeSensorSampler(registered.port, sample);
+            registered = undefined;
         }
     }
 
@@ -282,8 +309,11 @@
     onMount(() => {
         const canvas = document.getElementById(id);
         if (canvas) {
-            gl = WebGL.create(canvas as HTMLCanvasElement);
+            // No antialiasing: blended edge pixels would be read as colors
+            // or depths that aren't in the scene.
+            gl = WebGL.create(canvas as HTMLCanvasElement, { antialias: false });
             if (gl) {
+                gl.maxPixelRatio = 1;
                 gl.perspectiveAngle = 35; // 35 degree viewing angle
                 gl.mindist = 1; //Only measures from 50mm, but we don't want to clip that, so we set 1mm
                 gl.maxdist = range; // fast sensing is 300mm. But can measure up to 2000mm. Go with 2000
@@ -301,6 +331,7 @@
 
     onDestroy(() => {
         canRender = false;
+        unregisterSampler();
         if (mapTexture && gl) {
             gl.deleteTexture(mapTexture.texture);
             mapTexture = null;
@@ -330,6 +361,7 @@
 
     $: cameraMatrix = getCameraMatrix(distanceSensorId, $componentStore.robotModel);
     $: checkEnabled(enabled);
+    $: registerSampler(hub, port);
     $: loadMapTexture(scene.map);
     $: setMapSize(scene);
     $: loadSceneItems(scene.objects, false);
