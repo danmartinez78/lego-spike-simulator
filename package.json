@@ -8,7 +8,8 @@
         "check": "svelte-check --tsconfig ./svelte.check.tsconfig.json",
         "check:watch": "svelte-check --tsconfig ./svelte.check.tsconfig.json --watch",
         "lint": "prettier --check . && eslint .",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "physics": "node tools/physics/run.mjs"
     },
     "devDependencies": {
         "@fontsource/fira-mono": "^5.0.0",

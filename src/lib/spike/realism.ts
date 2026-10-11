@@ -154,11 +154,16 @@ function generator(seed: number) {
     };
 }
 
+// How far a wheel rolls before its slip changes, in mm.
+const slipLengthMm = 20;
+
 export class RealismRun {
     settings: RealismSettings;
     seed: number;
     random: () => number;
     wheelScales: Map<number, number>;
+    // Each wheel's current slip and how far (mm) it lasts before changing.
+    wheelSlips: Map<number, { slip: number; remaining: number }>;
     gyroDriftPerSecond: number;
 
     constructor(settings: RealismSettings) {
@@ -166,6 +171,7 @@ export class RealismRun {
         this.seed = settings.seed > 0 ? settings.seed : Math.floor(Math.random() * 999999) + 1;
         this.random = generator(this.seed);
         this.wheelScales = new Map();
+        this.wheelSlips = new Map();
         this.gyroDriftPerSecond = (this.uniform() * settings.gyroDriftDegPerMin) / 60.0;
     }
 
@@ -197,8 +203,19 @@ export class RealismRun {
             scale = 1.0 + (this.uniform() * this.settings.wheelMismatchPct) / 100.0;
             this.wheelScales.set(wheelId, scale);
         }
-        const slip = (this.random() * this.settings.wheelSlipPct) / 100.0;
-        return distance * scale * (1.0 - slip);
+        // Slip changes every few centimetres of travel rather than every
+        // simulation step: a fresh random value each millisecond would average
+        // out to a fixed shortfall, with no effect on where the robot ends up.
+        let slip = this.wheelSlips.get(wheelId);
+        if (slip === undefined || slip.remaining <= 0) {
+            slip = {
+                slip: (this.random() * this.settings.wheelSlipPct) / 100.0,
+                remaining: slipLengthMm
+            };
+            this.wheelSlips.set(wheelId, slip);
+        }
+        slip.remaining -= Math.abs(distance);
+        return distance * scale * (1.0 - slip.slip);
     }
 
     stopOvershoot(speedFraction: number) {
