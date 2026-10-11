@@ -150,6 +150,16 @@ export function createTeam({ teamDir, sendJson, readBody, onRemove }) {
             sendJson(res, 200, roster);
             return;
         }
+        if (parts.length === 0 && req.method === 'DELETE') {
+            // End of the season: everyone and all their work goes.
+            for (const student of roster.students) await onRemove?.(student.id);
+            const count = roster.students.length;
+            roster.students = [];
+            await save(roster);
+            console.log(`${who} removed all ${count} students`);
+            sendJson(res, 200, roster);
+            return;
+        }
         if (parts.length === 1 && parts[0] === 'codes' && req.method === 'POST') {
             // A new season: everyone gets a new code and the old ones stop working.
             for (const student of roster.students) student.code = newCode(roster);
@@ -166,7 +176,7 @@ export function createTeam({ teamDir, sendJson, readBody, onRemove }) {
         if (parts.length === 2 && parts[1] === 'code' && req.method === 'POST') {
             student.code = newCode(roster);
             await save(roster);
-            console.log(`${who} gave ${student.name} a new code`);
+            console.log(`${who} gave student ${student.id.slice(0, 8)} a new code`);
             sendJson(res, 200, roster);
         } else if (parts.length === 1 && req.method === 'PATCH') {
             const name = cleanName((await body(req))?.name);
@@ -181,7 +191,7 @@ export function createTeam({ teamDir, sendJson, readBody, onRemove }) {
             roster.students = roster.students.filter((s) => s.id !== student.id);
             await onRemove?.(student.id);
             await save(roster);
-            console.log(`${who} removed ${student.name}`);
+            console.log(`${who} removed student ${student.id.slice(0, 8)}`);
             sendJson(res, 200, roster);
         } else {
             sendJson(res, 405, { error: 'Method not allowed' });

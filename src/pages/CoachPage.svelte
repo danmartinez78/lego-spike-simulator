@@ -10,6 +10,7 @@
     import TeamPanel from '$components/coach/TeamPanel.svelte';
     import AssignmentsPanel from '$components/coach/AssignmentsPanel.svelte';
     import AgentsPanel from '$components/coach/AgentsPanel.svelte';
+    import SettingsPanel from '$components/coach/SettingsPanel.svelte';
     import ChallengesPanel from '$components/coach/ChallengesPanel.svelte';
     import CodeCards from '$components/coach/CodeCards.svelte';
     import CoachGuide from '$components/coach/CoachGuide.svelte';
@@ -92,7 +93,8 @@
         | 'assignments'
         | 'students'
         | 'assets'
-        | 'agents';
+        | 'agents'
+        | 'settings';
     // Ordered by what a coach does: content students work on, then handing it
     // out and tracking it, then the robots and maps everything runs on.
     const views: { id: View; label: string }[] = [
@@ -102,7 +104,8 @@
         { id: 'assignments', label: 'Assignments' },
         { id: 'students', label: 'Students' },
         { id: 'assets', label: 'Robots and maps' },
-        { id: 'agents', label: 'AI assistants' }
+        { id: 'agents', label: 'AI assistants' },
+        { id: 'settings', label: 'Team settings' }
     ];
     // The library views and the library kinds they show.
     const viewKinds: Partial<Record<View, LibraryKind[]>> = {
@@ -592,6 +595,8 @@
             <TeamPanel on:print={(e) => printCards(e.detail)} />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'assignments'}
             <AssignmentsPanel />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'settings'}
+            <SettingsPanel />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'agents'}
             <AgentsPanel on:lessons={() => showView('lessons')} />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'challenges'}

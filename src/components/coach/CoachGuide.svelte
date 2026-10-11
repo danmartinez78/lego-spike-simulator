@@ -7,7 +7,8 @@
         | 'assignments'
         | 'students'
         | 'assets'
-        | 'agents';
+        | 'agents'
+        | 'settings';
 </script>
 
 <script lang="ts">
@@ -30,7 +31,8 @@
         { id: 'assignments', label: 'Assignments', tab: 'Assignments' },
         { id: 'students', label: 'Students', tab: 'Students' },
         { id: 'assets', label: 'Robots and maps', tab: 'Robots and maps' },
-        { id: 'agents', label: 'AI assistants', tab: 'AI assistants' }
+        { id: 'agents', label: 'AI assistants', tab: 'AI assistants' },
+        { id: 'settings', label: 'Team settings', tab: 'Team settings' }
     ];
 
     let body: HTMLElement;
@@ -295,8 +297,40 @@
                     over, especially the check on the mat, then publish them. Robots and fields are
                     ready to use as soon as they're saved.
                 </p>
+                <p>
+                    What an assistant sees about students is set on the Team settings tab: team
+                    statistics only (the default), or each student's name and progress as well.
+                </p>
                 <Button size="xs" color="light" class="self-start" on:click={() => go('agents')}
                     >Go to AI assistants</Button
+                >
+            </section>
+
+            <section data-section="settings" class="flex flex-col gap-2">
+                <h3 class="text-base font-semibold text-gray-900">Team settings</h3>
+                <p>
+                    Privacy choices for the whole team. If the site has head coaches set up, only
+                    they can change them.
+                </p>
+                <ul class="list-disc ml-5 flex flex-col gap-1">
+                    <li>
+                        <b>What AI assistants see:</b> team statistics per lesson (how many are done,
+                        and which steps students are stuck on), or each student by name as well.
+                    </li>
+                    <li>
+                        <b>Shared computers:</b> sign students out after a while without using the site,
+                        and clear the code panel for the next person.
+                    </li>
+                    <li>
+                        <b>For families:</b> your team name and a privacy contact, which fill in the
+                        privacy page and a note you can copy and send home.
+                    </li>
+                    <li>
+                        <b>End of the season:</b> remove every student and their work in one go.
+                    </li>
+                </ul>
+                <Button size="xs" color="light" class="self-start" on:click={() => go('settings')}
+                    >Go to Team settings</Button
                 >
             </section>
         </div>
