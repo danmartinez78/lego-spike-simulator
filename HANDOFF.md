@@ -38,7 +38,9 @@
 -   Realism presets (Ideal / Realistic / Challenging, `?realism=` links) and the
     ▶×5 results window with A vs B comparison.
 -   Example programs with lesson cards (book button), coach-only saving.
--   Coach tools page at `/coach` (`src/pages/CoachPage.svelte`): upload, rename,
+-   Coach tools page at `/coach` (`src/pages/CoachPage.svelte`), with tabs Lessons,
+    Challenges (built-in cards, read-only for now), Example programs, Homework,
+    Students, Robots and maps, and AI assistants: upload, rename,
     download and delete robots, scenes and programs, choose what loads on open,
     mat previews for scenes, and a lesson card form. Roadmap for the next steps
     (class settings, team progress, homework):
@@ -62,6 +64,14 @@
     plus the live fields with mat sizes and robot starts, robots, programs),
     `GET /api/lessons/schema`, and `POST /api/lessons/check` (validate a
     lesson.json or package, nothing saved). These are public and read-only.
+-   MCP server for coaches' AI assistants at `/mcp` (`server/mcp.mjs`, setup and
+    tools in `docs/mcp.md`): lesson guide, library listing, check and save
+    lessons as drafts stamped with the coach's identity (`"author"`). Same
+    sign-in as `/api/admin`; for people it needs a separate Access app on
+    `/mcp` with Managed OAuth, whose AUD is added to `CF_ACCESS_AUD`
+    (comma-separated). The coach page's AI assistants tab explains connecting an
+    assistant and the package-and-import route for chatbots without MCP. Next: homework and asset tools, then challenges stored
+    on the server.
 -   Students (coach page, Students tab): paste names, each gets a random code
     (`WORD-WORD-NN`); print cut-out code cards with a sign-in QR, copy one
     student's link, or export a CSV for a mail merge. Stored in plain text in

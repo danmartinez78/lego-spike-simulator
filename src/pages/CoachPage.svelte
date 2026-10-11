@@ -9,6 +9,8 @@
     import LessonEditor from '$components/coach/LessonEditor.svelte';
     import TeamPanel from '$components/coach/TeamPanel.svelte';
     import HomeworkPanel from '$components/coach/HomeworkPanel.svelte';
+    import AgentsPanel from '$components/coach/AgentsPanel.svelte';
+    import ChallengesPanel from '$components/coach/ChallengesPanel.svelte';
     import CodeCards from '$components/coach/CodeCards.svelte';
     import { tick } from 'svelte';
     import type { Student } from '$lib/team';
@@ -81,13 +83,53 @@
     ];
 
     let loading = true;
-    type View = 'students' | 'library' | 'homework';
-    let view: View = 'library';
+    type View =
+        | 'lessons'
+        | 'challenges'
+        | 'examples'
+        | 'homework'
+        | 'students'
+        | 'assets'
+        | 'agents';
+    // Ordered by what a coach does: content students work on, then handing it
+    // out and tracking it, then the robots and maps everything runs on.
     const views: { id: View; label: string }[] = [
-        { id: 'library', label: 'Library and lessons' },
+        { id: 'lessons', label: 'Lessons' },
+        { id: 'challenges', label: 'Challenges' },
+        { id: 'examples', label: 'Example programs' },
         { id: 'homework', label: 'Homework' },
-        { id: 'students', label: 'Students' }
+        { id: 'students', label: 'Students' },
+        { id: 'assets', label: 'Robots and maps' },
+        { id: 'agents', label: 'AI assistants' }
     ];
+    // The library views and the library kinds they show.
+    const viewKinds: Partial<Record<View, LibraryKind[]>> = {
+        lessons: ['lessons'],
+        examples: ['programs'],
+        assets: ['robots', 'scenes']
+    };
+    const viewText: Partial<Record<View, { title: string; about: string }>> = {
+        lessons: {
+            title: 'Lessons',
+            about: "Step-by-step activities students open from the Lessons button in the code panel. New and imported lessons are drafts, which students can't see, until you press Publish."
+        },
+        examples: {
+            title: 'Example programs',
+            about: 'Starter programs students open from the Examples window. Give each one a lesson card that explains what it does and what to try.'
+        },
+        assets: {
+            title: 'Robots and maps',
+            about: 'The robots, and the scenes with their mats, that lessons, challenges and students use. One default robot and one default scene load when someone opens the simulator.'
+        }
+    };
+    let view: View = 'lessons';
+
+    function showView(id: View) {
+        view = id;
+        message = '';
+        const kinds = viewKinds[id];
+        if (kinds && !kinds.includes(active)) active = kinds[0];
+    }
     let printing: Student[] = [];
 
     async function printCards(students: Student[]) {
@@ -506,16 +548,17 @@
             </div>
         {:else}
             <nav
-                class="flex flex-row gap-1 border-b border-gray-200 -mt-2"
+                class="flex flex-row gap-1 border-b border-gray-200 -mt-2 overflow-x-auto"
                 aria-label="Coach tools"
             >
                 {#each views as item}
                     <button
-                        class="px-4 py-2 -mb-px border-b-2 text-sm font-medium {view == item.id
+                        class="px-4 py-2 -mb-px border-b-2 text-sm font-medium whitespace-nowrap {view ==
+                        item.id
                             ? 'border-blue-600 text-blue-800'
                             : 'border-transparent text-gray-600 hover:text-gray-900'}"
                         aria-current={view == item.id ? 'page' : undefined}
-                        on:click={() => (view = item.id)}>{item.label}</button
+                        on:click={() => showView(item.id)}>{item.label}</button
                     >
                 {/each}
             </nav>
@@ -524,46 +567,48 @@
             <TeamPanel on:print={(e) => printCards(e.detail)} />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'homework'}
             <HomeworkPanel />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'agents'}
+            <AgentsPanel on:lessons={() => showView('lessons')} />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'challenges'}
+            <ChallengesPanel />
         {:else if !loading && $libraryStore.available && $libraryStore.writer}
             <section class="flex flex-col gap-3">
                 <div>
-                    <h2 class="text-lg font-semibold">Shared library</h2>
-                    <p class="text-gray-600 text-sm">
-                        What students see in the simulator's Lessons, Library and Examples windows.
-                        There is one default robot and one default scene; they load when someone
-                        opens the simulator.
-                    </p>
+                    <h2 class="text-lg font-semibold">{viewText[view]?.title ?? ''}</h2>
+                    <p class="text-gray-600 text-sm">{viewText[view]?.about ?? ''}</p>
                 </div>
 
-                <div class="flex flex-row gap-2 flex-wrap" role="tablist">
-                    {#each sections as s}
-                        <button
-                            role="tab"
-                            aria-selected={active == s.kind}
-                            class="flex flex-row items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium
+                {#if (viewKinds[view] ?? []).length > 1}
+                    <div class="flex flex-row gap-2 flex-wrap" role="tablist">
+                        {#each sections.filter((x) => viewKinds[view]?.includes(x.kind)) as s}
+                            <button
+                                role="tab"
+                                aria-selected={active == s.kind}
+                                class="flex flex-row items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium
                                 {active == s.kind
-                                ? 'bg-blue-50 border-blue-600 text-blue-800'
-                                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'}"
-                            on:click={() => {
-                                active = s.kind;
-                                message = '';
-                            }}
-                        >
-                            {#if s.icon}
-                                <img src={s.icon} alt="" width="20" height="20" />
-                            {:else}
-                                <ClipboardCheckOutline class="w-5 h-5" />
-                            {/if}
-                            {s.title}
-                            <span
-                                class="text-xs rounded-full px-2 py-0.5 {active == s.kind
-                                    ? 'bg-blue-100'
-                                    : 'bg-gray-100'}"
-                                >{$libraryStore.index[s.kind]?.length ?? 0}</span
+                                    ? 'bg-blue-50 border-blue-600 text-blue-800'
+                                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'}"
+                                on:click={() => {
+                                    active = s.kind;
+                                    message = '';
+                                }}
                             >
-                        </button>
-                    {/each}
-                </div>
+                                {#if s.icon}
+                                    <img src={s.icon} alt="" width="20" height="20" />
+                                {:else}
+                                    <ClipboardCheckOutline class="w-5 h-5" />
+                                {/if}
+                                {s.title}
+                                <span
+                                    class="text-xs rounded-full px-2 py-0.5 {active == s.kind
+                                        ? 'bg-blue-100'
+                                        : 'bg-gray-100'}"
+                                    >{$libraryStore.index[s.kind]?.length ?? 0}</span
+                                >
+                            </button>
+                        {/each}
+                    </div>
+                {/if}
 
                 {#if message}
                     <div
@@ -677,6 +722,14 @@
                                                     <span
                                                         class="text-xs font-medium rounded-full px-2 py-0.5 bg-gray-200 text-gray-700"
                                                         >Draft</span
+                                                    >
+                                                {/if}
+                                                {#if entry.lesson?.author}
+                                                    <span
+                                                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-purple-100 text-purple-800"
+                                                        title="Saved by an AI assistant for this coach"
+                                                        >From an assistant · {entry.lesson
+                                                            .author}</span
                                                     >
                                                 {/if}
                                                 {#if entry.lesson?.check}
@@ -816,10 +869,17 @@
                         </ul>
                     {/if}
                 </div>
-                <p class="text-sm text-gray-500">
-                    You can also save the robot, scene or program that's open in the simulator from
-                    its Save button and Examples window while signed in.
-                </p>
+                {#if view == 'examples'}
+                    <p class="text-sm text-gray-500">
+                        You can also save the program that's open in the simulator from its Examples
+                        window while signed in.
+                    </p>
+                {:else if view == 'assets'}
+                    <p class="text-sm text-gray-500">
+                        You can also save the robot or scene that's open in the simulator from its
+                        Save button while signed in.
+                    </p>
+                {/if}
             </section>
         {/if}
     </main>

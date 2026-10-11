@@ -190,5 +190,5 @@ export function createLessonsApi({ libraryDir, docsDir, schemaFile, sendJson, se
         sendJson(res, 404, { error: 'Not found' });
     }
 
-    return { handle, context };
+    return { handle, context, guide, checkUpload };
 }

@@ -66,6 +66,10 @@
             "type": "boolean",
             "description": "true hides the lesson from students. Imported lessons always start as drafts."
         },
+        "author": {
+            "type": "string",
+            "description": "Set by the server: the coach whose AI assistant saved the lesson through the MCP server."
+        },
         "check": {
             "type": "object",
             "description": "How the simulator checks the student's 5 runs. Needs a field, realism, needed and at least one rule.",
