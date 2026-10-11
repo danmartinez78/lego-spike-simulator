@@ -548,12 +548,12 @@
             </div>
         {:else}
             <nav
-                class="flex flex-row gap-1 border-b border-gray-200 -mt-2 overflow-x-auto"
+                class="flex flex-row gap-1 -mt-2 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_theme(colors.gray.200)]"
                 aria-label="Coach tools"
             >
                 {#each views as item}
                     <button
-                        class="px-4 py-2 -mb-px border-b-2 text-sm font-medium whitespace-nowrap {view ==
+                        class="px-4 py-2 border-b-2 text-sm font-medium whitespace-nowrap {view ==
                         item.id
                             ? 'border-blue-600 text-blue-800'
                             : 'border-transparent text-gray-600 hover:text-gray-900'}"
