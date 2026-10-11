@@ -145,18 +145,20 @@ export function setTimeFactor(factor: number) {
     }
 }
 
+// In milliseconds, like setStepSleep; startDelay itself is in seconds.
 export function setStartDelay(delay: number) {
-    if (delay < 0.001) {
+    const seconds = delay / 1000.0;
+    if (seconds < 0.001) {
         startDelay = 0.0;
-    } else if (delay > 10) {
+    } else if (seconds > 10) {
         startDelay = 10;
     } else {
-        startDelay = delay;
+        startDelay = seconds;
     }
 }
 
 export function getStartDelay() {
-    return startDelay;
+    return startDelay * 1000.0;
 }
 
 export function getStepSleep() {
@@ -502,8 +504,11 @@ export class ActionStatement extends Statement {
                     // Copy motorGoDirectionToPosition
                     let degrees = 0;
                     const position = attachment.motor!.relativePosition;
+                    // The target decides the direction, so only the size of
+                    // the speed matters.
+                    const percent = Math.abs(speed);
                     const rpm = attachment.motor!.getRpm({
-                        percent: speed,
+                        percent: percent,
                         ignorePresetSpeed: true
                     });
                     let reverse = false;
@@ -522,7 +527,7 @@ export class ActionStatement extends Statement {
                                 thread,
                                 port,
                                 (degrees * revolution_time) / 360.0,
-                                speed,
+                                percent,
                                 reverse,
                                 true
                             )
@@ -677,9 +682,12 @@ export class ActionStatement extends Statement {
                 if (attachment && attachment.type == 'motor') {
                     let degrees = 0;
                     let position = attachment.motor!.position;
+                    // The direction is given, so a negative motor speed only
+                    // sets how fast.
+                    const percent = Math.abs(attachment.motor!.motorSpeed * 100.0);
                     const rpm = attachment.motor!.getRpm({
-                        percent: 100.0,
-                        ignorePresetSpeed: false
+                        percent: percent,
+                        ignorePresetSpeed: true
                     });
                     let reverse = false;
                     if (direction == 'clockwise') {
@@ -721,9 +729,9 @@ export class ActionStatement extends Statement {
                                 thread,
                                 port,
                                 (degrees * revolution_time) / 360.0,
-                                100.0,
+                                percent,
                                 reverse,
-                                false
+                                true
                             )
                         );
                     }
@@ -795,10 +803,14 @@ export class ActionStatement extends Statement {
                     } else if (direction == 'counterclockwise') {
                         reverse = true;
                     }
-                    const rpm = attachment.motor!.getRpm({
-                        percent: 100.0,
-                        ignorePresetSpeed: false
-                    });
+                    // A negative motor speed turns the other way, as on the
+                    // hub, so time the turn from the size of the speed.
+                    const rpm = Math.abs(
+                        attachment.motor!.getRpm({
+                            percent: 100.0,
+                            ignorePresetSpeed: false
+                        })
+                    );
                     if (rpm && rpm > 0) {
                         if (unit == 'rotations') {
                             const revolution_time = 60.0 / rpm;
@@ -813,13 +825,12 @@ export class ActionStatement extends Statement {
                                 )
                             );
                         } else if (unit == 'degrees') {
-                            // This is probably approximate
                             const revolution_time = 60.0 / rpm;
                             promises.push(
                                 this.execute_movemotor(
                                     thread,
                                     port,
-                                    amount * revolution_time,
+                                    (amount * revolution_time) / 360.0,
                                     100.0,
                                     reverse,
                                     false
@@ -906,13 +917,13 @@ export class ActionStatement extends Statement {
             }
             attachment = thread.vm.hub.ports[thread.vm.hub.movePair1];
             if (attachment && attachment.type == 'motor') {
-                attachment.motor!.reverse = false;
                 attachment.motor!.stopMotor();
+                attachment.motor!.reverse = false;
             }
             attachment = thread.vm.hub.ports[thread.vm.hub.movePair2];
             if (attachment && attachment.type == 'motor') {
-                attachment.motor!.reverse = false;
                 attachment.motor!.stopMotor();
+                attachment.motor!.reverse = false;
             }
         } else if (op == 'movementSpeed') {
             const speed = this.arguments[0].evaluate(thread).getNumber();
@@ -975,13 +986,13 @@ export class ActionStatement extends Statement {
         } else if (op == 'stopMove') {
             let attachment = thread.vm.hub.ports[thread.vm.hub.movePair1];
             if (attachment && attachment.type == 'motor') {
-                attachment.motor!.reverse = false;
                 attachment.motor!.stopMotor();
+                attachment.motor!.reverse = false;
             }
             attachment = thread.vm.hub.ports[thread.vm.hub.movePair2];
             if (attachment && attachment.type == 'motor') {
-                attachment.motor!.reverse = false;
                 attachment.motor!.stopMotor();
+                attachment.motor!.reverse = false;
             }
         } else if (op == 'startSteer') {
             const steer = this.arguments[0].evaluate(thread).getNumber();
@@ -1112,17 +1123,24 @@ export class ActionStatement extends Statement {
                     yield thread.vm.sleep((amount * revolution_time) / 360.0);
                 } else if (unit == 'seconds') {
                     yield thread.vm.sleep(amount);
+                } else if (unit == 'cm' || unit == 'in' || unit == 'inches') {
+                    // Distance for the faster wheel, as rotations are above
+                    // (programs from the SPIKE app can steer by distance).
+                    const revolution_time = 60.0 / rpm;
+                    const mm = unit == 'cm' ? amount * 10.0 : amount * 25.4;
+                    const revs = mm / thread.vm.hub.moveDistance;
+                    yield thread.vm.sleep(revs * revolution_time);
                 }
             }
             attachment = thread.vm.hub.ports[thread.vm.hub.movePair1];
             if (attachment && attachment.type == 'motor') {
-                attachment.motor!.reverse = false;
                 attachment.motor!.stopMotor();
+                attachment.motor!.reverse = false;
             }
             attachment = thread.vm.hub.ports[thread.vm.hub.movePair2];
             if (attachment && attachment.type == 'motor') {
-                attachment.motor!.reverse = false;
                 attachment.motor!.stopMotor();
+                attachment.motor!.reverse = false;
             }
         } else {
             yield* super._execute(thread);
@@ -2098,6 +2116,8 @@ export class Motor {
     reverse: boolean;
     // Degrees still to turn after stopping (realism: motors don't stop dead).
     overshoot: number;
+    // Which way the motor was turning when it stopped, for the overshoot.
+    overshootReverse: boolean;
 
     constructor(id: number) {
         this.id = id;
@@ -2108,6 +2128,7 @@ export class Motor {
         this.on = false;
         this.reverse = false;
         this.overshoot = 0;
+        this.overshootReverse = false;
     }
 
     reset() {
@@ -2118,6 +2139,7 @@ export class Motor {
         this.on = false;
         this.reverse = false;
         this.overshoot = 0;
+        this.overshootReverse = false;
     }
 
     setSpeed(percent: number) {
@@ -2166,6 +2188,7 @@ export class Motor {
         const run = realism();
         if (this.on && run) {
             this.overshoot = run.stopOvershoot(Math.abs(this.rpm) / 135.0);
+            this.overshootReverse = this.reverse;
         } else {
             this.reverse = false;
         }
@@ -2199,8 +2222,11 @@ export class Motor {
         if (!this.on && this.overshoot <= 0) {
             return 0;
         }
+        // Overshooting carries on the way the motor was turning, even if the
+        // program has cleared its direction since.
+        const reverse = this.on ? this.reverse : this.overshootReverse;
         const delta = this.turnFraction(time);
-        if (this.reverse) {
+        if (reverse) {
             this.position -= delta * 360;
             this.relativePosition -= delta * 360;
         } else {
@@ -2213,7 +2239,7 @@ export class Motor {
         while (this.position < 0) {
             this.position += 360;
         }
-        if (this.reverse) {
+        if (reverse) {
             return -delta;
         } else {
             return delta;
@@ -2333,7 +2359,7 @@ export class Hub {
     eventHandler: HubEventHandler | undefined;
     buttonColour: string;
     wheels: Wheel[];
-    moveSpeed: number;
+    moveSpeed: number; // percent; the hub starts at 50%
     moveDistance: number; // in mm
     movePair1: PortType;
     movePair2: PortType;
@@ -2355,7 +2381,7 @@ export class Hub {
             F: new Port('none')
         };
         this.wheels = [];
-        this.moveSpeed = 0;
+        this.moveSpeed = 50;
         this.moveDistance = 175;
         this.movePair1 = 'A';
         this.movePair2 = 'B';
@@ -2375,7 +2401,7 @@ export class Hub {
         this.ports.D.reset();
         this.ports.E.reset();
         this.ports.F.reset();
-        this.moveSpeed = 0;
+        this.moveSpeed = 50;
         this.moveDistance = 175;
         this.movePair1 = 'A';
         this.movePair2 = 'B';
@@ -2399,7 +2425,7 @@ export class Hub {
             F: new Port('none')
         };
         this.wheels = [];
-        this.moveSpeed = 0;
+        this.moveSpeed = 50;
         this.movePair1 = 'A';
         this.movePair2 = 'B';
         this.moveDistance = 175;
@@ -2813,6 +2839,8 @@ export class VM {
     workspace: Blockly.WorkspaceSvg | undefined;
     state: 'running' | 'stopped' | 'paused';
     first: boolean;
+    // Simulated seconds since the program started, and when the timer was reset.
+    simTime: number;
     timerStart: number;
     deltaTime: number;
     wait: number;
@@ -2838,7 +2866,8 @@ export class VM {
         this.state = 'stopped';
         this.first = true;
         this.volume = 100;
-        this.timerStart = Date.now() / 1000.0;
+        this.simTime = 0;
+        this.timerStart = 0;
         this.audio = new Audio();
         const audioContext = new AudioContext();
         const oscillator = audioContext.createOscillator();
@@ -2855,13 +2884,15 @@ export class VM {
         }
     }
 
+    // The hub's timer counts simulated time from the start of the program,
+    // so it agrees with waits and motor timings at any speed, and pauses
+    // when the simulation does.
     getTimer(): number {
-        const now = Date.now() / 1000.0;
-        return (now - this.timerStart) * timeFactor;
+        return this.simTime - this.timerStart;
     }
 
     resetTimer() {
-        this.timerStart = Date.now() / 1000.0;
+        this.timerStart = this.simTime;
     }
 
     startBroadcast(name: string, watcher: BroadcastWatcher) {
@@ -3068,12 +3099,17 @@ export class VM {
                 this.wait -= duration;
                 return;
             }
+            duration -= this.wait;
+            this.wait = 0;
             while (duration > 0.0) {
                 const stepTime = this.stepTime();
-                this.processSleep(stepTime);
-                this.runThreads();
+                // Motors turn for the whole step before any sleep that ends
+                // with it stops them, so timed moves aren't a step short.
                 this.moveRobot(stepTime, scene);
                 this.driftGyro(stepTime);
+                this.simTime += stepTime;
+                this.processSleep(stepTime);
+                this.runThreads();
                 duration -= stepTime;
             }
             this.deltaTime = duration;
@@ -3185,11 +3221,10 @@ export class VM {
                     reverse = !reverse;
                 }
 
-                // Each simulation step is tiny, so with realism on even a
-                // small difference between the wheels has to turn the robot.
-                const straight = realism()
-                    ? Math.abs(d1 - d0) < 1e-9
-                    : (d1 - d0) * (d1 - d0) < 1e-3;
+                // Each simulation step is tiny, so even a small difference
+                // between the wheels has to turn the robot (a gentle curve
+                // differs by only hundredths of a mm per step).
+                const straight = Math.abs(d1 - d0) < 1e-9;
                 if (straight) {
                     // Very close in distance, just move straight
                     const direction = m4.transformVector(
@@ -3208,10 +3243,12 @@ export class VM {
                     const r1 = dist(p0, p1);
                     const r0 = (r1 * d0) / (d1 - d0);
                     const t = r0 + r1;
+                    // The pivot is on the line through both wheels, t from the
+                    // faster wheel p1 (beyond the slower wheel p0).
                     const c: Vertex = {
-                        x: (t * (p0.x - p1.x)) / r1,
-                        y: (t * (p0.y - p1.y)) / r1,
-                        z: (t * (p0.z - p1.z)) / r1
+                        x: p1.x + (t * (p0.x - p1.x)) / r1,
+                        y: p1.y + (t * (p0.y - p1.y)) / r1,
+                        z: p1.z + (t * (p0.z - p1.z)) / r1
                     };
                     // c is the rotation point. The angle is given by rsin(a) = t, rcos(a) = d1;
                     // But we can actually use arc length so that the angle a=d1/t (radians);

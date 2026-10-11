@@ -138,3 +138,7 @@
 -   The in-app browser can't render the colour sensor while hidden; use a
     separate headless Chrome (`--headless=new --use-angle=swiftshader`) driven
     over CDP against a local `node server/server.mjs`.
+-   `npm run physics` (`tools/physics/`) runs the VM headless and checks Ideal
+    rollouts against hand-worked geometry, the Realistic/Challenging spread, and
+    the colour sensor examples on a drawn mat. Run it after touching `vm.ts` or
+    `realism.ts`.
