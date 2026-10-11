@@ -6,7 +6,11 @@
         ChartLineUpOutline,
         RulerCombinedOutline,
         MapPinAltOutline,
-        AwardOutline
+        AwardOutline,
+        BookOpenOutline,
+        ClipboardCheckOutline,
+        QuestionCircleOutline,
+        UserCircleOutline
     } from 'flowbite-svelte-icons';
     import { helpStore, openBlockHelp } from '$lib/help';
     import { blockHelp, helpCategories } from '$lib/blockly/blockhelp';
@@ -41,6 +45,31 @@
         .map((c) => ({ ...c, types: c.types.filter((t) => matches(t, search)) }))
         .filter((c) => c.types.length > 0);
 
+    const codePanel = [
+        { icon: 'icons/FolderMedium.svg', text: 'Open a program saved on your computer (.llsp3).' },
+        {
+            icon: 'icons/FolderMerge.svg',
+            text: 'Merge: add another program to this one, for example to borrow its My Blocks.'
+        },
+        { icon: 'icons/SaveMedium.svg', text: 'Save your program as a file on your computer.' },
+        { icon: 'icons/Print.svg', text: 'Print your program (when the simulator is closed).' },
+        { icon: 'icons/Brick.svg', text: 'Open or close the simulator.' },
+        {
+            component: ClipboardCheckOutline,
+            text: 'Lessons: step-by-step activities, and any homework from your coach.'
+        },
+        { component: BookOpenOutline, text: 'Examples: programs that explain how they work.' },
+        {
+            component: AwardOutline,
+            text: 'Challenges: goals like "stop on green every time". Start one, write a program, press ▶︎×5 and the simulator checks it.'
+        },
+        { component: QuestionCircleOutline, text: 'Help: this guide.' },
+        {
+            component: UserCircleOutline,
+            text: 'Sign in with the code from your coach. It turns green and shows your name when you are signed in.'
+        }
+    ];
+
     const toolbar = [
         {
             icon: 'icons/Robot.svg',
@@ -71,10 +100,6 @@
         {
             component: CogOutline,
             text: 'Settings: simulation speed, boundary and realism.'
-        },
-        {
-            component: AwardOutline,
-            text: 'Challenges: goals like "stop on green every time". Start one, write a program, press ▶︎×5 and the simulator checks it.'
         },
         {
             component: ChartLineUpOutline,
@@ -118,9 +143,9 @@
                         the code and run again.
                     </li>
                     <li>
-                        <b>Save your work.</b> The save button in the code panel downloads your program
-                        as a .llsp3 file (the LEGO SPIKE app's file type). The folder button opens it
-                        again.
+                        <b>Save a copy.</b> The save button in the code panel downloads your program
+                        as a .llsp3 file (the LEGO SPIKE app's file type), which opens in the real LEGO
+                        SPIKE app too. The folder button opens it again.
                     </li>
                 </ol>
                 <p class="mt-3">
@@ -129,15 +154,91 @@
                     it, or add it to your program to borrow its My Blocks.
                 </p>
                 <p class="mt-3">
-                    Your program isn't stored on this site, so save it before closing the page. The
-                    1:1 button changes how wide the code panel is next to the simulator.
+                    Want a plan? The <b>Lessons</b> button opens step-by-step activities. See the Lessons
+                    tab.
+                </p>
+                <p class="mt-3">
+                    This browser keeps your program for you, so closing or reloading the page won't
+                    lose it. It is only kept on this computer, though. To work on it somewhere else,
+                    save it as a file, or hand it in from a lesson. The 1:1 button changes how wide
+                    the code panel is next to the simulator.
+                </p>
+            </TabItem>
+            <TabItem
+                open={activeTab == 'lessons'}
+                on:click={() => (activeTab = 'lessons')}
+                title="Lessons"
+            >
+                <p>
+                    Press <b>Lessons</b> in the code panel. Pick a lesson on the left and work down
+                    its steps, ticking each one off as you go. <b>Set up</b> loads the lesson's starter
+                    program, field and robot for you.
+                </p>
+                <p class="mt-3 font-medium">Checking your robot</p>
+                <p>
+                    Many lessons end with a check. The lesson shows what your robot has to do, with
+                    a map of the mat:
+                </p>
+                <ul class="list-disc ml-5 flex flex-col gap-1 mt-1">
+                    <li><span class="font-medium text-green-700">Green</span>: where to stop.</li>
+                    <li>
+                        <span class="font-medium text-blue-700">Blue</span>: places to drive
+                        through, in order.
+                    </li>
+                    <li>
+                        <span class="font-medium text-red-700">Red</span>: places to stay out of.
+                    </li>
+                    <li>
+                        <span class="font-medium text-amber-700">Orange</span>: a line for the
+                        colour sensor to follow.
+                    </li>
+                </ul>
+                <p class="mt-2">
+                    Press <b>Check my robot</b>. That loads the right field and robot but keeps your
+                    program. Then press <b>▶︎×5</b>. The robot runs five times, and each run gets a
+                    ✓ or ✗ for every rule. Click a run's number to see what went wrong in it. A
+                    lesson is done when every step is ticked and the check has passed.
+                </p>
+                <p class="mt-3 font-medium">Homework and signing in</p>
+                <p>
+                    If your coach gave you a card with a code, press <b>Sign in</b> and type it. A sign-in
+                    link from your coach does this for you. You only do this once on each computer. Once
+                    you're signed in:
+                </p>
+                <ul class="list-disc ml-5 flex flex-col gap-1 mt-1">
+                    <li>Homework from your coach shows at the top of the Lessons list.</li>
+                    <li>Your progress follows you to any computer you sign in on.</li>
+                    <li>
+                        <b>Hand in my program</b> (at the bottom of a lesson) sends your coach the program
+                        in your code panel. You can hand in again after changing it.
+                    </li>
+                </ul>
+                <p class="mt-2">
+                    Keep your code to yourself, like a password. If someone else is signed in on
+                    this computer, press their name and choose <b>Not you? Sign out</b>.
                 </p>
             </TabItem>
             <TabItem
                 open={activeTab == 'toolbar'}
                 on:click={() => (activeTab = 'toolbar')}
-                title="Simulator buttons"
+                title="Buttons"
             >
+                <h4 class="font-medium mb-2">Code panel</h4>
+                <div class="flex flex-col gap-2 mb-4">
+                    {#each codePanel as item}
+                        <div class="flex flex-row gap-3 items-center">
+                            <div class="w-8 h-8 flex justify-center items-center shrink-0">
+                                {#if item.icon}
+                                    <img alt="" width="28" height="28" src={item.icon} />
+                                {:else if item.component}
+                                    <svelte:component this={item.component} class="w-7 h-7" />
+                                {/if}
+                            </div>
+                            <div>{item.text}</div>
+                        </div>
+                    {/each}
+                </div>
+                <h4 class="font-medium mb-2">Simulator</h4>
                 <div class="flex flex-col gap-2">
                     {#each toolbar as item}
                         <div class="flex flex-row gap-3 items-center">
@@ -278,8 +379,8 @@
                 </p>
                 <p class="mt-2">
                     The <b>shared library</b> holds robots and scenes saved on this site. Anyone can
-                    load from it. Only signed-in people can add, delete or choose the defaults that load
-                    when the simulator opens.
+                    load from it. Only coaches can add, delete or choose the defaults that load when
+                    the simulator opens.
                 </p>
             </TabItem>
             <TabItem
@@ -351,9 +452,9 @@
                     >.
                 </p>
                 <p class="mt-2">
-                    This site runs a modified version that adds the shared library, realism
-                    settings, the ▶︎×5 path overlay, example programs, and this guide. Its full
-                    source code is at
+                    This site runs a modified version that adds lessons and homework, challenges,
+                    the shared library, realism settings, the ▶︎×5 path overlay, example programs,
+                    and this guide. Its full source code is at
                     <a
                         class="text-blue-700 underline"
                         href="https://github.com/danmartinez78/lego-spike-simulator"

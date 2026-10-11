@@ -59,9 +59,20 @@
                 </div>
             </div>
         </div>
+        <div class="flex flex-col gap-2 rounded-lg border border-gray-200 p-3 text-sm">
+            <p>
+                <b>Not sure where to start?</b> Press <b>Lessons</b> in the code panel. Each lesson walks
+                you through one idea, step by step, and ends with a check that tells you when your robot
+                got it right.
+            </p>
+            <p>
+                <b>Got a code card from your coach?</b> Press <b>Sign in</b> and type your code. Then
+                you'll see your homework, and your coach sees your progress.
+            </p>
+        </div>
         <p class="text-sm text-gray-600">
-            You can reopen this help any time with the
-            <span class="font-medium">?</span> button in the toolbar.
+            This browser keeps your program for you, even if you close the page. You can reopen this
+            help any time with the <b>Help</b> button.
         </p>
         <p class="text-xs text-gray-500">
             Based on the LEGO SPIKE Simulator by Alexandre Hardy. Free software under the GNU GPL
