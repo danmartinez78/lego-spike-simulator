@@ -14,8 +14,27 @@
     export let busy = false;
     export let passed = false;
     export let preview = false;
+    export let signedIn = false;
+    export let handedInAt: string | undefined = undefined;
 
-    const dispatch = createEventDispatcher<{ setup: void; toggle: number; challenge: void }>();
+    const dispatch = createEventDispatcher<{
+        setup: void;
+        toggle: number;
+        challenge: void;
+        handin: void;
+        openmine: void;
+        signin: void;
+    }>();
+
+    function when(iso: string) {
+        return new Date(iso).toLocaleString(undefined, {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
 
     // Show the play symbol as text rather than as an emoji.
     function text(value: string | undefined) {
@@ -144,6 +163,45 @@
             <Button size="sm" color="light" on:click={() => dispatch('challenge')}
                 >Open challenge</Button
             >
+        </section>
+    {/if}
+    {#if !preview}
+        <section
+            class="flex flex-col gap-2 rounded-xl border border-gray-200 px-4 py-3"
+            aria-label="Hand in"
+        >
+            {#if signedIn}
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <p class="flex-1 text-sm text-gray-800">
+                        {#if handedInAt}
+                            <b>Handed in</b> {when(handedInAt)}. Hand in again after you change it.
+                        {:else}
+                            <b>Hand in</b> the program in your code panel so your coach can see it.
+                        {/if}
+                    </p>
+                    <Button
+                        size="sm"
+                        color={handedInAt ? 'light' : 'green'}
+                        disabled={busy}
+                        on:click={() => dispatch('handin')}
+                        >{handedInAt ? 'Hand in again' : 'Hand in my program'}</Button
+                    >
+                </div>
+                {#if handedInAt}
+                    <button
+                        class="self-start text-sm text-blue-700 hover:underline"
+                        on:click={() => dispatch('openmine')}
+                        >Open what I handed in (for example on another computer)</button
+                    >
+                {/if}
+            {:else}
+                <p class="text-sm text-gray-700">
+                    <button
+                        class="text-blue-700 hover:underline"
+                        on:click={() => dispatch('signin')}>Sign in with your code</button
+                    > to hand in your program and keep your progress on any computer.
+                </p>
+            {/if}
         </section>
     {/if}
 </article>

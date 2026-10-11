@@ -26,7 +26,7 @@ wagon wheel whistle widget winch wizard yacht yo-yo`
     .split(/\s+/)
     .filter((w) => !w.includes('-'));
 
-export function createTeam({ teamDir, sendJson, readBody }) {
+export function createTeam({ teamDir, sendJson, readBody, onRemove }) {
     const rosterFile = path.join(teamDir, 'roster.json');
     let cache;
 
@@ -165,6 +165,7 @@ export function createTeam({ teamDir, sendJson, readBody }) {
             sendJson(res, 200, roster);
         } else if (parts.length === 1 && req.method === 'DELETE') {
             roster.students = roster.students.filter((s) => s.id !== student.id);
+            await onRemove?.(student.id);
             await save(roster);
             console.log(`${who} removed ${student.name}`);
             sendJson(res, 200, roster);
@@ -201,5 +202,15 @@ export function createTeam({ teamDir, sendJson, readBody }) {
         sendJson(res, 404, { error: 'Not found' });
     }
 
-    return { handleAdmin, handleStudent };
+    // The signed-in student for a request (code in X-Student-Code), with the
+    // same guessing limits as signing in.
+    async function studentFor(req) {
+        if (!req.headers['x-student-code']) return { student: undefined };
+        if (blocked(req)) return { blocked: true };
+        const student = await findByCode(req.headers['x-student-code']);
+        if (!student) failed(req);
+        return { student };
+    }
+
+    return { handleAdmin, handleStudent, studentFor, load };
 }

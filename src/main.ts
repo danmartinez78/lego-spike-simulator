@@ -3,6 +3,7 @@ import App from './App.svelte';
 import CoachPage from '$pages/CoachPage.svelte';
 import { loadLibraryDefaults } from '$lib/library';
 import { startStudentSession } from '$lib/team';
+import { startProgressSync } from '$lib/homework';
 
 const target = document.getElementById('app');
 
@@ -12,6 +13,7 @@ const app = coach ? new CoachPage({ target: target! }) : new App({ target: targe
 
 if (!coach) {
     loadLibraryDefaults();
+    startProgressSync();
     startStudentSession();
 }
 

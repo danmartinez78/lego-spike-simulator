@@ -23,6 +23,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createTeam } from './team.mjs';
+import { createHomework } from './homework.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +(process.env.PORT ?? 8080);
@@ -344,6 +345,10 @@ async function handleAdmin(req, res, parts) {
         await team.handleAdmin(req, res, parts.slice(1), who);
         return;
     }
+    if (parts[0] === 'homework' || parts[0] === 'progress') {
+        await homework.handleAdmin(req, res, parts[0] === 'homework' ? parts.slice(1) : parts, who);
+        return;
+    }
 
     if (parts[0] === 'rename' && req.method === 'POST') {
         let body;
@@ -505,7 +510,16 @@ async function handle(req, res) {
         return;
     }
     if (parts[0] === 'api' && parts[1] === 'student') {
-        await team.handleStudent(req, res, parts.slice(2));
+        if (parts[2] === 'signin' || parts[2] === 'me') {
+            await team.handleStudent(req, res, parts.slice(2));
+            return;
+        }
+        const { student, blocked } = await team.studentFor(req);
+        if (blocked) {
+            sendJson(res, 429, { error: 'Too many tries. Wait 10 minutes, then try again.' });
+            return;
+        }
+        await homework.handleStudent(req, res, parts.slice(2), student);
         return;
     }
     if (parts[0] === 'api' && parts[1] === 'library') {
@@ -557,7 +571,13 @@ async function handle(req, res) {
     }
 }
 
-const team = createTeam({ teamDir: TEAM_DIR, sendJson, readBody });
+const team = createTeam({
+    teamDir: TEAM_DIR,
+    sendJson,
+    readBody,
+    onRemove: (id) => homework.removeStudent(id)
+});
+const homework = createHomework({ teamDir: TEAM_DIR, team, sendJson, send, readBody });
 
 await ensureLibrary();
 http.createServer((req, res) => {
