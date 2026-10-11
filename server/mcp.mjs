@@ -22,7 +22,7 @@ const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05
 const INSTRUCTIONS = `Tools for coaches using the LEGO SPIKE simulator.
 Lessons are step-by-step activities; challenges are short goals with hints and no steps. Both can have a check that the simulator runs over five runs.
 To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).
-Assignments: list_assignments shows each assignment with every student's progress; save_assignment makes a draft assignment of published lessons, optionally typed as practice or prep for the next meeting, that a coach publishes on the Assignments tab.
+Assignments: list_assignments shows each assignment with team statistics (and each student's progress if the head coach allows it); save_assignment makes a draft assignment of published lessons, optionally typed as practice or prep for the next meeting, that a coach publishes on the Assignments tab.
 Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models. These are available to everyone as soon as they are saved.`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
@@ -152,7 +152,7 @@ const ASSET_TOOLS = [
     {
         name: 'list_assignments',
         description:
-            "List assignments (title, type, due date, lessons, draft state, author) with each student's progress on each lesson: not started, started or done (every step ticked, the check passed if the lesson has one, and a program handed in), whether the lesson's check passed, and when they handed in a program.",
+            "List assignments (title, type, due date, lessons, draft state, author) with team statistics for each lesson: how many students are done (every step ticked, the check passed if the lesson has one, and a program handed in), started or not started, how many handed in a program or passed the check, and which steps the students still working are on. If the head coach allows it, each student's name and progress are listed too; otherwise there is a privacy note and no per-student data.",
         inputSchema: object({}),
         annotations: { readOnlyHint: true }
     },

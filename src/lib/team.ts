@@ -145,6 +145,7 @@ export const newCode = (id: string) => rosterRequest('POST', `/${id}/code`);
 export const renameStudent = (id: string, name: string) =>
     rosterRequest('PATCH', `/${id}`, { name });
 export const removeStudent = (id: string) => rosterRequest('DELETE', `/${id}`);
+export const removeAllStudents = () => rosterRequest('DELETE');
 export const newCodesForEveryone = () => rosterRequest('POST', '/codes');
 
 // The site's address for a backup zip: the team (roster, progress, handed-in

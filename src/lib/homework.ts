@@ -319,3 +319,55 @@ export const getTeamProgress = () => adminJson<{ students: StudentProgress[] }>(
 export function handedInUrl(studentId: string, lessonName: string) {
     return `api/admin/progress/${studentId}/programs/${encodeURIComponent(lessonName)}`;
 }
+
+// ---- Shared computers ----------------------------------------------------------
+
+const activeKey = 'spike-sim-last-active';
+let lastWrite = 0;
+
+function markActive() {
+    const now = Date.now();
+    if (now - lastWrite < 30000) return;
+    lastWrite = now;
+    try {
+        localStorage.setItem(activeKey, String(now));
+    } catch {
+        // storage unavailable
+    }
+}
+
+function lastActive() {
+    try {
+        return Number(localStorage.getItem(activeKey) ?? '0') || 0;
+    } catch {
+        return 0;
+    }
+}
+
+// When the head coach turns it on (for shared computers), a student who hasn't
+// used the site for a while is signed out and the code panel is cleared, so the
+// next person doesn't pick up their account. Activity in any tab counts.
+export function startInactivitySignOut(minutes: () => number) {
+    for (const event of ['pointerdown', 'keydown', 'wheel']) {
+        window.addEventListener(event, markActive, { passive: true });
+    }
+    // Signing in counts as activity; the student already signed in at startup doesn't.
+    let previous = get(studentStore)?.code;
+    studentStore.subscribe((student) => {
+        if (student && student.code != previous) {
+            lastWrite = 0;
+            markActive();
+        }
+        previous = student?.code;
+    });
+    const check = () => {
+        const limit = minutes();
+        if (!limit || !get(studentStore)) return;
+        const last = lastActive();
+        // Nothing recorded yet (the setting was just turned on): start counting now.
+        if (!last) markActive();
+        else if (Date.now() - last > limit * 60 * 1000) void signOutStudent(true);
+    };
+    check();
+    setInterval(check, 60 * 1000);
+}

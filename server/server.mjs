@@ -3,6 +3,8 @@
 // Serves:
 //   /                  the built app (DIST_DIR)
 //   /coach             the same app, showing the coach tools page
+//   /privacy           the same app, showing what the site keeps about students
+//   /api/settings      the team settings (public; changed under /api/admin/settings)
 //   /ldraw/...         an extracted LDraw parts library (LDRAW_DIR), with parts.lst
 //   /api/library       list of shared robots and scenes (LIBRARY_DIR)
 //   /api/library/{robots|scenes}/<file>   download one entry
@@ -33,6 +35,7 @@ import { createLessonsApi } from './lessons-api.mjs';
 import { createMcp } from './mcp.mjs';
 import { createAuthors } from './authors.mjs';
 import { writeZip } from './zip.mjs';
+import { createSettings } from './settings.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +(process.env.PORT ?? 8080);
@@ -407,6 +410,10 @@ async function handleAdmin(req, res, parts) {
         });
         return;
     }
+    if (parts[0] === 'settings' && parts.length === 1) {
+        await settings.handleAdmin(req, res, who);
+        return;
+    }
     if (parts[0] === 'roster') {
         await team.handleAdmin(req, res, parts.slice(1), who);
         return;
@@ -601,6 +608,10 @@ async function handle(req, res) {
         await homework.handleStudent(req, res, parts.slice(2), student);
         return;
     }
+    if (parts[0] === 'api' && parts[1] === 'settings' && parts.length === 2) {
+        await settings.handlePublic(req, res);
+        return;
+    }
     if (parts[0] === 'mcp' && parts.length === 1) {
         await mcp.handle(req, res);
         return;
@@ -661,6 +672,11 @@ async function handle(req, res) {
         send(res, 405, 'Method not allowed');
         return;
     }
+    // The privacy page is the same app too, at a plain address to give families.
+    if (parts[0] === 'privacy' && parts.length === 1) {
+        await sendFile(req, res, path.join(DIST_DIR, 'index.html'));
+        return;
+    }
     // The coach page is the same single-file app; it picks the page from the path.
     // Keep it at /coach (no trailing slash) so the app's relative URLs still work.
     if (parts[0] === 'coach' && parts.length === 1) {
@@ -689,6 +705,7 @@ async function handle(req, res) {
     }
 }
 
+const settings = createSettings({ teamDir: TEAM_DIR, sendJson, readBody });
 const team = createTeam({
     teamDir: TEAM_DIR,
     sendJson,
@@ -696,7 +713,7 @@ const team = createTeam({
     onRemove: (id) => homework.removeStudent(id)
 });
 const authors = createAuthors(LIBRARY_DIR);
-const homework = createHomework({ teamDir: TEAM_DIR, team, sendJson, send, readBody });
+const homework = createHomework({ teamDir: TEAM_DIR, team, settings, sendJson, send, readBody });
 const lessonsApi = createLessonsApi({
     libraryDir: LIBRARY_DIR,
     docsDir: path.join(here, '..', 'docs'),

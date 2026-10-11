@@ -23,7 +23,7 @@ function isDate(value) {
     return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-export function createHomework({ teamDir, team, sendJson, send, readBody }) {
+export function createHomework({ teamDir, team, settings, sendJson, send, readBody }) {
     const homeworkFile = path.join(teamDir, 'homework.json');
     const studentDir = (id) => path.join(teamDir, 'students', id);
 
@@ -271,7 +271,7 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
                 await fsp.mkdir(path.dirname(file), { recursive: true });
                 await fsp.writeFile(file + '.tmp', data);
                 await fsp.rename(file + '.tmp', file);
-                console.log(`${student.name} handed in ${lesson}`);
+                console.log(`Student ${student.id.slice(0, 8)} handed in ${lesson}`);
                 sendJson(res, 200, { handedIn: new Date().toISOString() });
             } else {
                 sendJson(res, 405, { error: 'Method not allowed' });
@@ -327,9 +327,13 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
     // Each student's status on each lesson of each assignment, worked out the
     // same way as lessonStatus() in src/lib/lessons.ts. `lessons` maps a lesson
     // file name to its JSON.
+    // For AI assistants: by default team statistics per lesson, which say where
+    // the team is and where it gets stuck without naming anyone. The head coach
+    // can choose to share each student's name and progress instead.
     async function report(lessons) {
         const homework = await loadHomework();
         const roster = await team.load();
+        const { aiStudentNames } = await settings.load();
         const students = [];
         for (const s of roster.students) {
             students.push({
@@ -343,25 +347,89 @@ export function createHomework({ teamDir, team, sendJson, send, readBody }) {
             if (!lesson) return { status: 'lesson missing' };
             const mine = student.progress.lessons[name];
             const steps = Array.isArray(lesson.steps) ? lesson.steps.length : 0;
-            const ticked = (mine?.steps ?? []).filter((n) => n < steps).length;
+            const tickedSteps = (mine?.steps ?? []).filter((n) => n < steps);
+            const ticked = tickedSteps.length;
             const checkDone = !lesson.check || !!mine?.check?.passed;
             const handedIn = !!student.programs[name];
             const done = ticked >= steps && checkDone && handedIn;
             const started = ticked > 0 || !!mine?.check || handedIn;
+            let nextStep = -1;
+            for (let i = 0; i < steps; i++) {
+                if (!tickedSteps.includes(i)) {
+                    nextStep = i;
+                    break;
+                }
+            }
             return {
                 status: done ? 'done' : started ? 'started' : 'not started',
                 steps: `${ticked}/${steps}`,
                 ...(lesson.check ? { checkPassed: !!mine?.check?.passed } : {}),
-                ...(student.programs[name] ? { handedIn: student.programs[name] } : {})
+                ...(student.programs[name] ? { handedIn: student.programs[name] } : {}),
+                // For the statistics only.
+                _nextStep: nextStep,
+                _checkTried: !!mine?.check
             };
         }
-        return homework.assignments.map((a) => ({
-            ...a,
-            students: students.map((s) => ({
+        function stats(rows, name) {
+            const lesson = lessons[name];
+            const all = rows.map((r) => r.lessons[name]);
+            const count = (f) => all.filter(f).length;
+            const result = {
+                students: all.length,
+                done: count((x) => x.status === 'done'),
+                started: count((x) => x.status === 'started'),
+                notStarted: count((x) => x.status === 'not started'),
+                handedIn: count((x) => !!x.handedIn)
+            };
+            if (lesson?.check) {
+                result.checkPassed = count((x) => x.checkPassed);
+                result.checkTriedNotPassed = count((x) => x._checkTried && !x.checkPassed);
+            }
+            // Where students who started but haven't finished are up to.
+            const stuck = {};
+            for (const x of all) {
+                if (x.status !== 'started' || x._nextStep < 0) continue;
+                stuck[x._nextStep] = (stuck[x._nextStep] ?? 0) + 1;
+            }
+            const steps = Array.isArray(lesson?.steps) ? lesson.steps : [];
+            result.workingOnStep = Object.entries(stuck)
+                .sort((a, b) => b[1] - a[1])
+                .map(([i, n]) => ({
+                    step: Number(i) + 1,
+                    text: String(steps[i]?.text ?? '').slice(0, 80),
+                    students: n
+                }));
+            return result;
+        }
+        const clean = (status) => {
+            const { _nextStep, _checkTried, ...rest } = status;
+            return rest;
+        };
+        return homework.assignments.map((a) => {
+            const rows = students.map((s) => ({
                 name: s.name,
                 lessons: Object.fromEntries(a.lessons.map((l) => [l, status(s, l)]))
-            }))
-        }));
+            }));
+            const lessonStats = Object.fromEntries(a.lessons.map((l) => [l, stats(rows, l)]));
+            if (aiStudentNames === 'names') {
+                return {
+                    ...a,
+                    stats: lessonStats,
+                    students: rows.map((r) => ({
+                        name: r.name,
+                        lessons: Object.fromEntries(
+                            Object.entries(r.lessons).map(([l, x]) => [l, clean(x)])
+                        )
+                    }))
+                };
+            }
+            return {
+                ...a,
+                stats: lessonStats,
+                privacy:
+                    "Team statistics only: the head coach chose not to share individual students' names or progress with AI assistants."
+            };
+        });
     }
 
     return { handleAdmin, handleStudent, removeStudent, saveDraft, deleteDraft, report };

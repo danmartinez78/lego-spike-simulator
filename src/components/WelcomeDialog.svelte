@@ -82,7 +82,8 @@
         </p>
         <p class="text-xs text-gray-500">
             Based on the LEGO SPIKE Simulator by Alexandre Hardy. Free software under the GNU GPL
-            version 2. See About in the guide for credits and source code.
+            version 2. See About in the guide for credits and source code. No ads, no tracking: read
+            the <a class="underline" href="privacy" target="_blank">privacy notice</a>.
         </p>
         <div class="flex flex-row flex-wrap gap-3 items-center">
             <Checkbox bind:checked={dontShowAgain}>Don't show this again</Checkbox>

@@ -105,6 +105,17 @@
     zip of `team/` and `library/`; to restore, unzip it into `/data`) and New
     codes for everyone (`POST /api/admin/roster/codes`), and asks before adding
     names that look like full surnames. The guide's About tab has a privacy note.
+-   Team settings (coach page, Team settings tab; `server/settings.mjs`,
+    `src/lib/settings.ts`, `TEAM_DIR/settings.json`, public at `GET /api/settings`):
+    what AI assistants see (`aiStudentNames`: `stats`, the default, gives
+    `list_assignments` per-lesson statistics only; `names` adds each student's
+    name and progress), automatic sign-out on shared computers
+    (`signOutAfterMinutes`, tracked in localStorage `spike-sim-last-active`),
+    team name and privacy contact, a copyable note for families, and Remove all
+    students (`DELETE /api/admin/roster`). Optional env `HEAD_COACHES`
+    (comma-separated emails) limits who can change them; unset, any coach can.
+    The privacy notice is at `/privacy` (`src/pages/PrivacyPage.svelte`), linked
+    from the welcome screen and the guide. Server logs name students by id, not name.
 -   The code panel autosaves the program in the browser (`src/lib/blockly/autosave.ts`,
     localStorage key `spike-sim-program`) and restores it on the next visit.
 -   Welcome screen, guide (? button) with block reference, About/credits.
