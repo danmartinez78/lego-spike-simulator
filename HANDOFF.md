@@ -78,7 +78,7 @@
     into a `.spk` (`server/zip.mjs`). Which robots and fields an assistant
     added is in `LIBRARY_DIR/.assistant-files.json` (`server/authors.mjs`).
 -   Students (coach page, Students tab): paste names, each gets a random code
-    (`WORD-WORD-NN`); print cut-out code cards with a sign-in QR, copy one
+    (`WORD-WORD-NN`); print cut-out code cards, copy one
     student's link, or export a CSV for a mail merge. Stored in plain text in
     `/data/team/roster.json` (`server/team.mjs`). Students sign in with the
     Sign in button in the code panel or a `/#code=...` link; `/api/student` is
