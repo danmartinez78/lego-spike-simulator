@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { createEventDispatcher } from 'svelte';
     import { askConfirm } from '$lib/confirm';
     import { Button, Modal } from 'flowbite-svelte';
     import { StarSolid } from 'flowbite-svelte-icons';
@@ -19,6 +20,8 @@
     } from '$lib/library';
 
     export let modalOpen = false;
+
+    const dispatch = createEventDispatcher<{ started: Challenge }>();
 
     let selected: Challenge = challenges[0];
     let hintsShown = 0;
@@ -61,6 +64,7 @@
             applyPreset(c.realism);
             activeChallenge.set(c);
             modalOpen = false;
+            dispatch('started', c);
         } catch (e) {
             message = `Could not set up the challenge: ${(e as Error).message}`;
         } finally {

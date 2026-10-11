@@ -11,6 +11,9 @@
     import { programRequest, setProgramBuilder, type ProgramRequest } from '$lib/library';
     import { BookOpenOutline } from 'flowbite-svelte-icons';
     import ExamplesDialog from '$components/ExamplesDialog.svelte';
+    import ChallengesDialog from '$components/ChallengesDialog.svelte';
+    import { challengesOpen } from '$lib/spike/challenges';
+    import { AwardOutline } from 'flowbite-svelte-icons';
     import * as Blockly from 'blockly/core';
     // Import the list of blocks so it gets loaded into blockly
     import 'blockly/blocks';
@@ -457,6 +460,7 @@
 <ProcedureDialog bind:modalOpen={procedureDialogOpen} bind:callback={procedureCreateCallback} />
 <PrintDialog bind:modalOpen={printDialogOpen} callback={printCallback} />
 <ExamplesDialog bind:modalOpen={examplesOpen} />
+<ChallengesDialog bind:modalOpen={$challengesOpen} on:started={() => (simulatorOpen = true)} />
 
 <div class="relative h-full w-full overflow-hidden flex flex-row">
     <!-- flex-col-reverse so that the buttons are higher in z order -->
@@ -502,6 +506,10 @@
                 <BookOpenOutline class="w-7 h-7" />
             </ToolButton>
             <Tooltip>Example programs with explanations</Tooltip>
+            <ToolButton label="Challenges" on:click={() => challengesOpen.set(true)}>
+                <AwardOutline class="w-7 h-7" />
+            </ToolButton>
+            <Tooltip>Challenges: goals the simulator checks for you</Tooltip>
             <ToolButton label="Help" on:click={() => openGuide()}>
                 <QuestionCircleOutline class="w-7 h-7" />
             </ToolButton>
