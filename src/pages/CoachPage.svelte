@@ -2,36 +2,56 @@
     // Coach tools, served at /coach. On the live site Cloudflare Access guards
     // this page and /api/admin, so only coaches on the allowlist reach it.
     import { onMount } from 'svelte';
-    import { Button, Spinner } from 'flowbite-svelte';
+    import { Button, Input, Spinner } from 'flowbite-svelte';
     import ConfirmDialog from '$components/ConfirmDialog.svelte';
+    import SceneThumb from '$components/coach/SceneThumb.svelte';
+    import LessonCardEditor from '$components/coach/LessonCardEditor.svelte';
     import { askConfirm } from '$lib/confirm';
+    import { challenges } from '$lib/spike/challenges';
     import {
         libraryStore,
         refreshLibrary,
         deleteEntry,
+        renameEntry,
+        saveEntry,
+        saveLessonCard,
         setDefault,
+        type LessonCard,
         type LibraryEntry,
         type LibraryKind
     } from '$lib/library';
 
-    const sections: { kind: LibraryKind; title: string; icon: string; empty: string }[] = [
+    const sections: {
+        kind: LibraryKind;
+        title: string;
+        icon: string;
+        empty: string;
+        extensions: string[];
+        upload: string;
+    }[] = [
         {
             kind: 'robots',
             title: 'Robots',
             icon: 'icons/Robot.svg',
-            empty: 'No robots yet. Load one in the simulator, then use Save → Save robot.'
+            empty: 'No robots yet. Upload a .mpd or .ldr model, or load one in the simulator and use Save → Save robot.',
+            extensions: ['.mpd', '.ldr'],
+            upload: 'Upload a robot (.mpd or .ldr)'
         },
         {
             kind: 'scenes',
             title: 'Scenes and maps',
             icon: 'icons/Scene.svg',
-            empty: 'No scenes yet. Set one up in the simulator, then use Save → Save scene.'
+            empty: 'No scenes yet. Upload a .spk scene, or set one up in the simulator and use Save → Save scene.',
+            extensions: ['.spk'],
+            upload: 'Upload a scene (.spk)'
         },
         {
             kind: 'programs',
             title: 'Example programs',
             icon: 'icons/Library.svg',
-            empty: 'No example programs yet. Add one from the Examples window in the simulator.'
+            empty: 'No example programs yet. Upload a .llsp3 program, then add its lesson card.',
+            extensions: ['.llsp3'],
+            upload: 'Upload a program (.llsp3)'
         }
     ];
 
@@ -49,6 +69,47 @@
     $: section = sections.find((s) => s.kind == active)!;
     $: entries = $libraryStore.index[active] ?? [];
     $: hasDefault = active != 'programs';
+    $: sceneNames = $libraryStore.index.scenes.map((s) => s.name);
+    $: topics = [
+        ...new Set(
+            $libraryStore.index.programs.map((p) => p.card?.topic).filter((t): t is string => !!t)
+        )
+    ];
+
+    // Challenge cards name their field, robot and example program by file name.
+    function challengesUsing(kind: LibraryKind, name: string) {
+        return challenges.filter((c) =>
+            kind == 'scenes'
+                ? c.field == name
+                : kind == 'robots'
+                  ? c.robot == name
+                  : c.example == name
+        );
+    }
+
+    function cardsUsing(kind: LibraryKind, name: string) {
+        if (kind != 'scenes') return [];
+        return $libraryStore.index.programs.filter((p) => p.card?.scene == name);
+    }
+
+    function extensionOf(name: string) {
+        const dot = name.lastIndexOf('.');
+        return dot < 0 ? '' : name.slice(dot).toLowerCase();
+    }
+
+    function baseOf(name: string) {
+        const dot = name.lastIndexOf('.');
+        return dot < 0 ? name : name.slice(0, dot);
+    }
+
+    // Library names allow letters, digits, spaces and . ( ) + - _ and start with a letter or digit.
+    function cleanBase(base: string) {
+        return base
+            .trim()
+            .replace(/[^\w .()+-]/g, '_')
+            .replace(/^[^\w]+/, '')
+            .slice(0, 90);
+    }
 
     function isDefault(kind: LibraryKind, name: string) {
         const defaults = $libraryStore.index.defaults;
@@ -102,7 +163,11 @@
 
     async function remove(kind: LibraryKind, entry: LibraryEntry) {
         const what = entry.card?.title ? `"${entry.card.title}" (${entry.name})` : entry.name;
-        const extra = kind == 'programs' ? ' Its lesson card is deleted too.' : '';
+        const used = challengesUsing(kind, entry.name);
+        let extra = kind == 'programs' ? ' Its lesson card is deleted too.' : '';
+        if (used.length > 0) {
+            extra += ` ${used.length} challenge card${used.length == 1 ? '' : 's'} (${used.map((c) => c.title).join(', ')}) use${used.length == 1 ? 's' : ''} it.`;
+        }
         if (
             await askConfirm(
                 `Delete ${what} from the shared library? Students won't see it any more.${extra}`,
@@ -115,6 +180,105 @@
                 `Deleted ${entry.name}.`
             );
         }
+    }
+
+    let renaming = '';
+    let newName = '';
+
+    function startRename(entry: LibraryEntry) {
+        renaming = entry.name;
+        newName = baseOf(entry.name);
+        message = '';
+    }
+
+    async function finishRename(kind: LibraryKind, entry: LibraryEntry) {
+        const base = cleanBase(newName);
+        if (base.length == 0) {
+            failed = true;
+            message = 'Type a new name first.';
+            return;
+        }
+        const to = base + extensionOf(entry.name);
+        if (to == entry.name) {
+            renaming = '';
+            return;
+        }
+        const used = challengesUsing(kind, entry.name);
+        if (
+            used.length > 0 &&
+            !(await askConfirm(
+                `${used.length} challenge card${used.length == 1 ? '' : 's'} (${used.map((c) => c.title).join(', ')}) look for "${entry.name}" by name and won't find it after the rename. Rename anyway?`,
+                { confirmLabel: 'Rename' }
+            ))
+        ) {
+            return;
+        }
+        await run(
+            `rename ${entry.name}`,
+            () => renameEntry(kind, entry.name, to),
+            `Renamed to ${to}.`
+        );
+        if (!failed) renaming = '';
+    }
+
+    let fileInput: HTMLInputElement;
+
+    function chooseFile() {
+        message = '';
+        fileInput.value = '';
+        fileInput.click();
+    }
+
+    async function upload(kind: LibraryKind, file: File | undefined) {
+        if (!file) return;
+        const info = sections.find((s) => s.kind == kind)!;
+        const extension = extensionOf(file.name);
+        if (!info.extensions.includes(extension)) {
+            failed = true;
+            message =
+                kind == 'robots' && extension == '.io'
+                    ? 'BrickLink Studio .io files need exporting first: in Studio use File → Export As → LDraw (.mpd), then upload that.'
+                    : `${file.name} isn't a ${info.extensions.join(' or ')} file.`;
+            return;
+        }
+        const base = cleanBase(baseOf(file.name));
+        const name = (base.length > 0 ? base : kind.slice(0, -1)) + extension;
+        if (
+            $libraryStore.index[kind].some((e) => e.name == name) &&
+            !(await askConfirm(`There's already a ${name} in the library. Replace it?`, {
+                confirmLabel: 'Replace',
+                danger: true
+            }))
+        ) {
+            return;
+        }
+        await run(`upload ${name}`, () => saveEntry(kind, name, file), `Added ${name}.`);
+        if (!failed && kind == 'programs') {
+            const entry = $libraryStore.index.programs.find((p) => p.name == name);
+            if (entry && !entry.card) editCard(entry);
+        }
+    }
+
+    let cardOpen = false;
+    let cardProgram = '';
+    let cardValue: LessonCard | undefined = undefined;
+    let cardSaving = false;
+
+    function editCard(entry: LibraryEntry) {
+        cardProgram = entry.name;
+        cardValue = entry.card;
+        cardOpen = true;
+    }
+
+    async function saveCard(card: LessonCard) {
+        cardSaving = true;
+        await run(
+            `card ${cardProgram}`,
+            () => saveLessonCard(cardProgram, card),
+            `Saved the lesson card for "${card.title}".`
+        );
+        cardSaving = false;
+        if (!failed) cardOpen = false;
     }
 </script>
 
@@ -216,69 +380,172 @@
                     </div>
                 {/if}
 
+                <div class="flex flex-row flex-wrap items-center gap-2">
+                    <Button color="blue" size="sm" disabled={busy != ''} on:click={chooseFile}
+                        >{section.upload}</Button
+                    >
+                    <input
+                        bind:this={fileInput}
+                        type="file"
+                        class="hidden"
+                        accept={section.extensions.join(',')}
+                        data-testid="upload-input"
+                        on:change={() => upload(active, fileInput.files?.[0])}
+                    />
+                    {#if busy.startsWith('upload')}
+                        <span class="text-sm text-gray-600 flex items-center gap-2"
+                            ><Spinner size="4" /> Uploading…</span
+                        >
+                    {/if}
+                </div>
+
                 <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     {#if entries.length == 0}
                         <p class="p-6 text-gray-600">{section.empty}</p>
                     {:else}
                         <ul class="divide-y divide-gray-200">
                             {#each entries as entry (entry.name)}
+                                {@const usedBy = challengesUsing(active, entry.name)}
+                                {@const cards = cardsUsing(active, entry.name)}
                                 <li class="flex flex-row flex-wrap items-center gap-3 px-4 py-3">
+                                    {#if active == 'scenes'}
+                                        <SceneThumb name={entry.name} modified={entry.modified} />
+                                    {/if}
                                     <div class="flex-1 min-w-[12rem]">
-                                        <div
-                                            class="font-medium flex flex-row items-center gap-2 flex-wrap"
-                                        >
-                                            {entry.card?.title ?? entry.name}
-                                            {#if isDefault(active, entry.name)}
-                                                <span
-                                                    class="text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800"
-                                                    >Loads on open</span
+                                        {#if renaming == entry.name}
+                                            <form
+                                                class="flex flex-row flex-wrap items-center gap-2"
+                                                on:submit|preventDefault={() =>
+                                                    finishRename(active, entry)}
+                                            >
+                                                <Input
+                                                    size="sm"
+                                                    class="max-w-xs"
+                                                    bind:value={newName}
+                                                    aria-label="New name for {entry.name}"
+                                                />
+                                                <span class="text-sm text-gray-500"
+                                                    >{extensionOf(entry.name)}</span
                                                 >
-                                            {/if}
-                                        </div>
+                                                <Button
+                                                    size="xs"
+                                                    color="blue"
+                                                    type="submit"
+                                                    disabled={busy != ''}>Save name</Button
+                                                >
+                                                <Button
+                                                    size="xs"
+                                                    color="light"
+                                                    on:click={() => (renaming = '')}>Cancel</Button
+                                                >
+                                            </form>
+                                        {:else}
+                                            <div
+                                                class="font-medium flex flex-row items-center gap-2 flex-wrap"
+                                            >
+                                                {entry.card?.title ?? entry.name}
+                                                {#if isDefault(active, entry.name)}
+                                                    <span
+                                                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800"
+                                                        >Loads on open</span
+                                                    >
+                                                {/if}
+                                                {#if active == 'programs' && !entry.card}
+                                                    <span
+                                                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800"
+                                                        >No lesson card</span
+                                                    >
+                                                {/if}
+                                            </div>
+                                        {/if}
                                         <div class="text-sm text-gray-500">
                                             {#if entry.card}
                                                 {entry.card.topic} · {entry.name} ·
                                             {/if}
                                             {size(entry.size)} · changed {changed(entry.modified)}
                                         </div>
+                                        {#if usedBy.length > 0 || cards.length > 0}
+                                            <div class="text-sm text-gray-500">
+                                                Used by
+                                                {[
+                                                    usedBy.length > 0
+                                                        ? `${usedBy.length} challenge${usedBy.length == 1 ? '' : 's'}`
+                                                        : '',
+                                                    cards.length > 0
+                                                        ? `${cards.length} lesson card${cards.length == 1 ? '' : 's'}`
+                                                        : ''
+                                                ]
+                                                    .filter((x) => x)
+                                                    .join(' and ')}
+                                            </div>
+                                        {/if}
                                     </div>
-                                    <div class="flex flex-row gap-2 flex-wrap">
-                                        {#if hasDefault}
+                                    {#if renaming != entry.name}
+                                        <div class="flex flex-row gap-2 flex-wrap">
+                                            {#if active == 'programs'}
+                                                <Button
+                                                    size="xs"
+                                                    color="light"
+                                                    disabled={busy != ''}
+                                                    on:click={() => editCard(entry)}
+                                                    >{entry.card
+                                                        ? 'Edit lesson card'
+                                                        : 'Add lesson card'}</Button
+                                                >
+                                            {/if}
+                                            {#if hasDefault}
+                                                <Button
+                                                    size="xs"
+                                                    color="light"
+                                                    disabled={busy != ''}
+                                                    on:click={() => toggleDefault(active, entry)}
+                                                    >{isDefault(active, entry.name)
+                                                        ? "Don't load on open"
+                                                        : 'Load on open'}</Button
+                                                >
+                                            {/if}
                                             <Button
                                                 size="xs"
                                                 color="light"
                                                 disabled={busy != ''}
-                                                on:click={() => toggleDefault(active, entry)}
-                                                >{isDefault(active, entry.name)
-                                                    ? "Don't load on open"
-                                                    : 'Load on open'}</Button
+                                                on:click={() => startRename(entry)}>Rename</Button
                                             >
-                                        {/if}
-                                        <Button
-                                            size="xs"
-                                            color="light"
-                                            href={downloadUrl(active, entry.name)}
-                                            download={entry.name}>Download</Button
-                                        >
-                                        <Button
-                                            size="xs"
-                                            color="red"
-                                            outline
-                                            disabled={busy != ''}
-                                            on:click={() => remove(active, entry)}>Delete</Button
-                                        >
-                                    </div>
+                                            <Button
+                                                size="xs"
+                                                color="light"
+                                                href={downloadUrl(active, entry.name)}
+                                                download={entry.name}>Download</Button
+                                            >
+                                            <Button
+                                                size="xs"
+                                                color="red"
+                                                outline
+                                                disabled={busy != ''}
+                                                on:click={() => remove(active, entry)}
+                                                >Delete</Button
+                                            >
+                                        </div>
+                                    {/if}
                                 </li>
                             {/each}
                         </ul>
                     {/if}
                 </div>
                 <p class="text-sm text-gray-500">
-                    To add a robot or scene, open it in the simulator and use Save. To add an
-                    example program with a lesson card, use the Examples window.
+                    You can also save the robot, scene or program that's open in the simulator from
+                    its Save button and Examples window while signed in.
                 </p>
             </section>
         {/if}
     </main>
 </div>
+<LessonCardEditor
+    bind:open={cardOpen}
+    program={cardProgram}
+    card={cardValue}
+    scenes={sceneNames}
+    {topics}
+    saving={cardSaving}
+    on:save={(e) => saveCard(e.detail)}
+/>
 <ConfirmDialog />

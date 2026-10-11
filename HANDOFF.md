@@ -21,8 +21,13 @@
     (Unraid Docker tab, or the unraid MCP `update_container`).
 -   Nginx Proxy Manager proxy host `spike.robodan.dev` -> 192.168.0.228:8093
     (robodan cert). Cloudflare CNAME `spike` -> robodan.dev.
--   Cloudflare Access for saving from outside the LAN is supported
-    (`CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`, protect `/api/admin`) but not set up.
+-   Cloudflare Access (Zero Trust team `aged-glitter-854f.cloudflareaccess.com`)
+    guards `spike.robodan.dev/coach` and `/api/admin` with the One-time PIN login
+    and an email allowlist (policy "spike access"; add coaches' emails there).
+    The container has `CF_ACCESS_TEAM_DOMAIN` and
+    `CF_ACCESS_AUD` set, so the server checks the Access token on writes.
+-   Unraid "Apply" reuses the image it already has; use Check for Updates /
+    apply update (or Force Update in Advanced View) to pull a new `:latest`.
 
 ## Built so far
 
@@ -33,6 +38,11 @@
 -   Realism presets (Ideal / Realistic / Challenging, `?realism=` links) and the
     ▶×5 results window with A vs B comparison.
 -   Example programs with lesson cards (book button), coach-only saving.
+-   Coach tools page at `/coach` (`src/pages/CoachPage.svelte`): upload, rename,
+    download and delete robots, scenes and programs, choose what loads on open,
+    mat previews for scenes, and a lesson card form. Roadmap for the next steps
+    (class settings, team progress, homework):
+    https://claude.ai/code/artifact/97bba12c-7c37-4104-81ae-94fe7e782868
 -   Welcome screen, guide (? button) with block reference, About/credits.
 -   Block help: hover tooltips, right-click "Explain this block".
 -   Sensor graph, measure/route tool, top-down Place view.

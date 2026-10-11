@@ -6,7 +6,7 @@
 //   /ldraw/...         an extracted LDraw parts library (LDRAW_DIR), with parts.lst
 //   /api/library       list of shared robots and scenes (LIBRARY_DIR)
 //   /api/library/{robots|scenes}/<file>   download one entry
-//   /api/admin/...     write operations (upload, delete, set default)
+//   /api/admin/...     write operations (upload, delete, rename, set default)
 //
 // Writes are accepted from:
 //   - clients whose address starts with one of LAN_WRITE_PREFIXES
@@ -293,6 +293,77 @@ async function handleAdmin(req, res, parts) {
     }
     if (!who) {
         sendJson(res, 401, { error: 'Sign in to change the library' });
+        return;
+    }
+
+    if (parts[0] === 'rename' && req.method === 'POST') {
+        let body;
+        try {
+            body = JSON.parse((await readBody(req)).toString('utf8') || '{}');
+        } catch {
+            sendJson(res, 400, { error: 'Bad request' });
+            return;
+        }
+        const kind = String(body.kind ?? '');
+        const from = safeName(kind, body.from ?? '');
+        const to = safeName(kind, body.to ?? '');
+        if (
+            !from ||
+            !to ||
+            from.toLowerCase().endsWith('.json') ||
+            to.toLowerCase().endsWith('.json')
+        ) {
+            sendJson(res, 400, { error: 'Bad library name or file type' });
+            return;
+        }
+        const dir = path.join(LIBRARY_DIR, kind);
+        if (!fs.existsSync(path.join(dir, from))) {
+            sendJson(res, 404, { error: `${from} is not in the library` });
+            return;
+        }
+        if (from !== to && fs.existsSync(path.join(dir, to))) {
+            sendJson(res, 409, { error: `There is already something called ${to}` });
+            return;
+        }
+        await fsp.rename(path.join(dir, from), path.join(dir, to));
+        if (kind === 'programs' && fs.existsSync(path.join(dir, from + '.json'))) {
+            const cardFile = path.join(dir, to + '.json');
+            await fsp.rename(path.join(dir, from + '.json'), cardFile);
+            try {
+                const card = JSON.parse(await fsp.readFile(cardFile, 'utf8'));
+                if (card.file) {
+                    card.file = to;
+                    await fsp.writeFile(cardFile, JSON.stringify(card, null, 2));
+                }
+            } catch {
+                // not a readable lesson card
+            }
+        }
+        // Keep the defaults and the lesson cards that point at a renamed scene.
+        const defaults = await readDefaults();
+        const field = kind === 'robots' ? 'robot' : kind === 'scenes' ? 'scene' : undefined;
+        if (field && defaults[field] === from) {
+            defaults[field] = to;
+            await writeDefaults(defaults);
+        }
+        if (kind === 'scenes') {
+            const programs = path.join(LIBRARY_DIR, 'programs');
+            for (const name of await fsp.readdir(programs)) {
+                if (!name.toLowerCase().endsWith('.json')) continue;
+                const cardFile = path.join(programs, name);
+                try {
+                    const card = JSON.parse(await fsp.readFile(cardFile, 'utf8'));
+                    if (card.scene === from) {
+                        card.scene = to;
+                        await fsp.writeFile(cardFile, JSON.stringify(card, null, 2));
+                    }
+                } catch {
+                    // not a readable lesson card
+                }
+            }
+        }
+        console.log(`${who} renamed ${kind}/${from} to ${to}`);
+        sendJson(res, 200, { name: to });
         return;
     }
 
