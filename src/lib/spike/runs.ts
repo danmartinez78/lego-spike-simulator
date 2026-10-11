@@ -19,9 +19,14 @@ export interface RunPath {
     seconds?: number;
 }
 
+// Why a batch of runs was started: checking a challenge or lesson, or an
+// experiment to see how consistent the program is.
+export type RunPurpose = 'check' | 'experiment';
+
 export interface RunBatch {
     // Number of runs requested; 0 when no batch is in progress.
     total: number;
+    purpose: RunPurpose;
     active: boolean;
     completed: RunPath[];
     overlayOpen: boolean;
@@ -34,13 +39,14 @@ export const maxRunSeconds = 150;
 
 export const runBatch = writable<RunBatch>({
     total: 0,
+    purpose: 'experiment',
     active: false,
     completed: [],
     overlayOpen: false
 });
 
-export function startBatch(total: number) {
-    runBatch.set({ total, active: true, completed: [], overlayOpen: false });
+export function startBatch(total: number, purpose: RunPurpose) {
+    runBatch.set({ total, purpose, active: true, completed: [], overlayOpen: false });
 }
 
 export function finishRun(path: RunPath) {
@@ -136,10 +142,47 @@ export interface PinnedRuns {
     label: string;
     paths: RunPath[];
     realism: string;
+    // The batch these came from, so later batches can be told apart from it.
+    source?: RunPath[];
 }
 
 // Runs kept as "A" so the next batch can be compared with them.
 export const pinnedRuns = writable<PinnedRuns | undefined>(undefined);
 
-// Ask the simulator window to start another batch of runs.
-export const rerunRequest = writable(0);
+// Ask the simulator window to start a batch of runs. The number changes on
+// each request. The simulator waits for a robot that is still loading.
+export const rerunRequest = writable<{ n: number; purpose: RunPurpose }>({
+    n: 0,
+    purpose: 'experiment'
+});
+
+export function requestRuns(purpose: RunPurpose) {
+    rerunRequest.update((old) => ({ n: old.n + 1, purpose }));
+}
+
+// How far apart the runs ended, in words.
+export function spreadWords(summary: RunSummary) {
+    if (summary.runs < 2) return 'Only one run finished.';
+    if (summary.spread < 5) return `All ${summary.runs} runs ended in the same spot.`;
+    return `The ${summary.runs} runs ended up to ${(summary.spread / 10).toFixed(1)} cm apart.`;
+}
+
+export function headingWords(summary: RunSummary) {
+    if (summary.runs < 2) return '';
+    if (summary.headingSpread < 1) return 'They all faced the same way.';
+    return `Which way they faced varied by up to ${summary.headingSpread.toFixed(0)}°.`;
+}
+
+// Which set of runs ended closer together, in words.
+export function compareWords(a: RunSummary, b: RunSummary, nameA: string, nameB: string) {
+    if (a.spread < 5 && b.spread < 5) {
+        return `Both ${nameA} and ${nameB} ended in the same spot every time.`;
+    }
+    if (Math.abs(a.spread - b.spread) < Math.max(5, 0.1 * Math.max(a.spread, b.spread))) {
+        return `${nameA} and ${nameB} are about as consistent as each other.`;
+    }
+    const better = b.spread < a.spread ? nameB : nameA;
+    const ratio = Math.max(a.spread, b.spread) / Math.max(5, Math.min(a.spread, b.spread));
+    const times = ratio >= 10 ? 'more than 10×' : `${ratio.toFixed(1)}×`;
+    return `${better} wins: its runs ended ${times} closer together.`;
+}

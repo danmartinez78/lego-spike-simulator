@@ -185,7 +185,7 @@
             </div>
             <CheckMap field={lesson.field} check={lesson.check} maxHeight={200} />
             <p class="text-xs text-gray-500">
-                Check my robot loads the field and robot but keeps your program. Then press ▶︎×5.
+                Check my robot runs your program 5 times on the lesson's field and checks every run.
             </p>
         </section>
     {/if}

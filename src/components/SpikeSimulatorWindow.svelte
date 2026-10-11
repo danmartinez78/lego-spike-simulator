@@ -31,7 +31,16 @@
     import LoadScene from '$components/LoadScene.svelte';
     import LibraryDialog from '$components/LibraryDialog.svelte';
     import RunOverlay from '$components/RunOverlay.svelte';
-    import { runBatch, startBatch, rerunRequest, pinnedRuns } from '$lib/spike/runs';
+    import {
+        runBatch,
+        startBatch,
+        rerunRequest,
+        pinnedRuns,
+        requestRuns,
+        type RunPurpose
+    } from '$lib/spike/runs';
+    import { robotRequest } from '$lib/library';
+    import ExperimentPanel from '$components/ExperimentPanel.svelte';
     import { realismStore, presetLabels } from '$lib/spike/realism';
     import { libraryStore } from '$lib/library';
     import { type LDrawStore, componentStore } from '$lib/ldraw/components';
@@ -58,14 +67,20 @@
     let libraryKind: 'robots' | 'scenes' = 'scenes';
     let measureOpen = false;
     let placeOpen = false;
+    let experimentOpen = false;
     let lastRerun = 0;
 
-    function handleRerun(request: number) {
-        if (request != lastRerun) {
-            lastRerun = request;
-            if (!runSimulation) {
-                startRepeatedRuns();
-            }
+    // Start the runs someone asked for, once the simulator is open and any
+    // robot that is still loading has arrived.
+    async function handleRerun(request: { n: number; purpose: RunPurpose }) {
+        if (request.n == lastRerun) return;
+        lastRerun = request.n;
+        for (let i = 0; i < 100 && (!modalOpen || $robotRequest); i++) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        if (!runSimulation && request.n == lastRerun) {
+            startRepeatedRuns(request.purpose);
         }
     }
 
@@ -205,8 +220,8 @@
         runSimulation = true;
     }
 
-    function startRepeatedRuns() {
-        startBatch(5);
+    function startRepeatedRuns(purpose: RunPurpose) {
+        startBatch(5, purpose);
         startRobot();
     }
 
@@ -319,56 +334,86 @@
                         <img alt="" width="28" height="28" src="icons/GenericPlayIcon.svg" />
                     </ToolButton>
                     <Tooltip>Start the simulation, running the code in the code panel</Tooltip>
-                    <ToolButton label="Run ×5" on:click={startRepeatedRuns}>
-                        <span class="flex flex-row items-center text-sm">
-                            <img alt="" width="18" height="18" src="icons/GenericPlayIcon.svg" />
-                            ×5
-                        </span>
-                    </ToolButton>
-                    <Tooltip
-                        >Run the program 5 times and draw every path on the mat, to see how much the
-                        runs differ</Tooltip
-                    >
                 {/if}
                 {#if runSimulation && $runBatch.active}
-                    <span class="text-sm">
-                        Run {Math.min($runBatch.completed.length + 1, $runBatch.total)} of {$runBatch.total}
+                    <span class="text-sm font-medium">
+                        {$runBatch.purpose == 'check' ? 'Checking' : 'Experiment'}: run {Math.min(
+                            $runBatch.completed.length + 1,
+                            $runBatch.total
+                        )} of {$runBatch.total}
                     </span>
                 {/if}
                 {#if $activeChallenge}
-                    <span class="text-xs rounded bg-green-100 text-green-900 flex items-center">
+                    <div
+                        class="flex flex-row items-center gap-1 rounded-xl border border-green-300 bg-green-50 p-1"
+                        role="group"
+                        aria-label="Checking"
+                    >
+                        <ToolButton
+                            label="Check"
+                            color="green"
+                            disabled={runSimulation}
+                            on:click={() => requestRuns('check')}
+                        >
+                            {#if $activeChallenge.lesson}
+                                <ClipboardCheckOutline class="w-7 h-7" />
+                            {:else}
+                                <AwardOutline class="w-7 h-7" />
+                            {/if}
+                        </ToolButton>
+                        <Tooltip
+                            >Run your program 5 times and check every run. {$activeChallenge.needed}
+                            of 5 must pass.</Tooltip
+                        >
                         <button
-                            class="px-2 py-1 flex items-center gap-1 rounded-l hover:bg-green-200"
+                            class="flex flex-col items-start px-1 max-w-[11rem] text-left rounded hover:bg-green-100"
                             on:click={() =>
                                 $activeChallenge?.lesson
                                     ? lessonsOpen.set(true)
                                     : challengesOpen.set(true)}
                         >
-                            {#if $activeChallenge.lesson}
-                                <ClipboardCheckOutline class="w-4 h-4" />
-                            {:else}
-                                <AwardOutline class="w-4 h-4" />
-                            {/if}
-                            {$activeChallenge.title}
+                            <span class="text-xs font-semibold text-green-900 truncate w-full"
+                                >{$activeChallenge.title}</span
+                            >
+                            <span class="text-[11px] text-green-800"
+                                >{$activeChallenge.lesson ? 'Lesson check' : 'Challenge'}</span
+                            >
                         </button>
+                        <Tooltip
+                            >Open the {$activeChallenge.lesson ? 'lesson' : 'challenge'}</Tooltip
+                        >
                         <button
-                            class="px-1.5 py-1 rounded-r hover:bg-green-200"
+                            class="px-1.5 py-1 rounded text-green-900 hover:bg-green-200"
                             aria-label="Stop checking"
                             on:click={() => activeChallenge.set(undefined)}>✕</button
                         >
-                    </span>
-                    <Tooltip
-                        >{$activeChallenge.lesson ? 'Lesson check' : 'Challenge'} in progress. Press
-                        ▶︎×5 to check it.</Tooltip
-                    >
+                        <Tooltip>Stop checking</Tooltip>
+                    </div>
                 {/if}
-                {#if $pinnedRuns}
+                <ToolButton
+                    label="Experiment"
+                    color={experimentOpen ? 'blue' : 'light'}
+                    on:click={() => (experimentOpen = !experimentOpen)}
+                >
+                    <svg
+                        class="w-7 h-7"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                        ><path
+                            d="M9 3h6M10 3v6.5L4.5 19a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9.5V3"
+                        /><path d="M7 15h10" /></svg
+                    >
+                </ToolButton>
+                <Tooltip>Experiment: how consistent is your program? Compare two versions.</Tooltip>
+                {#if $pinnedRuns && !experimentOpen}
                     <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-900">
                         Comparing with {$pinnedRuns.label}
                     </span>
-                    <Tooltip
-                        >The next ▶︎×5 results are compared with the runs you kept as A.</Tooltip
-                    >
                 {/if}
                 {#if $realismStore.preset != 'ideal'}
                     <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-900">
@@ -376,7 +421,7 @@
                             ? 'Custom realism'
                             : presetLabels[$realismStore.preset]}
                     </span>
-                    <Tooltip>Real-world errors are on. Change them in the settings.</Tooltip>
+                    <Tooltip>Real-world errors are on. Change them in Experiment or Settings.</Tooltip>
                 {/if}
                 {#if $libraryStore.available}
                     <ToolButton
@@ -451,7 +496,8 @@
                 {/if}
             </div>
             {#key blocklyOpen}
-                <div class="flex-1 w-full overflow-hidden">
+                <div class="relative flex-1 w-full overflow-hidden">
+                    <ExperimentPanel bind:open={experimentOpen} running={runSimulation} />
                     <SpikeSimulator
                         bind:runSimulation
                         {workspace}
