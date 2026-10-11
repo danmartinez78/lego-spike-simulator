@@ -119,7 +119,8 @@
             const sense = override;
             if (lastColour != sense) {
                 const c = hexColor(sense);
-                const r = Math.sqrt(c.r * c.r + c.g * c.g + c.b * c.b);
+                // Same scale as a measured colour below (0 to 1).
+                const r = Math.sqrt((c.r * c.r + c.g * c.g + c.b * c.b) / 3.0);
                 hub.measureReflected(port, r);
                 hub.measureColour(port, sense);
                 lastColour = sense;
