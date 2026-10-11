@@ -1,8 +1,8 @@
 # Lesson packages
 
 A lesson is a short, step-by-step activity that students open from the
-**Lessons** button in the code panel. Coaches add lessons on the coach page
-(`/coach`, Lessons tab) by importing a lesson package.
+**Lessons** button in the code panel. Coaches write lessons on the coach page
+(`/coach`, Lessons tab, **New lesson**) or import a lesson package.
 
 ## The package
 
