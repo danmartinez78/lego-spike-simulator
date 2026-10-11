@@ -31,6 +31,9 @@
 
 ## Built so far
 
+A reader-facing summary of everything the fork adds is in
+`docs/what-this-fork-adds.md`; keep it and the README up to date with new features.
+
 -   `server/server.mjs`: serves the app, the parts library and the shared library
     API (robots `.mpd`, scenes `.spk`, programs `.llsp3` + lesson card `.json`).
     Bundled presets in `presets/` are seeded once each into the library.
