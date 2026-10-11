@@ -62,7 +62,7 @@
         { component: BookOpenOutline, text: 'Examples: programs that explain how they work.' },
         {
             component: AwardOutline,
-            text: 'Challenges: goals like "stop on green every time". Start one, write a program, press ▶︎×5 and the simulator checks it.'
+            text: 'Challenges: goals like "stop on green every time". Start one, write a program, then press the green Check button in the simulator.'
         },
         { component: QuestionCircleOutline, text: 'Help: this guide.' },
         {
@@ -198,10 +198,11 @@
                     </li>
                 </ul>
                 <p class="mt-2">
-                    Press <b>Check my robot</b>. That loads the right field and robot but keeps your
-                    program. Then press <b>▶︎×5</b>. The robot runs five times, and each run gets a
-                    ✓ or ✗ for every rule. Click a run's number to see what went wrong in it. A
-                    lesson is done when every step is ticked and the check has passed.
+                    Press <b>Check my robot</b>. That loads the right field and robot, keeps your
+                    program, and runs it five times. Each run gets a ✓ or ✗ for every rule. Click a
+                    run's number to see what went wrong in it. A lesson is done when every step is
+                    ticked and the check has passed. To check again after changing your program,
+                    press the green <b>Check</b> button in the simulator. The ✕ next to it stops checking.
                 </p>
                 <p class="mt-3 font-medium">Homework and signing in</p>
                 <p>
@@ -257,12 +258,23 @@
                         </div>
                     {/each}
                     <div class="flex flex-row gap-3 items-center">
-                        <div class="w-8 h-8 flex justify-center items-center shrink-0 text-xs">
-                            ▶︎×5
+                        <div
+                            class="w-8 h-8 flex justify-center items-center shrink-0 text-xs font-semibold text-green-700"
+                        >
+                            Check
                         </div>
                         <div>
-                            Run the program five times and draw every path on the mat. See the
-                            Realism tab.
+                            Only while a challenge or lesson check is open: run the program five
+                            times and check every run.
+                        </div>
+                    </div>
+                    <div class="flex flex-row gap-3 items-center">
+                        <div class="w-8 h-8 flex justify-center items-center shrink-0 text-xs">
+                            Exp.
+                        </div>
+                        <div>
+                            Experiment: see how consistent your program is, and compare two
+                            versions. See the Realism tab.
                         </div>
                     </div>
                 </div>
@@ -422,28 +434,32 @@
                 title="Realism"
             >
                 <p>
-                    Real robots never drive exactly the same way twice. Under <b>Settings</b>, the
-                    Realism menu adds the errors a real robot has: a slightly different start each
-                    time, wheels that aren't quite the same size, wheel slip, motors that overshoot
-                    a little when they stop, a gyro that slowly drifts, and noisy sensors.
+                    Real robots never drive exactly the same way twice. The <b>Experiment</b> panel
+                    (and Settings) can add the errors a real robot has: a slightly different start
+                    each time, wheels that aren't quite the same size, wheel slip, motors that
+                    overshoot a little when they stop, a gyro that slowly drifts, and noisy sensors.
                     <i>Ideal</i> turns all of that off.
                 </p>
                 <p class="mt-2 font-medium">Try this: open loop vs closed loop</p>
                 <ol class="list-decimal ml-5 flex flex-col gap-1">
                     <li>
-                        Set Realism to <i>Realistic</i>. Write a program that only uses
+                        Open <b>Experiment</b> and pick a <i>Realistic</i> robot. Write a program
+                        that only uses
                         <i>move ... cm</i> and turn blocks to reach a target on the mat. This is
                         <b>open loop</b>: the robot never checks where it is.
                     </li>
-                    <li>Press <b>▶︎×5</b> and look at how far apart the five runs end.</li>
+                    <li>
+                        Press <b>Run 5 times</b> and look at how far apart the five runs end. Save them
+                        as Program A.
+                    </li>
                     <li>
                         Now make it <b>closed loop</b>: steer with the gyro (yaw angle) to drive
                         straight, turn until the yaw reaches an angle, or drive until the colour
-                        sensor sees a line. Run ×5 again.
+                        sensor sees a line. Run Program B 5 times.
                     </li>
                     <li>
-                        Compare the spread. In the results window, <b>Keep as A</b> saves the first program's
-                        runs, so the next ▶︎×5 draws both and says which was more consistent.
+                        The results draw both programs' runs and say which one ended closer
+                        together.
                     </li>
                 </ol>
                 <p class="mt-2">
@@ -486,8 +502,8 @@
                 </p>
                 <p class="mt-2">
                     This site runs a modified version that adds lessons and homework, challenges,
-                    the shared library, realism settings, the ▶︎×5 path overlay, example programs,
-                    and this guide. Its full source code is at
+                    the shared library, realism settings, experiments that compare programs, example
+                    programs, and this guide. Its full source code is at
                     <a
                         class="text-blue-700 underline"
                         href="https://github.com/danmartinez78/lego-spike-simulator"
