@@ -15,7 +15,8 @@ import {
     type LibraryKind,
     type Lesson
 } from '$lib/library';
-import { challenges } from '$lib/spike/challenges';
+import { challenges, type Challenge } from '$lib/spike/challenges';
+import { lessonProblems } from '../../server/lesson-rules.mjs';
 
 export const lessonsOpen = writable(false);
 
@@ -65,6 +66,8 @@ export interface LessonProgress {
     steps: number[];
     // When the ticks last changed, so the newest copy wins when syncing.
     updated?: string;
+    // Best result of the lesson's check: runs passed out of 5, and whether it passed.
+    check?: { best: number; passed: boolean };
 }
 
 function loadProgress(): Record<string, LessonProgress> {
@@ -97,20 +100,61 @@ export function toggleStep(lessonName: string, step: number) {
     });
 }
 
+export function recordLessonCheck(lessonName: string, passes: number, needed: number) {
+    const all = get(lessonProgress);
+    const old = all[lessonName] ?? { steps: [] };
+    lessonProgress.set({
+        ...all,
+        [lessonName]: {
+            ...old,
+            check: {
+                best: Math.max(old.check?.best ?? 0, passes),
+                passed: !!old.check?.passed || passes >= needed
+            }
+        }
+    });
+}
+
 export type LessonStatus = 'new' | 'started' | 'done';
 
-// Done means every step ticked and, if the lesson has a challenge, the challenge passed.
+// Done means every step ticked, the lesson's check passed (if it has one) and
+// its challenge card completed (older lessons).
 export function lessonStatus(
     name: string,
     lesson: Lesson,
     progress: Record<string, LessonProgress>,
     passed: Record<string, { completed: boolean }>
 ): LessonStatus {
-    const ticked = progress[name]?.steps.filter((s) => s < lesson.steps.length).length ?? 0;
+    const mine = progress[name];
+    const ticked = mine?.steps.filter((s) => s < lesson.steps.length).length ?? 0;
+    const checkDone = !lesson.check || !!mine?.check?.passed;
     const challengeDone = !lesson.challenge || !!passed[lesson.challenge]?.completed;
-    if (ticked >= lesson.steps.length && challengeDone) return 'done';
-    if (ticked > 0 || (lesson.challenge && passed[lesson.challenge])) return 'started';
+    if (ticked >= lesson.steps.length && checkDone && challengeDone) return 'done';
+    if (ticked > 0 || mine?.check || (lesson.challenge && passed[lesson.challenge])) {
+        return 'started';
+    }
     return 'new';
+}
+
+// The lesson's check, in the shape the simulator's run checker uses.
+export function lessonCheck(name: string, lesson: Lesson): Challenge | undefined {
+    if (!lesson.check || !lesson.field) return undefined;
+    return {
+        id: `lesson:${name}`,
+        lesson: name,
+        title: lesson.title,
+        goal: lesson.summary ?? '',
+        field: lesson.field,
+        robot: lesson.robot,
+        realism: lesson.check.realism,
+        needed: lesson.check.needed,
+        check: lesson.check,
+        hints: []
+    };
+}
+
+export function isPublished(entry: LibraryEntry) {
+    return !!entry.lesson && !entry.lesson.draft;
 }
 
 export function challengeFor(lesson: Lesson | undefined) {
@@ -119,33 +163,12 @@ export function challengeFor(lesson: Lesson | undefined) {
 
 // ---- Checking a lesson ----------------------------------------------------
 
-// Returns what is wrong with a lesson, or undefined. Matches the server's checks.
-export function lessonProblem(value: unknown): string | undefined {
-    const lesson = value as Partial<Lesson> | undefined;
-    if (!lesson || typeof lesson !== 'object' || Array.isArray(lesson)) {
-        return 'A lesson must be a JSON object';
-    }
-    if (lesson.schema !== 'spike-lesson/1') return 'The lesson needs "schema": "spike-lesson/1"';
-    if (typeof lesson.title !== 'string' || lesson.title.trim() == '') {
-        return 'The lesson needs a title';
-    }
-    if (!Array.isArray(lesson.steps) || lesson.steps.length == 0) {
-        return 'The lesson needs at least one step';
-    }
-    for (const [i, step] of lesson.steps.entries()) {
-        if (!step || typeof step.text !== 'string' || step.text.trim() == '') {
-            return `Step ${i + 1} needs some text`;
-        }
-    }
-    for (const field of ['topic', 'summary', 'program', 'field', 'robot', 'challenge'] as const) {
-        if (lesson[field] !== undefined && typeof lesson[field] !== 'string') {
-            return `"${field}" must be text`;
-        }
-    }
-    if (lesson.challenge && !challenges.some((c) => c.id == lesson.challenge)) {
-        return `There is no challenge called "${lesson.challenge}"`;
-    }
-    return undefined;
+// Returns what is wrong with a lesson, or undefined. The same rules as the server.
+export function lessonProblem(
+    value: unknown,
+    mats?: Record<string, { width: number; height: number }>
+) {
+    return lessonProblems(value, { challenges: challenges.map((c) => c.id), mats }).errors[0];
 }
 
 // Library files the lesson points at that the library doesn't have.
@@ -221,7 +244,8 @@ export async function installLessonPackage(pkg: LessonPackage) {
     for (const f of pkg.files) {
         await saveEntry(f.kind, f.name, f.blob);
     }
-    await saveLesson(pkg.name, pkg.lesson);
+    // Imported lessons wait for a coach to look them over and publish them.
+    await saveLesson(pkg.name, { ...pkg.lesson, draft: true });
 }
 
 // Build a package with the lesson and the library files it uses.

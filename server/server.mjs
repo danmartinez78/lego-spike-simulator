@@ -8,6 +8,7 @@
 //   /api/library/{robots|scenes}/<file>   download one entry
 //   /api/admin/...     write operations (upload, delete, rename, set default, roster)
 //   /api/student/...   student sign-in with a roster code (TEAM_DIR)
+//   /api/lessons/...   lesson authoring guide, schema and checker (read-only)
 //
 // Writes are accepted from:
 //   - clients whose address starts with one of LAN_WRITE_PREFIXES
@@ -24,6 +25,8 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createTeam } from './team.mjs';
 import { createHomework } from './homework.mjs';
+import { lessonProblems } from './lesson-rules.mjs';
+import { createLessonsApi } from './lessons-api.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +(process.env.PORT ?? 8080);
@@ -119,31 +122,6 @@ function safeName(kind, name) {
     const ext = path.extname(base).toLowerCase();
     if (!KINDS[kind].includes(ext)) return undefined;
     return base;
-}
-
-// Basic checks for a lesson (see schemas/lesson-v1.json). Returns what is wrong, if anything.
-function lessonProblem(lesson) {
-    if (!lesson || typeof lesson !== 'object' || Array.isArray(lesson)) {
-        return 'A lesson must be a JSON object';
-    }
-    if (lesson.schema !== 'spike-lesson/1') return 'The lesson needs "schema": "spike-lesson/1"';
-    if (typeof lesson.title !== 'string' || lesson.title.trim() === '') {
-        return 'The lesson needs a title';
-    }
-    if (!Array.isArray(lesson.steps) || lesson.steps.length === 0) {
-        return 'The lesson needs at least one step';
-    }
-    for (const [i, step] of lesson.steps.entries()) {
-        if (!step || typeof step.text !== 'string' || step.text.trim() === '') {
-            return `Step ${i + 1} needs some text`;
-        }
-    }
-    for (const field of ['topic', 'summary', 'program', 'field', 'robot', 'challenge']) {
-        if (lesson[field] !== undefined && typeof lesson[field] !== 'string') {
-            return `"${field}" must be text`;
-        }
-    }
-    return undefined;
 }
 
 async function readDefaults() {
@@ -472,10 +450,12 @@ async function handleAdmin(req, res, parts) {
                 sendJson(res, 400, { error: 'Lesson card must be JSON' });
                 return;
             }
-            const problem = kind === 'lessons' ? lessonProblem(json) : undefined;
-            if (problem) {
-                sendJson(res, 400, { error: problem });
-                return;
+            if (kind === 'lessons') {
+                const { errors } = lessonProblems(json, await lessonsApi.context());
+                if (errors.length > 0) {
+                    sendJson(res, 400, { error: errors[0], errors });
+                    return;
+                }
             }
         }
         await fsp.writeFile(file + '.tmp', body);
@@ -520,6 +500,10 @@ async function handle(req, res) {
             return;
         }
         await homework.handleStudent(req, res, parts.slice(2), student);
+        return;
+    }
+    if (parts[0] === 'api' && parts[1] === 'lessons') {
+        await lessonsApi.handle(req, res, parts.slice(2));
         return;
     }
     if (parts[0] === 'api' && parts[1] === 'library') {
@@ -578,6 +562,14 @@ const team = createTeam({
     onRemove: (id) => homework.removeStudent(id)
 });
 const homework = createHomework({ teamDir: TEAM_DIR, team, sendJson, send, readBody });
+const lessonsApi = createLessonsApi({
+    libraryDir: LIBRARY_DIR,
+    docsDir: path.join(here, '..', 'docs'),
+    schemaFile: path.join(here, '..', 'schemas', 'lesson-v1.json'),
+    sendJson,
+    send,
+    readBody
+});
 
 await ensureLibrary();
 http.createServer((req, res) => {

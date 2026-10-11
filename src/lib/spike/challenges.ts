@@ -2,15 +2,12 @@
 
 import { get, writable } from 'svelte/store';
 import { type PresetName } from '$lib/spike/realism';
-import { type RunPath } from '$lib/spike/runs';
+import { type Check, type Zone } from '$lib/spike/checks';
 
-export type Target =
-    // Robot centre must end inside a circle (mat coordinates, mm).
-    | { kind: 'circle'; x: number; z: number; radius: number; label?: string }
-    // Robot centre must end inside a rectangle (mat coordinates, mm).
-    | { kind: 'box'; x1: number; z1: number; x2: number; z2: number; label?: string };
+export type Target = Zone;
 
-export interface Challenge {
+// A built-in challenge card. Its check is made from the target and heading.
+interface ChallengeCard {
     id: string;
     title: string;
     level: 1 | 2 | 3;
@@ -28,7 +25,25 @@ export interface Challenge {
     example?: string;
 }
 
-export const challenges: Challenge[] = [
+// Something a batch of runs is checked against: a challenge card, or a
+// lesson's check (then lesson is the lesson's file name).
+export interface Challenge {
+    id: string;
+    title: string;
+    level?: 1 | 2 | 3;
+    skill?: string;
+    goal: string;
+    field: string;
+    robot?: string;
+    realism: PresetName;
+    needed: number;
+    check: Check;
+    hints: string[];
+    example?: string;
+    lesson?: string;
+}
+
+const cards: ChallengeCard[] = [
     {
         id: 'first-square',
         title: 'Back where you started',
@@ -168,50 +183,16 @@ export const challenges: Challenge[] = [
     }
 ];
 
+export const challenges = cards.map((card): Challenge & ChallengeCard => ({
+    ...card,
+    check: {
+        realism: card.realism,
+        needed: card.needed,
+        stop: { zone: card.target, heading: card.heading }
+    }
+}));
+
 // ---- Checking ----------------------------------------------------------
-
-export function headingOf(rotation: number) {
-    return (((180 - rotation) % 360) + 360) % 360;
-}
-
-function angleDiff(a: number, b: number) {
-    let d = Math.abs(a - b) % 360;
-    if (d > 180) d = 360 - d;
-    return d;
-}
-
-export interface RunCheck {
-    passed: boolean;
-    inTarget: boolean;
-    headingOk: boolean;
-    // How far the robot centre ended from the target, in mm (0 when inside).
-    miss: number;
-    heading: number;
-}
-
-export function checkRun(challenge: Challenge, path: RunPath): RunCheck {
-    const end = path.points[path.points.length - 1];
-    if (!end) {
-        return { passed: false, inTarget: false, headingOk: false, miss: Infinity, heading: 0 };
-    }
-    const t = challenge.target;
-    let miss = 0;
-    if (t.kind == 'circle') {
-        miss = Math.max(0, Math.hypot(end.x - t.x, end.z - t.z) - t.radius);
-    } else {
-        const x1 = Math.min(t.x1, t.x2);
-        const x2 = Math.max(t.x1, t.x2);
-        const z1 = Math.min(t.z1, t.z2);
-        const z2 = Math.max(t.z1, t.z2);
-        miss = Math.hypot(Math.max(x1 - end.x, 0, end.x - x2), Math.max(z1 - end.z, 0, end.z - z2));
-    }
-    const inTarget = miss == 0;
-    const heading = headingOf(end.rotation);
-    const headingOk =
-        !challenge.heading ||
-        angleDiff(heading, challenge.heading.value) <= challenge.heading.tolerance;
-    return { passed: inTarget && headingOk && !path.timedOut, inTarget, headingOk, miss, heading };
-}
 
 // ---- Active challenge and progress -------------------------------------
 

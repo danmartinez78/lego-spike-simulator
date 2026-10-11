@@ -2,9 +2,12 @@
     // One lesson as students see it. The coach page uses it as a preview.
     import { createEventDispatcher } from 'svelte';
     import { Button } from 'flowbite-svelte';
-    import { AwardOutline, CheckOutline } from 'flowbite-svelte-icons';
+    import { AwardOutline, CheckOutline, ClipboardCheckOutline } from 'flowbite-svelte-icons';
     import type { Lesson } from '$lib/library';
     import { challengeFor, topicColour } from '$lib/lessons';
+    import { describeCheck } from '$lib/spike/checks';
+    import { presetLabels } from '$lib/spike/realism';
+    import CheckMap from '$components/CheckMap.svelte';
 
     export let lesson: Lesson;
     export let position = 0;
@@ -16,11 +19,14 @@
     export let preview = false;
     export let signedIn = false;
     export let handedInAt: string | undefined = undefined;
+    // Best result of the lesson's check, if the student tried it.
+    export let checkResult: { best: number; passed: boolean } | undefined = undefined;
 
     const dispatch = createEventDispatcher<{
         setup: void;
         toggle: number;
         challenge: void;
+        check: void;
         handin: void;
         openmine: void;
         signin: void;
@@ -141,6 +147,48 @@
         </ol>
     </section>
 
+    {#if lesson.check}
+        <section
+            class="flex flex-col gap-3 rounded-xl border px-4 py-3 {checkResult?.passed
+                ? 'border-green-300 bg-green-50/50'
+                : 'border-gray-200'}"
+            aria-label="Check"
+        >
+            <div class="flex flex-col sm:flex-row sm:items-start gap-3">
+                <ClipboardCheckOutline class="w-6 h-6 text-gray-500 shrink-0" />
+                <div class="flex-1 flex flex-col gap-1">
+                    <div class="text-xs text-gray-500">
+                        Check · {checkResult?.passed
+                            ? 'passed'
+                            : checkResult
+                              ? `best so far ${checkResult.best} of 5`
+                              : 'not tried yet'} · {presetLabels[lesson.check.realism] ??
+                            lesson.check.realism}
+                    </div>
+                    <ul class="text-sm text-gray-800 list-disc pl-5">
+                        {#each describeCheck(lesson.check) as line}
+                            <li>{line}</li>
+                        {/each}
+                    </ul>
+                </div>
+                {#if checkResult?.passed}
+                    <span class="text-xs rounded-full px-2 py-0.5 bg-green-100 text-green-800"
+                        >Passed</span
+                    >
+                {/if}
+                <Button
+                    size="sm"
+                    color={checkResult?.passed ? 'light' : 'green'}
+                    disabled={preview || busy || !lesson.field}
+                    on:click={() => dispatch('check')}>Check my robot</Button
+                >
+            </div>
+            <CheckMap field={lesson.field} check={lesson.check} maxHeight={200} />
+            <p class="text-xs text-gray-500">
+                Check my robot loads the field and robot but keeps your program. Then press ▶︎×5.
+            </p>
+        </section>
+    {/if}
     {#if challenge}
         <section
             class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-gray-200 px-4 py-3"

@@ -7,9 +7,11 @@
         ChartLineUpOutline,
         RulerCombinedOutline,
         MapPinAltOutline,
-        AwardOutline
+        AwardOutline,
+        ClipboardCheckOutline
     } from 'flowbite-svelte-icons';
     import { activeChallenge, challengesOpen } from '$lib/spike/challenges';
+    import { lessonsOpen } from '$lib/lessons';
     import PlaceDialog from '$components/PlaceDialog.svelte';
     import { graphOpen } from '$lib/spike/telemetry';
     import MeasureDialog from '$components/MeasureDialog.svelte';
@@ -347,14 +349,31 @@
                     </span>
                 {/if}
                 {#if $activeChallenge}
-                    <button
-                        class="text-xs px-2 py-1 rounded bg-green-100 text-green-900 flex items-center gap-1 hover:bg-green-200"
-                        on:click={() => challengesOpen.set(true)}
+                    <span class="text-xs rounded bg-green-100 text-green-900 flex items-center">
+                        <button
+                            class="px-2 py-1 flex items-center gap-1 rounded-l hover:bg-green-200"
+                            on:click={() =>
+                                $activeChallenge?.lesson
+                                    ? lessonsOpen.set(true)
+                                    : challengesOpen.set(true)}
+                        >
+                            {#if $activeChallenge.lesson}
+                                <ClipboardCheckOutline class="w-4 h-4" />
+                            {:else}
+                                <AwardOutline class="w-4 h-4" />
+                            {/if}
+                            {$activeChallenge.title}
+                        </button>
+                        <button
+                            class="px-1.5 py-1 rounded-r hover:bg-green-200"
+                            aria-label="Stop checking"
+                            on:click={() => activeChallenge.set(undefined)}>✕</button
+                        >
+                    </span>
+                    <Tooltip
+                        >{$activeChallenge.lesson ? 'Lesson check' : 'Challenge'} in progress. Press
+                        ▶︎×5 to check it.</Tooltip
                     >
-                        <AwardOutline class="w-4 h-4" />
-                        {$activeChallenge.title}
-                    </button>
-                    <Tooltip>Challenge in progress. Press ▶︎×5 to check it.</Tooltip>
                 {/if}
                 {#if $pinnedRuns}
                     <span class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-900">

@@ -44,10 +44,24 @@
     (class settings, team progress, homework):
     https://claude.ai/code/artifact/97bba12c-7c37-4104-81ae-94fe7e782868
 -   Lessons (clipboard button in the code panel): step-by-step activities with a
-    Set up button, tick-off steps and an optional challenge. Stored in
+    Set up button, tick-off steps and an optional check. Stored in
     `library/lessons/*.json`; imported and exported on the coach page as zip
-    packages, or written with the New lesson form (live student preview). Format: `docs/lessons.md`, `schemas/lesson-v1.json`. Starter
-    lessons come from `tools/examples/make_lessons.py`. Progress is per browser.
+    packages, or written with the New lesson form (live student preview). New
+    and imported lessons are drafts (`"draft": true`, hidden from students)
+    until a coach presses Publish. Format: `docs/lessons.md`,
+    `schemas/lesson-v1.json`; the validation rules live in
+    `server/lesson-rules.mjs`, shared by the server and the app. One sample
+    lesson ships in `presets/lessons/`.
+-   Checks (`src/lib/spike/checks.ts`): stop zone (+ heading), ordered
+    waypoints, stay-out zones, follow a line (colour sensor within a corridor
+    along a traced path), time limit and block rules, over 5 runs. Lessons draw
+    them on the mat in the lesson editor (`CheckEditor.svelte`); students press
+    Check my robot, then ▶×5. Built-in challenge cards use the same engine.
+    Runs now record each colour sensor's position and the run time.
+-   Agent authoring, no repo needed: `GET /api/lessons/guide` (docs/lessons.md
+    plus the live fields with mat sizes and robot starts, robots, programs),
+    `GET /api/lessons/schema`, and `POST /api/lessons/check` (validate a
+    lesson.json or package, nothing saved). These are public and read-only.
 -   Students (coach page, Students tab): paste names, each gets a random code
     (`WORD-WORD-NN`); print cut-out code cards with a sign-in QR, copy one
     student's link, or export a CSV for a mail merge. Stored in plain text in
@@ -57,7 +71,7 @@
     address per 10 minutes.
 -   Homework (coach page, Homework tab): pick lessons and an optional due date;
     students see it at the top of their Lessons window. Signed-in students'
-    ticked steps and challenge results sync to `/data/team/students/<id>/progress.json`
+    ticked steps, check results and challenge results sync to `/data/team/students/<id>/progress.json`
     (newer lesson wins, challenge results only improve), and Hand in saves the
     current program as `students/<id>/programs/<lesson>.llsp3`. The coach grid
     shows each student's status per lesson with a download link for the program.

@@ -315,7 +315,7 @@
         await run(
             `upload ${pkg.name}`,
             () => installLessonPackage(pkg),
-            `Added the lesson "${pkg.lesson.title}"${count > 0 ? ` and ${count} file${count == 1 ? '' : 's'} it uses` : ''}.`
+            `Added the lesson "${pkg.lesson.title}"${count > 0 ? ` and ${count} file${count == 1 ? '' : 's'} it uses` : ''} as a draft. Look it over, then press Publish.`
         );
         const missing = failed ? [] : missingFiles(pkg.lesson);
         if (missing.length > 0) {
@@ -333,6 +333,21 @@
         lessonValue = entry?.lesson;
         lessonOpen = true;
         message = '';
+    }
+
+    async function togglePublished(entry: LibraryEntry) {
+        const lesson = entry.lesson;
+        if (!lesson) return;
+        const next: Lesson = { ...lesson };
+        if (lesson.draft) delete next.draft;
+        else next.draft = true;
+        await run(
+            `lesson ${entry.name}`,
+            () => saveLesson(entry.name, next),
+            lesson.draft
+                ? `Published "${lesson.title}". Students can see it now.`
+                : `"${lesson.title}" is a draft again. Students can't see it.`
+        );
     }
 
     async function saveLessonForm(lesson: Lesson) {
@@ -658,6 +673,18 @@
                                                             : 's'}</span
                                                     >
                                                 {/if}
+                                                {#if entry.lesson?.draft}
+                                                    <span
+                                                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-gray-200 text-gray-700"
+                                                        >Draft</span
+                                                    >
+                                                {/if}
+                                                {#if entry.lesson?.check}
+                                                    <span
+                                                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-800"
+                                                        >Has a check</span
+                                                    >
+                                                {/if}
                                                 {#if active == 'programs' && !entry.card}
                                                     <span
                                                         class="text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800"
@@ -742,6 +769,15 @@
                                                     color="light"
                                                     disabled={busy != ''}
                                                     on:click={() => editLesson(entry)}>Edit</Button
+                                                >
+                                                <Button
+                                                    size="xs"
+                                                    color={entry.lesson?.draft ? 'green' : 'light'}
+                                                    disabled={busy != ''}
+                                                    on:click={() => togglePublished(entry)}
+                                                    >{entry.lesson?.draft
+                                                        ? 'Publish'
+                                                        : 'Unpublish'}</Button
                                                 >
                                                 <Button
                                                     size="xs"

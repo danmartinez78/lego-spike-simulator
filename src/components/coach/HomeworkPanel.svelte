@@ -133,7 +133,10 @@
         });
     }
 
-    $: groups = groupLessons($libraryStore.index.lessons);
+    // Drafts can't be assigned (unless they already were).
+    $: groups = groupLessons(
+        $libraryStore.index.lessons.filter((e) => !e.lesson?.draft || picked.includes(e.name))
+    );
     $: sorted = [...assignments].sort((a, b) => (b.due ?? '0000').localeCompare(a.due ?? '0000'));
     $: sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name));
 </script>
@@ -218,6 +221,9 @@
                                         on:change={() => toggle(entry.name)}
                                     />
                                     {entry.lesson?.title}
+                                    {#if entry.lesson?.draft}
+                                        <span class="text-xs text-gray-500">(draft)</span>
+                                    {/if}
                                 </label>
                             {/each}
                         </div>

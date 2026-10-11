@@ -1,0 +1,41 @@
+{
+    "schema": "spike-lesson/1",
+    "title": "Sample lesson: Drive a square",
+    "topic": "Basics",
+    "order": 1,
+    "summary": "Drive 30 cm, turn right, and repeat four times. A sample to copy when you write your own lessons.",
+    "steps": [
+        {
+            "title": "Open the starter program",
+            "text": "Press Set up. The robot drives forward 30 cm, spins a quarter turn, and does that four times, so it should end up back where it started."
+        },
+        {
+            "title": "Why it works",
+            "text": "A repeat block runs the blocks inside it again and again, so you only write one side of the square. The robot only counts how far its wheels turn. It never checks where it really is. That is called open loop."
+        },
+        {
+            "title": "Try it",
+            "text": "Change 30 to 50 to make a bigger square. Then change it back."
+        },
+        {
+            "title": "Check your robot",
+            "text": "Press Check my robot, then ▶︎×5. The robot must drive through the three blue corners in order and stop back in the green start ring, facing up the mat."
+        }
+    ],
+    "program": "01 Drive a square.llsp3",
+    "field": "Practice - start box.spk",
+    "check": {
+        "realism": "ideal",
+        "needed": 5,
+        "waypoints": [
+            { "kind": "circle", "x": -900, "z": 0, "radius": 60, "label": "1" },
+            { "kind": "circle", "x": -600, "z": 0, "radius": 60, "label": "2" },
+            { "kind": "circle", "x": -600, "z": 300, "radius": 60, "label": "3" }
+        ],
+        "stop": {
+            "zone": { "kind": "circle", "x": -900, "z": 300, "radius": 50, "label": "start" },
+            "heading": { "value": 0, "tolerance": 10 }
+        },
+        "blocks": { "use": ["repeat"] }
+    }
+}
