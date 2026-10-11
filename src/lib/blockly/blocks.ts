@@ -51,7 +51,7 @@ export const blocks = [
                             src: 'colours/CircleNone.svg',
                             width: 25,
                             height: 25,
-                            alt: 'Colour None'
+                            alt: 'Color None'
                         },
                         '-1'
                     ]
@@ -634,7 +634,7 @@ export const blocks = [
                             src: 'colours/CircleNone.svg',
                             width: 25,
                             height: 25,
-                            alt: 'Colour None'
+                            alt: 'Color None'
                         },
                         '-1'
                     ]
@@ -1467,7 +1467,7 @@ export const blocks = [
     },
     {
         type: 'flipperevents_whenColor',
-        message0: '%3 %1 when colour is %2',
+        message0: '%3 %1 when color is %2',
         args0: [
             {
                 type: 'input_value',
@@ -1723,7 +1723,7 @@ export const blocks = [
     },
     {
         type: 'flipperlight_centerButtonLight',
-        message0: '%2 set Centre Button Light to %1',
+        message0: '%2 set Center Button Light to %1',
         args0: [
             {
                 type: 'input_value',
@@ -3129,7 +3129,7 @@ export const blocks = [
     },
     {
         type: 'flippersensors_color',
-        message0: '%2 %1 colour',
+        message0: '%2 %1 color',
         args0: [
             {
                 type: 'input_value',
@@ -3224,7 +3224,7 @@ export const blocks = [
     },
     {
         type: 'flippersensors_isColor',
-        message0: '%3 %1 is colour %2 ?',
+        message0: '%3 %1 is color %2 ?',
         args0: [
             {
                 type: 'input_value',

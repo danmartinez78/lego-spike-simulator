@@ -42,12 +42,12 @@ export const blockRules = [
     },
     {
         id: 'maths',
-        label: 'Maths (+ − × ÷)',
+        label: 'Math (+ − × ÷)',
         types: ['operator_add', 'operator_subtract', 'operator_multiply', 'operator_divide']
     },
     {
         id: 'colour-sensor',
-        label: 'Colour sensor',
+        label: 'Color sensor',
         types: [
             'flippersensors_color',
             'flippersensors_isColor',

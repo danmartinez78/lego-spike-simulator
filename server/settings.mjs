@@ -10,7 +10,6 @@ import path from 'node:path';
 
 export const DEFAULT_SETTINGS = {
     teamName: '',
-    privacyContact: '',
     // What coaches' AI assistants see of students: team statistics per lesson
     // ('stats'), or each student's name and progress as well ('names').
     aiStudentNames: 'stats',
@@ -52,9 +51,6 @@ export function createSettings({ teamDir, sendJson, readBody }) {
     function clean(input, base) {
         const result = { ...base };
         if (input.teamName !== undefined) result.teamName = text(input.teamName, 60);
-        if (input.privacyContact !== undefined) {
-            result.privacyContact = text(input.privacyContact, 120);
-        }
         if (AI_CHOICES.includes(input.aiStudentNames)) result.aiStudentNames = input.aiStudentNames;
         if (SIGN_OUT_CHOICES.includes(Number(input.signOutAfterMinutes))) {
             result.signOutAfterMinutes = Number(input.signOutAfterMinutes);

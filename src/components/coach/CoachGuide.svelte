@@ -104,7 +104,7 @@
                 <p class="font-medium text-gray-900">Drafts and publishing</p>
                 <p>
                     New and imported lessons and challenges, and anything an AI assistant writes or
-                    sets as an assignment, start as a <b>draft</b>, marked with a grey Draft badge.
+                    sets as an assignment, start as a <b>draft</b>, marked with a gray Draft badge.
                     Students can't see drafts. Press
                     <b>Publish</b> when it's ready, and <b>Unpublish</b> to hide it again without losing
                     it.
@@ -326,8 +326,8 @@
                         and clear the code panel for the next person.
                     </li>
                     <li>
-                        <b>For families:</b> your team name and a privacy contact, which fill in the
-                        privacy page and a note you can copy and send home.
+                        <b>For families:</b> your team name, which goes on the privacy page and a note
+                        you can copy and send home.
                     </li>
                     <li>
                         <b>End of the season:</b> remove every student and their work in one go.

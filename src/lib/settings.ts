@@ -7,14 +7,12 @@ export type AiStudentNames = 'stats' | 'names';
 
 export interface TeamSettings {
     teamName: string;
-    privacyContact: string;
     aiStudentNames: AiStudentNames;
     signOutAfterMinutes: number;
 }
 
 export const DEFAULT_SETTINGS: TeamSettings = {
     teamName: '',
-    privacyContact: '',
     aiStudentNames: 'stats',
     signOutAfterMinutes: 0
 };
@@ -90,9 +88,6 @@ export function privacyAddress() {
 // A note coaches can send to families, filled in from the settings.
 export function parentNotice(settings: TeamSettings) {
     const team = settings.teamName || 'our team';
-    const contact = settings.privacyContact
-        ? ` If you have questions, or want your child's information removed, contact ${settings.privacyContact}.`
-        : " If you have questions, or want your child's information removed, contact the coach.";
     const ai = {
         names: "Coaches may use an AI assistant to help plan lessons; it can see students' names and progress.",
         stats: 'Coaches may use an AI assistant to help plan lessons; it sees team statistics only, never names or anything about one student.'
@@ -100,11 +95,11 @@ export function parentNotice(settings: TeamSettings) {
     return [
         `Hello families,`,
         ``,
-        `${team} uses the LEGO SPIKE Simulator (${new URL('./', window.location.href).href}) to practise programming robots online. It runs in the browser: there's nothing to install, no sign-up or email address, no ads and no cookies for students. Cloudflare, which delivers the site, counts visits; the team only sees totals.`,
+        `${team} uses the LEGO SPIKE Simulator (${new URL('./', window.location.href).href}) to practice programming robots online. It runs in the browser: there's nothing to install, no sign-up or email address, no ads and no cookies for students. Cloudflare, which delivers the site, counts visits; the team only sees totals.`,
         ``,
         `Each student gets a sign-in code from the coach. When they sign in, the site keeps the name the coach entered (first name and last initial), their progress on lessons and challenges, and the programs they hand in. Only the team's coaches can see this. ${ai}`,
         ``,
-        `Everything is deleted when a student leaves the team, and at the end of the season.${contact}`,
+        `Everything is deleted when a student leaves the team, and at the end of the season. If you have questions, or want your child's information removed, ask the coach.`,
         ``,
         `The full privacy notice is at ${privacyAddress()}.`
     ].join('\n');

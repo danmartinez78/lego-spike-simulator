@@ -65,10 +65,10 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
     const examples = [
         'Write a lesson on driving a square with a repeat block, with a check that the robot ends back in the start box.',
         'Look at the "Sample lesson - Drive a square" lesson and make a harder version that uses a My Block.',
-        'Make three short lessons on the colour sensor for beginners, using the colour stops field.',
+        'Make three short lessons on the color sensor for beginners, using the color stops field.',
         'Make a tricky challenge on the mini missions field: drive through P1, avoid the walls and park in P2 within 20 seconds.',
         'Look at the "Hit target A" challenge and make an easier version for beginners.',
-        'Set the two colour sensor lessons as prep for next meeting, due next Friday.',
+        'Set the two color sensor lessons as prep for next meeting, due next Friday.',
         "Who hasn't finished this week's assignment yet?",
         'Make a line-following field with an oval, a figure eight and a finish box, then a challenge on it.'
     ];

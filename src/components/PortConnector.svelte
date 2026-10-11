@@ -22,7 +22,7 @@
         '54696p01': 'Medium motor',
         '68488': 'Small motor',
         '54675': 'Large motor',
-        '37308': 'Colour sensor',
+        '37308': 'Color sensor',
         '37316': 'Distance sensor',
         '37312': 'Force sensor'
     };

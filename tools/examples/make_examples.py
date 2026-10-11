@@ -116,7 +116,7 @@ p.script(
         wait_until(is_color('0', 'B')),
         stop_moving(),
     ],
-    comment='Start moving and keep going. The wait block keeps checking the colour '
+    comment='Start moving and keep going. The wait block keeps checking the color '
     'sensor. As soon as it sees black, the program moves on and stops the robot.',
 )
 save(
@@ -126,8 +126,8 @@ save(
         'title': 'Stop at a black line',
         'topic': 'Sensors',
         'order': 3,
-        'summary': 'Drive until the colour sensor sees black.',
-        'what': 'The robot drives forward and stops the moment its colour sensor (port B) '
+        'summary': 'Drive until the color sensor sees black.',
+        'what': 'The robot drives forward and stops the moment its color sensor (port B) '
         'sees the black line.',
         'why': 'Instead of guessing a distance, the robot watches the mat. It does not '
         'matter if it started a little early or late: it always stops at the line. '

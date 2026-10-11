@@ -193,8 +193,8 @@
                         <span class="font-medium text-red-700">Red</span>: places to stay out of.
                     </li>
                     <li>
-                        <span class="font-medium text-amber-700">Orange</span>: a line for the
-                        colour sensor to follow.
+                        <span class="font-medium text-amber-700">Orange</span>: a line for the color
+                        sensor to follow.
                     </li>
                 </ul>
                 <p class="mt-2">
@@ -387,8 +387,8 @@
                     </li>
                     <li>
                         Use real SPIKE Prime parts: the hub, the large, medium and small motors, the
-                        colour, distance and force sensors, and the 56 mm or 88 mm wheels. Parts
-                        that only look similar won't move or sense.
+                        color, distance and force sensors, and the 56 mm or 88 mm wheels. Parts that
+                        only look similar won't move or sense.
                     </li>
                     <li>Press <b>Build</b> in the simulator, then <b>Open robot</b>.</li>
                     <li>
@@ -422,9 +422,9 @@
                     can save the new position as the field's start.
                 </p>
                 <p class="mt-2">
-                    The library has <b>practice fields</b> for building skills: a line course,
-                    colour stops, accuracy targets, a turn rose, a wall course and mini missions.
-                    For the wall course, choose the robot <i>Driving Base 3 with distance sensor</i>
+                    The library has <b>practice fields</b> for building skills: a line course, color
+                    stops, accuracy targets, a turn rose, a wall course and mini missions. For the
+                    wall course, choose the robot <i>Driving Base 3 with distance sensor</i>
                     (sensor on port F). Sensors can see obstacles, but the robot drives through them
                     rather than pushing them.
                 </p>
@@ -460,7 +460,7 @@
                     </li>
                     <li>
                         Now make it <b>closed loop</b>: steer with the gyro (yaw angle) to drive
-                        straight, turn until the yaw reaches an angle, or drive until the colour
+                        straight, turn until the yaw reaches an angle, or drive until the color
                         sensor sees a line. Run Program B 5 times.
                     </li>
                     <li>

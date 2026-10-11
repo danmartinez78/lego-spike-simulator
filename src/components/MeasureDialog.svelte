@@ -401,7 +401,7 @@
                 >
             </div>
             <p class="text-xs text-gray-500">
-                Distances are measured from the centre of the robot. Turns are what the robot needs
+                Distances are measured from the center of the robot. Turns are what the robot needs
                 to do at each point, so they match a TurnRight / TurnLeft My Block that resets the
                 yaw angle each time.
             </p>

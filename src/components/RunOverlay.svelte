@@ -218,7 +218,7 @@
                 {/if}
                 <span>● start · ✕ end</span>
                 {#if challenge?.check.follow}
-                    <span>Lines show where the colour sensor went</span>
+                    <span>Lines show where the color sensor went</span>
                 {/if}
             </div>
         </div>

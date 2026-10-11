@@ -209,7 +209,7 @@
                 <Input
                     id="lesson-summary"
                     bind:value={summary}
-                    placeholder="Drive until the colour sensor sees black."
+                    placeholder="Drive until the color sensor sees black."
                 />
             </div>
 

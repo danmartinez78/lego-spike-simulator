@@ -8,24 +8,24 @@ the library, where lessons, challenges and students can use it straight away.
 
 ## Coordinates
 
--   Millimetres, with the origin in the middle of the mat.
+-   Millimeters, with the origin in the middle of the mat.
 -   `x` runs across the mat (right is positive), `z` runs down it (towards the
     bottom edge is positive), like reading a picture of the mat.
 -   Headings are degrees clockwise from "up the mat": 0 is up, 90 right,
     180 down, 270 left.
 -   The usual mat is 2360 × 1140 mm (an FLL-size table), so x goes from -1180 to
     1180 and z from -570 to 570.
--   The robot (Driving Base 3) is about 160 mm wide and 200 mm long. Its colour
+-   The robot (Driving Base 3) is about 160 mm wide and 200 mm long. Its color
     sensor sits near the front, in the middle.
 
-## Colours
+## Colors
 
-Mat colours: `white`, `black`, `red`, `blue`, `green`, `yellow`, `grey`,
-`lightgrey`, or `#rrggbb`. The named colours are the ones the simulator's
-colour sensor reports reliably, so use them for anything a robot should detect.
+Mat colors: `white`, `black`, `red`, `blue`, `green`, `yellow`, `grey`,
+`lightgrey`, or `#rrggbb`. The named colors are the ones the simulator's
+color sensor reports reliably, so use them for anything a robot should detect.
 Lines to follow work best black, 20 mm wide, on white.
 
-Wall and block colours (LEGO bricks): `black`, `blue`, `green`, `red`,
+Wall and block colors (LEGO bricks): `black`, `blue`, `green`, `red`,
 `yellow`, `white`, `grey`, `darkgrey`.
 
 ## The description
@@ -49,33 +49,33 @@ Wall and block colours (LEGO bricks): `black`, `blue`, `green`, `red`,
 | `title`      |          | Printed along the top of the mat, and the file name unless `save_field` gets one                         |
 | `width`      |          | mm, 300 to 4000 (default 2360)                                                                           |
 | `height`     |          | mm, 300 to 3000 (default 1140)                                                                           |
-| `background` |          | Mat colour (default white)                                                                               |
-| `start`      | yes      | `x`, `z`, `heading` of the robot's centre; `box: false` hides the start box, `label` changes its "START" |
+| `background` |          | Mat color (default white)                                                                                |
+| `start`      | yes      | `x`, `z`, `heading` of the robot's center; `box: false` hides the start box, `label` changes its "START" |
 | `shapes`     |          | Up to 500 things drawn on the mat, in order (later ones on top)                                          |
 | `objects`    |          | Up to 30 walls and blocks standing on the mat                                                            |
 
 ### Shapes
 
-Every shape has a `type` and an optional `colour` (black by default, grey for
+Every shape has a `type` and an optional `colour` (black by default, gray for
 text).
 
 | `type`    | Fields                                                                                    | Draws                                                                                                             |
 | --------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `line`    | `points` `[[x, z], ...]`, `width` (mm, default 20)                                        | A thick line through the points, with round ends and corners                                                      |
 | `arc`     | `x`, `z`, `radius`, `from`, `to` (headings), `width`                                      | Part of a circle, from heading `from` to `to` (0 to 360 is a full ring; `to` less than `from` goes anticlockwise) |
-| `rect`    | `x`, `z` (centre), `width` (across), `height` (along), `angle`, `outline`                 | A filled rectangle, turned clockwise by `angle`; with `outline` (mm) just its border                              |
+| `rect`    | `x`, `z` (center), `width` (across), `height` (along), `angle`, `outline`                 | A filled rectangle, turned clockwise by `angle`; with `outline` (mm) just its border                              |
 | `circle`  | `x`, `z`, `radius`, `outline`                                                             | A filled circle, or a ring `outline` mm wide                                                                      |
 | `polygon` | `points`, `outline`                                                                       | A filled shape with those corners, or its border                                                                  |
-| `text`    | `x`, `z` (centre), `text` (up to 60 characters), `size` (letter height in mm, default 40) | Capital letters, digits and common punctuation                                                                    |
+| `text`    | `x`, `z` (center), `text` (up to 60 characters), `size` (letter height in mm, default 40) | Capital letters, digits and common punctuation                                                                    |
 
 ### Objects
 
 | `type`  | Fields                                                                                                                                   | Notes                                                                                                  |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `wall`  | `x`, `z` (centre), `length` (mm), `heading` (0 runs up and down the mat), `layers` (default 6, about 58 mm high), `colour` (default red) | Fixed in place. A distance sensor sees it. Built from 1×8 bricks, so the length rounds to 64 mm steps. |
+| `wall`  | `x`, `z` (center), `length` (mm), `heading` (0 runs up and down the mat), `layers` (default 6, about 58 mm high), `colour` (default red) | Fixed in place. A distance sensor sees it. Built from 1×8 bricks, so the length rounds to 64 mm steps. |
 | `block` | `x`, `z`, `layers` (default 3), `colour` (default blue)                                                                                  | A loose cube about 64 mm across that the robot can push                                                |
 
-Walls also leave a light grey footprint on the mat so they show from above.
+Walls also leave a light gray footprint on the mat so they show from above.
 
 ## Tips
 

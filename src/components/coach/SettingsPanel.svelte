@@ -181,18 +181,6 @@
                         placeholder="Team 12345 RoboRaptors"
                     />
                 </div>
-                <div class="flex flex-col gap-1 max-w-md">
-                    <Label for="privacy-contact">Who families contact about privacy</Label>
-                    <Input
-                        id="privacy-contact"
-                        size="sm"
-                        bind:value={settings.privacyContact}
-                        placeholder="Coach Dan, coach@example.org"
-                    />
-                    <span class="text-xs text-gray-500"
-                        >Shown on the privacy page. Leave it empty to say "your coach".</span
-                    >
-                </div>
             </fieldset>
 
             {#if canEdit}

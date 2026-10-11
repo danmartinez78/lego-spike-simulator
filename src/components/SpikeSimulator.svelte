@@ -540,7 +540,7 @@
                     {#each sensors as sensor}
                         {#if sensor.type == 'light'}
                             <span class="text-sm mt-2">
-                                Port {sensor.port}: Colour sensor
+                                Port {sensor.port}: Color sensor
                             </span>
                             <ColourSensor
                                 id={`sensor_view_${sensor.port}`}
