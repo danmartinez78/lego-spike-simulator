@@ -1,0 +1,35 @@
+{
+  "schema": "spike-lesson/1",
+  "title": "Follow a line (smooth)",
+  "topic": "Sensors",
+  "order": 5,
+  "summary": "Steer more when far from the edge, less when close.",
+  "steps": [
+    {
+      "title": "Open the starter program",
+      "text": "The robot follows the edge of the oval smoothly instead of zig-zagging."
+    },
+    {
+      "title": "Why it works",
+      "text": "The program works out an error: how far the light reading is from the edge value of 50. It steers by an amount that is proportional to the error. Engineers call this a P controller (P for proportional). The number 0.4 is the gain. Too small and the robot drifts off the line, too big and it wobbles."
+    },
+    {
+      "title": "Try it 1",
+      "text": "Try a gain of 0.2 and 0.8. Which follows best?"
+    },
+    {
+      "title": "Try it 2",
+      "text": "Raise the base speed from 25 to 40. Do you need a different gain?"
+    },
+    {
+      "title": "Try it 3",
+      "text": "Compare with the simple line follower using ▶×5."
+    },
+    {
+      "title": "Try it 4",
+      "text": "Gains that work in the simulator are a starting point. Tune them on the real robot."
+    }
+  ],
+  "program": "05 Follow a line (smooth).llsp3",
+  "field": "Practice - line oval.spk"
+}

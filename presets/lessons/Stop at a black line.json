@@ -1,0 +1,36 @@
+{
+  "schema": "spike-lesson/1",
+  "title": "Stop at a black line",
+  "topic": "Sensors",
+  "order": 3,
+  "summary": "Drive until the colour sensor sees black.",
+  "steps": [
+    {
+      "title": "Open the starter program",
+      "text": "The robot drives forward and stops the moment its colour sensor (port B) sees the black line."
+    },
+    {
+      "title": "Why it works",
+      "text": "Instead of guessing a distance, the robot watches the mat. It does not matter if it started a little early or late: it always stops at the line. Using a sensor to decide when to stop is called closed loop."
+    },
+    {
+      "title": "Try it 1",
+      "text": "Make it faster by changing the speed to 60. Does it still stop on the line?"
+    },
+    {
+      "title": "Try it 2",
+      "text": "After it stops, add a move backward 5 cm so it lines up just before the line."
+    },
+    {
+      "title": "Try it 3",
+      "text": "With Realism on Realistic, press ▶×5. Compare the end points with Drive a square."
+    },
+    {
+      "title": "Take the challenge",
+      "text": "Start the challenge, then press ▶︎×5. The simulator checks your runs for you."
+    }
+  ],
+  "program": "03 Stop at a line.llsp3",
+  "field": "Practice - start box.spk",
+  "challenge": "stop-green"
+}

@@ -1,0 +1,51 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://spike.robodan.dev/schemas/lesson-v1.json",
+    "title": "LEGO SPIKE Simulator lesson",
+    "description": "A lesson students work through in the simulator's Lessons window. See docs/lessons.md.",
+    "type": "object",
+    "required": ["schema", "title", "steps"],
+    "properties": {
+        "schema": { "const": "spike-lesson/1" },
+        "title": { "type": "string", "minLength": 1, "description": "Shown as the lesson's name." },
+        "topic": {
+            "type": "string",
+            "description": "Groups lessons, for example Basics, Sensors, Gyro or Missions."
+        },
+        "order": { "type": "number", "description": "Position within the topic, lowest first." },
+        "summary": { "type": "string", "description": "One line shown in the lesson list." },
+        "steps": {
+            "type": "array",
+            "minItems": 1,
+            "description": "What the student does, in order. Students tick each one off.",
+            "items": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                    "title": { "type": "string" },
+                    "text": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Plain text. Blank lines start a new paragraph."
+                    }
+                }
+            }
+        },
+        "program": {
+            "type": "string",
+            "description": "Starter program: a .llsp3 file name in the library (or in programs/ in the zip)."
+        },
+        "field": {
+            "type": "string",
+            "description": "Field to practise on: a .spk scene name in the library (or in scenes/ in the zip)."
+        },
+        "robot": {
+            "type": "string",
+            "description": "Robot to use: a .mpd or .ldr name in the library (or in robots/ in the zip)."
+        },
+        "challenge": {
+            "type": "string",
+            "description": "Id of a built-in challenge the simulator checks, for example first-square."
+        }
+    }
+}

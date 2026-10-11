@@ -43,7 +43,9 @@ const KINDS = {
     robots: ['.mpd', '.ldr'],
     scenes: ['.spk'],
     // Example programs, each with an optional lesson card in <name>.llsp3.json
-    programs: ['.llsp3', '.json']
+    programs: ['.llsp3', '.json'],
+    // Lessons: <name>.json following schemas/lesson-v1.json
+    lessons: ['.json']
 };
 
 const MIME = {
@@ -115,6 +117,31 @@ function safeName(kind, name) {
     return base;
 }
 
+// Basic checks for a lesson (see schemas/lesson-v1.json). Returns what is wrong, if anything.
+function lessonProblem(lesson) {
+    if (!lesson || typeof lesson !== 'object' || Array.isArray(lesson)) {
+        return 'A lesson must be a JSON object';
+    }
+    if (lesson.schema !== 'spike-lesson/1') return 'The lesson needs "schema": "spike-lesson/1"';
+    if (typeof lesson.title !== 'string' || lesson.title.trim() === '') {
+        return 'The lesson needs a title';
+    }
+    if (!Array.isArray(lesson.steps) || lesson.steps.length === 0) {
+        return 'The lesson needs at least one step';
+    }
+    for (const [i, step] of lesson.steps.entries()) {
+        if (!step || typeof step.text !== 'string' || step.text.trim() === '') {
+            return `Step ${i + 1} needs some text`;
+        }
+    }
+    for (const field of ['topic', 'summary', 'program', 'field', 'robot', 'challenge']) {
+        if (lesson[field] !== undefined && typeof lesson[field] !== 'string') {
+            return `"${field}" must be text`;
+        }
+    }
+    return undefined;
+}
+
 async function readDefaults() {
     try {
         return JSON.parse(await fsp.readFile(path.join(LIBRARY_DIR, 'defaults.json'), 'utf8'));
@@ -130,14 +157,28 @@ async function writeDefaults(defaults) {
 }
 
 async function listLibrary() {
-    const result = { robots: [], scenes: [], programs: [], defaults: await readDefaults() };
+    const result = {
+        robots: [],
+        scenes: [],
+        programs: [],
+        lessons: [],
+        defaults: await readDefaults()
+    };
     for (const kind of Object.keys(KINDS)) {
         const dir = path.join(LIBRARY_DIR, kind);
         const names = fs.existsSync(dir) ? await fsp.readdir(dir) : [];
         for (const name of names.sort((a, b) => a.localeCompare(b))) {
-            if (!safeName(kind, name) || name.toLowerCase().endsWith('.json')) continue;
+            if (!safeName(kind, name)) continue;
+            if (kind !== 'lessons' && name.toLowerCase().endsWith('.json')) continue;
             const stat = await fsp.stat(path.join(dir, name));
             const entry = { name, size: stat.size, modified: stat.mtime.toISOString() };
+            if (kind === 'lessons') {
+                try {
+                    entry.lesson = JSON.parse(await fsp.readFile(path.join(dir, name), 'utf8'));
+                } catch {
+                    continue;
+                }
+            }
             if (kind === 'programs') {
                 try {
                     entry.card = JSON.parse(
@@ -411,10 +452,16 @@ async function handleAdmin(req, res, parts) {
             return;
         }
         if (isCard) {
+            let json;
             try {
-                JSON.parse(body.toString('utf8'));
+                json = JSON.parse(body.toString('utf8'));
             } catch {
                 sendJson(res, 400, { error: 'Lesson card must be JSON' });
+                return;
+            }
+            const problem = kind === 'lessons' ? lessonProblem(json) : undefined;
+            if (problem) {
+                sendJson(res, 400, { error: problem });
                 return;
             }
         }
@@ -429,7 +476,7 @@ async function handleAdmin(req, res, parts) {
         }
         const defaults = await readDefaults();
         const field = kind === 'robots' ? 'robot' : 'scene';
-        if (defaults[field] === name) {
+        if ((kind === 'robots' || kind === 'scenes') && defaults[field] === name) {
             delete defaults[field];
             await writeDefaults(defaults);
         }
