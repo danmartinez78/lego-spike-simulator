@@ -7,7 +7,15 @@
     import SceneThumb from '$components/coach/SceneThumb.svelte';
     import LessonCardEditor from '$components/coach/LessonCardEditor.svelte';
     import { askConfirm } from '$lib/confirm';
+    import { ClipboardCheckOutline } from 'flowbite-svelte-icons';
     import { challenges } from '$lib/spike/challenges';
+    import {
+        exportLessonPackage,
+        installLessonPackage,
+        missingFiles,
+        packageConflicts,
+        readLessonPackage
+    } from '$lib/lessons';
     import {
         libraryStore,
         refreshLibrary,
@@ -29,6 +37,14 @@
         extensions: string[];
         upload: string;
     }[] = [
+        {
+            kind: 'lessons',
+            title: 'Lessons',
+            icon: '',
+            empty: 'No lessons yet. Import a lesson package (.zip) or a lesson .json file.',
+            extensions: ['.zip', '.json'],
+            upload: 'Import a lesson (.zip or .json)'
+        },
         {
             kind: 'robots',
             title: 'Robots',
@@ -56,7 +72,7 @@
     ];
 
     let loading = true;
-    let active: LibraryKind = 'robots';
+    let active: LibraryKind = 'lessons';
     let message = '';
     let failed = false;
     let busy = '';
@@ -68,7 +84,7 @@
 
     $: section = sections.find((s) => s.kind == active)!;
     $: entries = $libraryStore.index[active] ?? [];
-    $: hasDefault = active != 'programs';
+    $: hasDefault = active == 'robots' || active == 'scenes';
     $: sceneNames = $libraryStore.index.scenes.map((s) => s.name);
     $: topics = [
         ...new Set(
@@ -84,6 +100,18 @@
                 : kind == 'robots'
                   ? c.robot == name
                   : c.example == name
+        );
+    }
+
+    function lessonsUsing(kind: LibraryKind, name: string) {
+        return $libraryStore.index.lessons.filter((l) =>
+            kind == 'programs'
+                ? l.lesson?.program == name
+                : kind == 'scenes'
+                  ? l.lesson?.field == name
+                  : kind == 'robots'
+                    ? l.lesson?.robot == name
+                    : false
         );
     }
 
@@ -162,11 +190,16 @@
     }
 
     async function remove(kind: LibraryKind, entry: LibraryEntry) {
-        const what = entry.card?.title ? `"${entry.card.title}" (${entry.name})` : entry.name;
-        const used = challengesUsing(kind, entry.name);
+        const title = entry.card?.title ?? entry.lesson?.title;
+        const what = title ? `"${title}" (${entry.name})` : entry.name;
+        const used = kind == 'lessons' ? [] : challengesUsing(kind, entry.name);
+        const lessons = lessonsUsing(kind, entry.name);
         let extra = kind == 'programs' ? ' Its lesson card is deleted too.' : '';
         if (used.length > 0) {
             extra += ` ${used.length} challenge card${used.length == 1 ? '' : 's'} (${used.map((c) => c.title).join(', ')}) use${used.length == 1 ? 's' : ''} it.`;
+        }
+        if (lessons.length > 0) {
+            extra += ` ${lessons.length} lesson${lessons.length == 1 ? '' : 's'} (${lessons.map((l) => l.lesson?.title).join(', ')}) use${lessons.length == 1 ? 's' : ''} it.`;
         }
         if (
             await askConfirm(
@@ -229,8 +262,66 @@
         fileInput.click();
     }
 
+    async function importLesson(file: File) {
+        let pkg;
+        try {
+            pkg = await readLessonPackage(file);
+        } catch (e) {
+            failed = true;
+            message = `Couldn't import ${file.name}: ${(e as Error).message}`;
+            return;
+        }
+        const replaced = packageConflicts(pkg);
+        if (
+            replaced.length > 0 &&
+            !(await askConfirm(
+                `Importing "${pkg.lesson.title}" replaces what's already in the library: ${replaced.join(', ')}. Import anyway?`,
+                { confirmLabel: 'Replace', danger: true }
+            ))
+        ) {
+            return;
+        }
+        const count = pkg.files.length;
+        await run(
+            `upload ${pkg.name}`,
+            () => installLessonPackage(pkg),
+            `Added the lesson "${pkg.lesson.title}"${count > 0 ? ` and ${count} file${count == 1 ? '' : 's'} it uses` : ''}.`
+        );
+        const missing = failed ? [] : missingFiles(pkg.lesson);
+        if (missing.length > 0) {
+            message += ` It also needs ${missing.join(', ')}, which the library doesn't have yet.`;
+        }
+    }
+
+    async function downloadLesson(entry: LibraryEntry) {
+        const lesson = entry.lesson;
+        if (!lesson) return;
+        await run(
+            `download ${entry.name}`,
+            async () => {
+                const blob = await exportLessonPackage(lesson);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = baseOf(entry.name) + '.zip';
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+            },
+            `Downloaded the lesson package for "${lesson.title}".`
+        );
+    }
+
     async function upload(kind: LibraryKind, file: File | undefined) {
         if (!file) return;
+        if (kind == 'lessons') {
+            const extension = extensionOf(file.name);
+            if (extension != '.zip' && extension != '.json') {
+                failed = true;
+                message = `${file.name} isn't a lesson package (.zip) or lesson (.json).`;
+                return;
+            }
+            await importLesson(file);
+            return;
+        }
         const info = sections.find((s) => s.kind == kind)!;
         const extension = extensionOf(file.name);
         if (!info.extensions.includes(extension)) {
@@ -338,9 +429,9 @@
                 <div>
                     <h2 class="text-lg font-semibold">Shared library</h2>
                     <p class="text-gray-600 text-sm">
-                        What students see in the simulator's Library and Examples windows. There is
-                        one default robot and one default scene; they load when someone opens the
-                        simulator.
+                        What students see in the simulator's Lessons, Library and Examples windows.
+                        There is one default robot and one default scene; they load when someone
+                        opens the simulator.
                     </p>
                 </div>
 
@@ -358,7 +449,11 @@
                                 message = '';
                             }}
                         >
-                            <img src={s.icon} alt="" width="20" height="20" />
+                            {#if s.icon}
+                                <img src={s.icon} alt="" width="20" height="20" />
+                            {:else}
+                                <ClipboardCheckOutline class="w-5 h-5" />
+                            {/if}
                             {s.title}
                             <span
                                 class="text-xs rounded-full px-2 py-0.5 {active == s.kind
@@ -408,6 +503,8 @@
                             {#each entries as entry (entry.name)}
                                 {@const usedBy = challengesUsing(active, entry.name)}
                                 {@const cards = cardsUsing(active, entry.name)}
+                                {@const lessons = lessonsUsing(active, entry.name)}
+                                {@const missing = entry.lesson ? missingFiles(entry.lesson) : []}
                                 <li class="flex flex-row flex-wrap items-center gap-3 px-4 py-3">
                                     {#if active == 'scenes'}
                                         <SceneThumb name={entry.name} modified={entry.modified} />
@@ -444,13 +541,25 @@
                                             <div
                                                 class="font-medium flex flex-row items-center gap-2 flex-wrap"
                                             >
-                                                {entry.card?.title ?? entry.name}
+                                                {entry.card?.title ??
+                                                    entry.lesson?.title ??
+                                                    entry.name}
                                                 {#if isDefault(active, entry.name)}
                                                     <span
                                                         class="text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800"
                                                         >{active == 'robots'
                                                             ? 'Default robot'
                                                             : 'Default scene'}</span
+                                                    >
+                                                {/if}
+                                                {#if missing.length > 0}
+                                                    <span
+                                                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800"
+                                                        title="Missing: {missing.join(', ')}"
+                                                        >Missing {missing.length} file{missing.length ==
+                                                        1
+                                                            ? ''
+                                                            : 's'}</span
                                                     >
                                                 {/if}
                                                 {#if active == 'programs' && !entry.card}
@@ -465,9 +574,30 @@
                                             {#if entry.card}
                                                 {entry.card.topic} · {entry.name} ·
                                             {/if}
+                                            {#if entry.lesson}
+                                                {entry.lesson.topic || 'Other'} · {entry.lesson
+                                                    .steps.length} step{entry.lesson.steps.length ==
+                                                1
+                                                    ? ''
+                                                    : 's'} ·
+                                            {/if}
                                             {size(entry.size)} · changed {changed(entry.modified)}
                                         </div>
-                                        {#if usedBy.length > 0 || cards.length > 0}
+                                        {#if entry.lesson && (entry.lesson.program || entry.lesson.field || entry.lesson.robot || entry.lesson.challenge)}
+                                            <div class="text-sm text-gray-500">
+                                                Uses {[
+                                                    entry.lesson.program,
+                                                    entry.lesson.field,
+                                                    entry.lesson.robot,
+                                                    entry.lesson.challenge
+                                                        ? `the challenge "${challenges.find((c) => c.id == entry.lesson?.challenge)?.title ?? entry.lesson.challenge}"`
+                                                        : ''
+                                                ]
+                                                    .filter((x) => x)
+                                                    .join(', ')}
+                                            </div>
+                                        {/if}
+                                        {#if usedBy.length > 0 || cards.length > 0 || lessons.length > 0}
                                             <div class="text-sm text-gray-500">
                                                 Used by
                                                 {[
@@ -476,10 +606,13 @@
                                                         : '',
                                                     cards.length > 0
                                                         ? `${cards.length} lesson card${cards.length == 1 ? '' : 's'}`
+                                                        : '',
+                                                    lessons.length > 0
+                                                        ? `${lessons.length} lesson${lessons.length == 1 ? '' : 's'}`
                                                         : ''
                                                 ]
                                                     .filter((x) => x)
-                                                    .join(' and ')}
+                                                    .join(', ')}
                                             </div>
                                         {/if}
                                     </div>
@@ -507,18 +640,29 @@
                                                         : 'Make default'}</Button
                                                 >
                                             {/if}
-                                            <Button
-                                                size="xs"
-                                                color="light"
-                                                disabled={busy != ''}
-                                                on:click={() => startRename(entry)}>Rename</Button
-                                            >
-                                            <Button
-                                                size="xs"
-                                                color="light"
-                                                href={downloadUrl(active, entry.name)}
-                                                download={entry.name}>Download</Button
-                                            >
+                                            {#if active == 'lessons'}
+                                                <Button
+                                                    size="xs"
+                                                    color="light"
+                                                    disabled={busy != ''}
+                                                    on:click={() => downloadLesson(entry)}
+                                                    >Download package</Button
+                                                >
+                                            {:else}
+                                                <Button
+                                                    size="xs"
+                                                    color="light"
+                                                    disabled={busy != ''}
+                                                    on:click={() => startRename(entry)}
+                                                    >Rename</Button
+                                                >
+                                                <Button
+                                                    size="xs"
+                                                    color="light"
+                                                    href={downloadUrl(active, entry.name)}
+                                                    download={entry.name}>Download</Button
+                                                >
+                                            {/if}
                                             <Button
                                                 size="xs"
                                                 color="red"

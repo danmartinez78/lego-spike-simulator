@@ -220,6 +220,14 @@ export const activeChallenge = writable<Challenge | undefined>(undefined);
 // Whether the Challenges window is open, so either panel can open it.
 export const challengesOpen = writable(false);
 
+// Challenge to show when the window next opens, for example from a lesson.
+export const requestedChallenge = writable<string | undefined>(undefined);
+
+export function openChallenge(id?: string) {
+    requestedChallenge.set(id);
+    challengesOpen.set(true);
+}
+
 const progressKey = 'spike-sim-challenges';
 
 export interface Progress {

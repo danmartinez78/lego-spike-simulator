@@ -1,0 +1,36 @@
+{
+  "schema": "spike-lesson/1",
+  "title": "Mission template",
+  "topic": "Missions",
+  "order": 8,
+  "summary": "A starting point for a mission run built from reliable My Blocks.",
+  "steps": [
+    {
+      "title": "Open the starter program",
+      "text": "Drives 40 cm, turns right, drives 30 cm and backs up, using the DriveStraight and TurnRight My Blocks."
+    },
+    {
+      "title": "Why it works",
+      "text": "Competition runs are long lists of moves. Building them from tested My Blocks makes them easier to read, change and debug. When something goes wrong, you fix the My Block once and every step improves."
+    },
+    {
+      "title": "Try it 1",
+      "text": "Plan a path to a mission model on the field, then change the steps to drive there."
+    },
+    {
+      "title": "Try it 2",
+      "text": "Add a \"Stop at a black line\" step to line up before an important move."
+    },
+    {
+      "title": "Try it 3",
+      "text": "Press ▶×5 on Realistic. If the end points spread out, which step needs a sensor?"
+    },
+    {
+      "title": "Take the challenge",
+      "text": "Start the challenge, then press ▶︎×5. The simulator checks your runs for you."
+    }
+  ],
+  "program": "08 Mission template.llsp3",
+  "field": "Practice - start box.spk",
+  "challenge": "target-b"
+}

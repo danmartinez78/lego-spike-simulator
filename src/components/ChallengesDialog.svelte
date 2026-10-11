@@ -7,6 +7,7 @@
         challenges,
         activeChallenge,
         progressStore,
+        requestedChallenge,
         type Challenge
     } from '$lib/spike/challenges';
     import { applyPreset, presetLabels } from '$lib/spike/realism';
@@ -91,7 +92,10 @@
         if (open) {
             message = '';
             refreshLibrary();
-            if ($activeChallenge) choose($activeChallenge);
+            const requested = challenges.find((c) => c.id == $requestedChallenge);
+            requestedChallenge.set(undefined);
+            if (requested) choose(requested);
+            else if ($activeChallenge) choose($activeChallenge);
         }
     }
 
