@@ -76,20 +76,26 @@ export function signOut() {
     studentStore.set(undefined);
 }
 
+// Sign in from a #code=... link. Returns false when the address has no code.
+async function signInFromLink() {
+    const match = window.location.hash.match(/code=([A-Za-z0-9-]+)/);
+    if (!match) return false;
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    try {
+        await signIn(match[1]);
+    } catch {
+        // Show the code in the sign-in window so the student sees what went wrong.
+        pendingCode.set(match[1]);
+    }
+    studentDialogOpen.set(true);
+    return true;
+}
+
 // On startup: sign in from a #code=... link, or check the remembered code still works.
 export async function startStudentSession() {
-    const match = window.location.hash.match(/code=([A-Za-z0-9-]+)/);
-    if (match) {
-        history.replaceState(null, '', window.location.pathname + window.location.search);
-        try {
-            await signIn(match[1]);
-        } catch {
-            // Show the code in the sign-in window so the student sees what went wrong.
-            pendingCode.set(match[1]);
-        }
-        studentDialogOpen.set(true);
-        return;
-    }
+    // A link opened while the simulator is already open only changes the hash.
+    window.addEventListener('hashchange', () => void signInFromLink());
+    if (await signInFromLink()) return;
     const current = loadStudent();
     if (!current) return;
     try {

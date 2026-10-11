@@ -8,6 +8,7 @@
     import LessonCardEditor from '$components/coach/LessonCardEditor.svelte';
     import LessonEditor from '$components/coach/LessonEditor.svelte';
     import TeamPanel from '$components/coach/TeamPanel.svelte';
+    import HomeworkPanel from '$components/coach/HomeworkPanel.svelte';
     import CodeCards from '$components/coach/CodeCards.svelte';
     import { tick } from 'svelte';
     import type { Student } from '$lib/team';
@@ -80,7 +81,13 @@
     ];
 
     let loading = true;
-    let view: 'students' | 'library' = 'library';
+    type View = 'students' | 'library' | 'homework';
+    let view: View = 'library';
+    const views: { id: View; label: string }[] = [
+        { id: 'library', label: 'Library and lessons' },
+        { id: 'homework', label: 'Homework' },
+        { id: 'students', label: 'Students' }
+    ];
     let printing: Student[] = [];
 
     async function printCards(students: Student[]) {
@@ -487,20 +494,21 @@
                 class="flex flex-row gap-1 border-b border-gray-200 -mt-2"
                 aria-label="Coach tools"
             >
-                {#each [{ id: 'library', label: 'Library and lessons' }, { id: 'students', label: 'Students' }] as item}
+                {#each views as item}
                     <button
                         class="px-4 py-2 -mb-px border-b-2 text-sm font-medium {view == item.id
                             ? 'border-blue-600 text-blue-800'
                             : 'border-transparent text-gray-600 hover:text-gray-900'}"
                         aria-current={view == item.id ? 'page' : undefined}
-                        on:click={() => (view = item.id == 'students' ? 'students' : 'library')}
-                        >{item.label}</button
+                        on:click={() => (view = item.id)}>{item.label}</button
                     >
                 {/each}
             </nav>
         {/if}
         {#if !loading && $libraryStore.available && $libraryStore.writer && view == 'students'}
             <TeamPanel on:print={(e) => printCards(e.detail)} />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'homework'}
+            <HomeworkPanel />
         {:else if !loading && $libraryStore.available && $libraryStore.writer}
             <section class="flex flex-col gap-3">
                 <div>

@@ -63,6 +63,8 @@ const progressKey = 'spike-sim-lessons';
 export interface LessonProgress {
     // Indexes of the steps the student ticked.
     steps: number[];
+    // When the ticks last changed, so the newest copy wins when syncing.
+    updated?: string;
 }
 
 function loadProgress(): Record<string, LessonProgress> {
@@ -89,7 +91,8 @@ export function toggleStep(lessonName: string, step: number) {
     lessonProgress.set({
         ...all,
         [lessonName]: {
-            steps: steps.includes(step) ? steps.filter((s) => s != step) : [...steps, step]
+            steps: steps.includes(step) ? steps.filter((s) => s != step) : [...steps, step],
+            updated: new Date().toISOString()
         }
     });
 }

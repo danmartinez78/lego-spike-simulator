@@ -54,7 +54,15 @@
     `/data/team/roster.json` (`server/team.mjs`). Students sign in with the
     Sign in button in the code panel or a `/#code=...` link; `/api/student` is
     deliberately outside Cloudflare Access and limits wrong codes to 10 per
-    address per 10 minutes. Progress is not synced to the server yet.
+    address per 10 minutes.
+-   Homework (coach page, Homework tab): pick lessons and an optional due date;
+    students see it at the top of their Lessons window. Signed-in students'
+    ticked steps and challenge results sync to `/data/team/students/<id>/progress.json`
+    (newer lesson wins, challenge results only improve), and Hand in saves the
+    current program as `students/<id>/programs/<lesson>.llsp3`. The coach grid
+    shows each student's status per lesson with a download link for the program.
+    Signing out clears the browser's copy of the progress. Code: `server/homework.mjs`,
+    `src/lib/homework.ts`, `HomeworkPanel.svelte`.
 -   The code panel autosaves the program in the browser (`src/lib/blockly/autosave.ts`,
     localStorage key `spike-sim-program`) and restores it on the next visit.
 -   Welcome screen, guide (? button) with block reference, About/credits.
@@ -70,7 +78,7 @@
 -   Robots drive through obstacles (no object physics); tilt/gesture sensors
     aren't simulated; acceleration/stop-method blocks are ignored.
 -   No robot builder in the site (build in BrickLink Studio / LeoCAD, load .io/.mpd).
--   Progress on challenges is per browser.
+-   Progress on lessons and challenges is per browser unless the student signs in.
 -   The BIOGLOW wireframe in the live library is FIRST material (site only, not in the repo).
 
 ## Open items
