@@ -48,6 +48,8 @@ export interface Lesson {
     check?: Check;
     // Drafts are only shown to coaches.
     draft?: boolean;
+    // Set by the server when a coach's AI assistant saved it through /mcp.
+    author?: string;
 }
 
 export interface LibraryEntry {

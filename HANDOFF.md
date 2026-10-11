@@ -67,7 +67,8 @@
     lessons as drafts stamped with the coach's identity (`"author"`). Same
     sign-in as `/api/admin`; for people it needs a separate Access app on
     `/mcp` with Managed OAuth, whose AUD is added to `CF_ACCESS_AUD`
-    (comma-separated). Next: homework and asset tools, then challenges stored
+    (comma-separated). The coach page's AI assistants tab explains connecting an
+    assistant and the package-and-import route for chatbots without MCP. Next: homework and asset tools, then challenges stored
     on the server.
 -   Students (coach page, Students tab): paste names, each gets a random code
     (`WORD-WORD-NN`); print cut-out code cards with a sign-in QR, copy one

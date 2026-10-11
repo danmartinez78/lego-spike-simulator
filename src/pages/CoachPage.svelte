@@ -9,6 +9,7 @@
     import LessonEditor from '$components/coach/LessonEditor.svelte';
     import TeamPanel from '$components/coach/TeamPanel.svelte';
     import HomeworkPanel from '$components/coach/HomeworkPanel.svelte';
+    import AgentsPanel from '$components/coach/AgentsPanel.svelte';
     import CodeCards from '$components/coach/CodeCards.svelte';
     import { tick } from 'svelte';
     import type { Student } from '$lib/team';
@@ -81,12 +82,13 @@
     ];
 
     let loading = true;
-    type View = 'students' | 'library' | 'homework';
+    type View = 'students' | 'library' | 'homework' | 'agents';
     let view: View = 'library';
     const views: { id: View; label: string }[] = [
         { id: 'library', label: 'Library and lessons' },
         { id: 'homework', label: 'Homework' },
-        { id: 'students', label: 'Students' }
+        { id: 'students', label: 'Students' },
+        { id: 'agents', label: 'AI assistants' }
     ];
     let printing: Student[] = [];
 
@@ -506,12 +508,13 @@
             </div>
         {:else}
             <nav
-                class="flex flex-row gap-1 border-b border-gray-200 -mt-2"
+                class="flex flex-row gap-1 border-b border-gray-200 -mt-2 overflow-x-auto"
                 aria-label="Coach tools"
             >
                 {#each views as item}
                     <button
-                        class="px-4 py-2 -mb-px border-b-2 text-sm font-medium {view == item.id
+                        class="px-4 py-2 -mb-px border-b-2 text-sm font-medium whitespace-nowrap {view ==
+                        item.id
                             ? 'border-blue-600 text-blue-800'
                             : 'border-transparent text-gray-600 hover:text-gray-900'}"
                         aria-current={view == item.id ? 'page' : undefined}
@@ -524,6 +527,13 @@
             <TeamPanel on:print={(e) => printCards(e.detail)} />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'homework'}
             <HomeworkPanel />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'agents'}
+            <AgentsPanel
+                on:lessons={() => {
+                    view = 'library';
+                    active = 'lessons';
+                }}
+            />
         {:else if !loading && $libraryStore.available && $libraryStore.writer}
             <section class="flex flex-col gap-3">
                 <div>
@@ -677,6 +687,14 @@
                                                     <span
                                                         class="text-xs font-medium rounded-full px-2 py-0.5 bg-gray-200 text-gray-700"
                                                         >Draft</span
+                                                    >
+                                                {/if}
+                                                {#if entry.lesson?.author}
+                                                    <span
+                                                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-purple-100 text-purple-800"
+                                                        title="Saved by an AI assistant for this coach"
+                                                        >From an assistant · {entry.lesson
+                                                            .author}</span
                                                     >
                                                 {/if}
                                                 {#if entry.lesson?.check}
