@@ -137,6 +137,18 @@ export async function setDefault(kind: LibraryKind, name: string | null) {
     await adminRequest('PUT', 'defaults', JSON.stringify({ [field]: name }));
 }
 
+export async function renameEntry(kind: LibraryKind, from: string, to: string) {
+    await adminRequest('POST', 'rename', JSON.stringify({ kind, from, to }));
+}
+
+export async function saveLessonCard(name: string, card: LessonCard) {
+    await adminRequest(
+        'PUT',
+        `programs/${encodeURIComponent(name + '.json')}`,
+        new Blob([JSON.stringify(card, null, 2)], { type: 'application/json' })
+    );
+}
+
 export async function saveProgram(name: string, blob: Blob, card: LessonCard) {
     await adminRequest('PUT', `programs/${encodeURIComponent(name)}`, blob);
     await adminRequest(
