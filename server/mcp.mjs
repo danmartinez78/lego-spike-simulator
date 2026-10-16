@@ -16,6 +16,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { buildField, fieldProblems } from './fields.mjs';
 import { readZip } from './zip.mjs';
+import { fingerprint, UploadError } from './uploads.mjs';
 
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
@@ -25,7 +26,8 @@ To write either: read get_lesson_guide first (it explains both formats and lists
 Assignments: list_assignments shows each assignment with team statistics (and each student's progress if the head coach allows it); save_assignment makes a draft assignment of published lessons, optionally typed as practice or prep for the next meeting, that a coach publishes on the Assignments tab.
 Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models.
 Missions: list_missions, save_mission and add_mission_version manage the team's missions and every version of the team's program for them. They are team code, kept apart from the public library; only coaches and signed-in students see them.
-Programs: upload_program adds a .llsp3 program (from the SPIKE app or the simulator) to the program catalog that lessons, challenges and missions use; with an explanation card it is also an example in students' Examples window. These are available to everyone as soon as they are saved.`;
+Programs: upload_program adds a .llsp3 program (from the SPIKE app or the simulator) to the program catalog that lessons, challenges and missions use; with an explanation card it is also an example in students' Examples window. These are available to everyone as soon as they are saved.
+Files: if you can run commands (curl), use start_upload instead of content_base64: it gives a one-time link; send the file to it (curl -T), then pass its upload_id to upload_program, add_mission_version, upload_field or upload_robot. Every upload returns the file's size and sha256, so you can check it arrived intact.`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
 const object = (properties, required = []) => ({ type: 'object', properties, required });
@@ -243,16 +245,23 @@ const ASSET_TOOLS = [
         annotations: { readOnlyHint: true }
     },
     {
+        name: 'start_upload',
+        description:
+            'Make a one-time link to send a file to, for upload_program, add_mission_version, upload_field or upload_robot. Send the raw file to url with PUT (curl -sS --fail -T file url) before it expires (10 minutes), then pass upload_id to the tool instead of content_base64. Much faster and safer than base64 for any file you can reach from a command line.',
+        inputSchema: object({})
+    },
+    {
         name: 'upload_field',
         description:
-            "Add an existing .spk scene file (from the simulator's Save → Save scene, or another team) to the library, base64-encoded.",
+            "Add an existing .spk scene file (from the simulator's Save → Save scene, or another team) to the library: send it with start_upload and pass upload_id, or give it base64-encoded.",
         inputSchema: object(
             {
                 name: { type: 'string', description: 'File name ending in .spk' },
-                content_base64: { type: 'string', description: 'The .spk file, base64' },
+                upload_id: { type: 'string', description: 'The file, sent with start_upload' },
+                content_base64: { type: 'string', description: 'Or the .spk file, base64' },
                 replace: { type: 'boolean', description: 'Replace your own field with this name' }
             },
-            ['name', 'content_base64']
+            ['name']
         )
     },
     {
@@ -263,6 +272,7 @@ const ASSET_TOOLS = [
             {
                 name: { type: 'string', description: 'File name ending in .mpd or .ldr' },
                 content: { type: 'string', description: 'The model as LDraw text' },
+                upload_id: { type: 'string', description: 'Or the file, sent with start_upload' },
                 content_base64: { type: 'string', description: 'Or the file, base64' },
                 replace: { type: 'boolean', description: 'Replace your own robot with this name' }
             },
@@ -272,11 +282,12 @@ const ASSET_TOOLS = [
     {
         name: 'upload_program',
         description:
-            "Add a SPIKE program (.llsp3, saved from the SPIKE app or the simulator) to the public program catalog, base64-encoded. Anyone who opens the site can download catalog programs, so put the team's own mission code in add_mission_version instead. Lessons and challenges can use catalog programs, and a mission can point at one as FIRST's guided mission. With a card (an explanation), it is also shown in students' Examples window, unless the card has hidden: true.",
+            "Add a SPIKE program (.llsp3, saved from the SPIKE app or the simulator) to the public program catalog: send it with start_upload and pass upload_id, or give it base64-encoded. Anyone who opens the site can download catalog programs, so put the team's own mission code in add_mission_version instead. Lessons and challenges can use catalog programs, and a mission can point at one as FIRST's guided mission. With a card (an explanation), it is also shown in students' Examples window, unless the card has hidden: true.",
         inputSchema: object(
             {
                 name: { type: 'string', description: 'File name ending in .llsp3' },
-                content_base64: { type: 'string', description: 'The .llsp3 file, base64' },
+                upload_id: { type: 'string', description: 'The file, sent with start_upload' },
+                content_base64: { type: 'string', description: 'Or the .llsp3 file, base64' },
                 card: {
                     type: 'object',
                     description:
@@ -307,7 +318,7 @@ const ASSET_TOOLS = [
                 },
                 replace: { type: 'boolean', description: 'Replace your own program with this name' }
             },
-            ['name', 'content_base64']
+            ['name']
         )
     },
     {
@@ -398,11 +409,12 @@ const MISSION_TOOLS = [
     {
         name: 'add_mission_version',
         description:
-            "Add a version of the team's program for a mission: a .llsp3 file (from the SPIKE app or the simulator), base64-encoded, with a note on what it is or what changed. Versions are never overwritten. saved (YYYY-MM-DD) records the day the team saved it, if not today. team_run: true makes it the version used at the competition.",
+            "Add a version of the team's program for a mission: a .llsp3 file (from the SPIKE app or the simulator), sent with start_upload (upload_id) or base64-encoded, with a note on what it is or what changed. Versions are never overwritten. saved (YYYY-MM-DD) records the day the team saved it, if not today. team_run: true makes it the version used at the competition.",
         inputSchema: object(
             {
                 id: { type: 'string', description: 'Mission id from list_missions' },
-                content_base64: { type: 'string', description: 'The .llsp3 file, base64' },
+                upload_id: { type: 'string', description: 'The file, sent with start_upload' },
+                content_base64: { type: 'string', description: 'Or the .llsp3 file, base64' },
                 note: { type: 'string', description: 'What it is, like "Saturday meeting"' },
                 saved: {
                     type: 'string',
@@ -413,7 +425,7 @@ const MISSION_TOOLS = [
                     description: 'Use it at the competition (optional)'
                 }
             },
-            ['id', 'content_base64', 'note']
+            ['id', 'note']
         )
     },
     {
@@ -466,6 +478,7 @@ export function createMcp({
     homework,
     missions,
     authors,
+    uploads,
     readDefaults,
     sendJson,
     send,
@@ -681,8 +694,9 @@ export function createMcp({
         return { saved: true, mission: result.mission, warnings: result.warnings };
     };
 
-    tools.add_mission_version = async ({ id, content_base64, note, saved, team_run }, who) => {
-        const data = decode(content_base64);
+    tools.add_mission_version = async (args, who) => {
+        const { id, note, saved, team_run } = args;
+        const data = fileArg(args, who);
         let files;
         try {
             files = readZip(data);
@@ -700,20 +714,24 @@ export function createMcp({
         if (result.error) throw new ToolError(result.error);
         let mission = result.mission;
         if (team_run === true) mission = (await missions.setCurrent(id, result.version.id)).mission;
+        usedUpload(args);
         return {
             saved: true,
             version: result.version,
-            teamRun: mission.current === result.version.id
+            teamRun: mission.current === result.version.id,
+            ...fingerprint(data)
         };
     };
 
     tools.get_mission_version = async ({ id, version }) => {
         const found = await missions.versionFile(id, version);
         if (!found) throw new ToolError('There is no such mission version. Use list_missions.');
+        const data = await fsp.readFile(found.file);
         return {
             mission: `M${found.mission.number} ${found.mission.title}`,
             version: found.version,
-            content_base64: (await fsp.readFile(found.file)).toString('base64')
+            ...fingerprint(data),
+            content_base64: data.toString('base64')
         };
     };
 
@@ -812,11 +830,52 @@ export function createMcp({
     }
 
     function decode(base64) {
-        const data = Buffer.from(String(base64 ?? ''), 'base64');
+        if (base64 === undefined || base64 === null || base64 === '') {
+            throw new ToolError('Give the file as upload_id (from start_upload) or content_base64');
+        }
+        const data = Buffer.from(String(base64), 'base64');
         if (data.length === 0) throw new ToolError('content_base64 is empty or not base64');
         if (data.length > MAX_ASSET) throw new ToolError('That file is too large (15 MB at most)');
         return data;
     }
+
+    /** The file a tool was given: an upload_id from start_upload, or content_base64. */
+    function fileArg({ upload_id, content_base64 }, who) {
+        if (typeof upload_id === 'string' && upload_id.length > 0) {
+            try {
+                return uploads.get(upload_id, who);
+            } catch (e) {
+                if (e instanceof UploadError) throw new ToolError(e.message);
+                throw e;
+            }
+        }
+        return decode(content_base64);
+    }
+
+    /** Once a tool has saved an uploaded file, its link is used up. */
+    function usedUpload({ upload_id }) {
+        if (typeof upload_id === 'string' && upload_id.length > 0) uploads.done(upload_id);
+    }
+
+    tools.start_upload = async (_args, who, { origin }) => {
+        let link;
+        try {
+            link = uploads.start(who);
+        } catch (e) {
+            if (e instanceof UploadError) throw new ToolError(e.message);
+            throw e;
+        }
+        const url = `${origin}/api/upload/${link.token}`;
+        return {
+            upload_id: link.token,
+            url,
+            method: 'PUT',
+            expires: link.expires,
+            max_bytes: link.maxBytes,
+            example: `curl -sS --fail -T "program.llsp3" "${url}"`,
+            next: 'The reply to the PUT gives the size and sha256 it received. Then call upload_program, add_mission_version, upload_field or upload_robot with this upload_id instead of content_base64.'
+        };
+    };
 
     tools.save_field = async ({ field, name, replace }, who) => {
         const { errors, warnings } = fieldProblems(field);
@@ -874,8 +933,9 @@ export function createMcp({
         return result;
     };
 
-    tools.upload_field = async ({ name, content_base64, replace }, who) => {
-        const data = decode(content_base64);
+    tools.upload_field = async (args, who) => {
+        const { name, replace } = args;
+        const data = fileArg(args, who);
         let files;
         try {
             files = readZip(data);
@@ -893,21 +953,24 @@ export function createMcp({
         const file = assetName('scenes', name);
         await checkWrite('scenes', file, replace, who);
         await writeAsset('scenes', file, data, who);
+        usedUpload(args);
         return {
             saved: true,
             name: file,
+            ...fingerprint(data),
             warnings: files.has('mat.jpg') ? [] : ['The scene has no mat picture (mat.jpg)']
         };
     };
 
-    tools.upload_robot = async ({ name, content, content_base64, replace }, who) => {
+    tools.upload_robot = async (args, who) => {
+        const { name, content, replace } = args;
         let data;
         if (typeof content === 'string' && content.length > 0) {
             data = Buffer.from(content, 'utf8');
             if (data.length > MAX_ASSET)
                 throw new ToolError('That model is too large (15 MB at most)');
         } else {
-            data = decode(content_base64);
+            data = fileArg(args, who);
         }
         const text = data.toString('utf8');
         if (text.includes('\0') || !/^\s*1\s/m.test(text)) {
@@ -918,15 +981,18 @@ export function createMcp({
         const file = assetName('robots', name);
         await checkWrite('robots', file, replace, who);
         await writeAsset('robots', file, data, who);
+        usedUpload(args);
         return {
             saved: true,
             name: file,
+            ...fingerprint(data),
             next: 'Open it in the simulator from the Robot button to check its hub, motors and sensors are on the right ports.'
         };
     };
 
-    tools.upload_program = async ({ name, content_base64, card, replace }, who) => {
-        const data = decode(content_base64);
+    tools.upload_program = async (args, who) => {
+        const { name, card, replace } = args;
+        const data = fileArg(args, who);
         let files;
         try {
             files = readZip(data);
@@ -986,9 +1052,11 @@ export function createMcp({
         } else {
             await fsp.rm(cardFile, { force: true });
         }
+        usedUpload(args);
         return {
             saved: true,
             name: file,
+            ...fingerprint(data),
             inExamples: !!cardJson && !cardJson.hidden,
             ...(cardJson ? { card: cardJson } : {})
         };
@@ -1027,11 +1095,11 @@ export function createMcp({
         };
     }
 
-    async function callTool(params, who) {
+    async function callTool(params, who, context) {
         const tool = tools[params?.name];
         if (!tool) return { error: { code: -32602, message: `Unknown tool: ${params?.name}` } };
         try {
-            const value = await tool(params.arguments ?? {}, who);
+            const value = await tool(params.arguments ?? {}, who, context);
             const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
             const result = { content: [{ type: 'text', text }] };
             if (typeof value !== 'string') result.structuredContent = value;
@@ -1043,7 +1111,7 @@ export function createMcp({
         }
     }
 
-    async function answer(message, who) {
+    async function answer(message, who, context) {
         const { id, method, params } = message ?? {};
         const isRequest = id !== undefined && id !== null;
         let outcome;
@@ -1070,13 +1138,33 @@ export function createMcp({
         } else if (method === 'tools/list') {
             outcome = { result: { tools: TOOLS } };
         } else if (method === 'tools/call') {
-            outcome = await callTool(params, who);
+            outcome = await callTool(params, who, context);
         } else if (method.startsWith('notifications/')) {
             return undefined;
         } else {
             outcome = { error: { code: -32601, message: `Method not found: ${method}` } };
         }
         return isRequest ? { jsonrpc: '2.0', id, ...outcome } : undefined;
+    }
+
+    // The address this request came in on, as the coach's assistant sees it
+    // (behind Cloudflare: the public https hostname), for start_upload links.
+    function publicOrigin(req) {
+        const first = (value) =>
+            String(value ?? '')
+                .split(',')[0]
+                .trim();
+        let proto = first(req.headers['x-forwarded-proto']);
+        if (!proto) {
+            try {
+                proto = JSON.parse(String(req.headers['cf-visitor'] ?? '{}')).scheme ?? '';
+            } catch {
+                proto = '';
+            }
+        }
+        if (proto !== 'https' && proto !== 'http') proto = req.socket?.encrypted ? 'https' : 'http';
+        const host = first(req.headers['x-forwarded-host']) || first(req.headers.host);
+        return `${proto}://${host}`;
     }
 
     async function handle(req, res) {
@@ -1115,10 +1203,11 @@ export function createMcp({
             });
             return;
         }
+        const context = { origin: publicOrigin(req) };
         const batch = Array.isArray(body);
         const replies = [];
         for (const message of batch ? body : [body]) {
-            const reply = await answer(message, who);
+            const reply = await answer(message, who, context);
             if (reply) replies.push(reply);
         }
         if (replies.length === 0) {
