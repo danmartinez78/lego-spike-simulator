@@ -94,7 +94,7 @@ export const blockHelp: Record<string, BlockHelp> = {
     },
     flippermove_movementSpeed: {
         title: 'set movement speed',
-        text: 'Sets how fast the robot drives in later movement blocks, from 0 to 100%.',
+        text: 'Sets how fast the robot drives in later movement blocks, from 0 to 100%. The robot starts at 50%.',
         tip: 'Fast is not always better: the robot slides more when stopping and sensors have less time to react.'
     },
     flippermove_setMovementPair: {

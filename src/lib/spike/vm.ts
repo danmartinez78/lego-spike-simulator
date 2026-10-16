@@ -2361,7 +2361,7 @@ export class Hub {
     eventHandler: HubEventHandler | undefined;
     buttonColour: string;
     wheels: Wheel[];
-    moveSpeed: number; // percent; 0 until a program sets it
+    moveSpeed: number; // percent; the hub starts at 50%
     moveDistance: number; // in mm
     movePair1: PortType;
     movePair2: PortType;
@@ -2386,7 +2386,7 @@ export class Hub {
             F: new Port('none')
         };
         this.wheels = [];
-        this.moveSpeed = 0;
+        this.moveSpeed = 50;
         this.moveDistance = 175;
         this.movePair1 = 'A';
         this.movePair2 = 'B';
@@ -2406,7 +2406,7 @@ export class Hub {
         this.ports.D.reset();
         this.ports.E.reset();
         this.ports.F.reset();
-        this.moveSpeed = 0;
+        this.moveSpeed = 50;
         this.moveDistance = 175;
         this.movePair1 = 'A';
         this.movePair2 = 'B';
@@ -2430,7 +2430,7 @@ export class Hub {
             F: new Port('none')
         };
         this.wheels = [];
-        this.moveSpeed = 0;
+        this.moveSpeed = 50;
         this.movePair1 = 'A';
         this.movePair2 = 'B';
         this.moveDistance = 175;

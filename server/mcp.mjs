@@ -7,8 +7,8 @@
 // stamped with that coach's identity and starts as a draft, so publishing stays
 // a click on the coach page, and an assistant can only replace or delete its
 // own coach's drafts. Lessons, challenges and assignments work the same way.
-// Robots and fields (maps) have no drafts: they go straight into the library
-// for everyone, so an assistant can only add new ones and replace or delete
+// Robots, fields (maps) and example programs have no drafts: they go straight
+// into the library for everyone, so an assistant can only add new ones and replace or delete
 // the ones its coach's assistant added (server/authors.mjs keeps track).
 
 import fs from 'node:fs';
@@ -23,7 +23,9 @@ const INSTRUCTIONS = `Tools for coaches using the LEGO SPIKE simulator.
 Lessons are step-by-step activities; challenges are short goals with hints and no steps. Both can have a check that the simulator runs over five runs.
 To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).
 Assignments: list_assignments shows each assignment with team statistics (and each student's progress if the head coach allows it); save_assignment makes a draft assignment of published lessons, optionally typed as practice or prep for the next meeting, that a coach publishes on the Assignments tab.
-Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models. These are available to everyone as soon as they are saved.`;
+Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models.
+Missions: list_missions, save_mission and add_mission_version manage the team's missions and every version of the team's program for them. They are team code, kept apart from the public library; only coaches and signed-in students see them.
+Programs: upload_program adds a .llsp3 program (from the SPIKE app or the simulator) to the program catalog that lessons, challenges and missions use; with an explanation card it is also an example in students' Examples window. These are available to everyone as soon as they are saved.`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
 const object = (properties, required = []) => ({ type: 'object', properties, required });
@@ -268,6 +270,54 @@ const ASSET_TOOLS = [
         )
     },
     {
+        name: 'upload_program',
+        description:
+            "Add a SPIKE program (.llsp3, saved from the SPIKE app or the simulator) to the public program catalog, base64-encoded. Anyone who opens the site can download catalog programs, so put the team's own mission code in add_mission_version instead. Lessons and challenges can use catalog programs, and a mission can point at one as FIRST's guided mission. With a card (an explanation), it is also shown in students' Examples window, unless the card has hidden: true.",
+        inputSchema: object(
+            {
+                name: { type: 'string', description: 'File name ending in .llsp3' },
+                content_base64: { type: 'string', description: 'The .llsp3 file, base64' },
+                card: {
+                    type: 'object',
+                    description:
+                        'Explanation for students (optional). Without one the program is only in the catalog, not in the Examples window.',
+                    properties: {
+                        title: { type: 'string', description: 'Shown in the Examples window' },
+                        topic: {
+                            type: 'string',
+                            description: 'Groups examples: Basics, Sensors, Gyro, Missions…'
+                        },
+                        order: { type: 'number', description: 'Position within the topic' },
+                        summary: { type: 'string', description: 'One line under the title' },
+                        what: { type: 'string', description: 'What the program does' },
+                        why: { type: 'string', description: 'Why it is built this way' },
+                        try: {
+                            type: 'array',
+                            items: { type: 'string' },
+                            description: 'Things to try changing'
+                        },
+                        scene: { type: 'string', description: 'A field (.spk) to load with it' },
+                        hidden: {
+                            type: 'boolean',
+                            description:
+                                'Keep the card but leave the program out of the Examples window'
+                        }
+                    },
+                    required: ['title']
+                },
+                replace: { type: 'boolean', description: 'Replace your own program with this name' }
+            },
+            ['name', 'content_base64']
+        )
+    },
+    {
+        name: 'delete_program',
+        description:
+            "Delete an example program your coach's assistant added, with its explanation, if no lesson or challenge uses it.",
+        inputSchema: object({ name: { type: 'string' } }, ['name']),
+        annotations: { destructiveHint: true }
+    },
+    {
         name: 'delete_field',
         description:
             "Delete a field your coach's assistant added, if no lesson, challenge or example uses it and it isn't the default.",
@@ -283,6 +333,89 @@ const ASSET_TOOLS = [
     }
 ];
 TOOLS.push(...ASSET_TOOLS);
+
+const MISSION_DETAILS = {
+    type: 'object',
+    properties: {
+        number: { type: 'integer', description: 'Mission number, 1 to 99' },
+        title: { type: 'string', description: 'Mission name, like "Window to the Past"' },
+        season: { type: 'string', description: 'Season, like "2026-27" (optional)' },
+        goal: { type: 'string', description: 'What the robot has to do' },
+        notes: {
+            type: 'string',
+            description: 'Team notes: launch area, attachments, ports, tips (optional)'
+        },
+        video: {
+            type: 'string',
+            description: 'https address of a video of the mission (optional)'
+        },
+        field: { type: 'string', description: 'Field (.spk) from list_library (optional)' },
+        robot: { type: 'string', description: 'Robot (.mpd/.ldr) from list_library (optional)' },
+        guided: {
+            type: 'string',
+            description:
+                "FIRST's guided mission: a public program (.llsp3) from list_library (optional)"
+        }
+    },
+    required: ['number', 'title']
+};
+
+const MISSION_TOOLS = [
+    {
+        name: 'list_missions',
+        description:
+            "List the team's missions: number, name, goal, notes, video, field, FIRST's guided mission, which version is used at the competition, and every version of the team's program (number, note, who saved it, when, and which version it was made from). Missions are team code: only coaches and signed-in students see them, never the public library.",
+        inputSchema: object({}),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: 'save_mission',
+        description:
+            "Add a mission, or change one's details by passing its id from list_missions (send all the details again; they replace the old ones). Signed-in students see it at once in their Missions window. Versions are added with add_mission_version.",
+        inputSchema: object(
+            {
+                mission: MISSION_DETAILS,
+                id: { type: 'string', description: 'Id of the mission to change (optional)' }
+            },
+            ['mission']
+        )
+    },
+    {
+        name: 'add_mission_version',
+        description:
+            "Add a version of the team's program for a mission: a .llsp3 file (from the SPIKE app or the simulator), base64-encoded, with a note on what it is or what changed. Versions are never overwritten. saved (YYYY-MM-DD) records the day the team saved it, if not today. team_run: true makes it the version used at the competition.",
+        inputSchema: object(
+            {
+                id: { type: 'string', description: 'Mission id from list_missions' },
+                content_base64: { type: 'string', description: 'The .llsp3 file, base64' },
+                note: { type: 'string', description: 'What it is, like "Saturday meeting"' },
+                saved: {
+                    type: 'string',
+                    description: 'Day the team saved it, YYYY-MM-DD (optional)'
+                },
+                team_run: {
+                    type: 'boolean',
+                    description: 'Use it at the competition (optional)'
+                }
+            },
+            ['id', 'content_base64', 'note']
+        )
+    },
+    {
+        name: 'get_mission_version',
+        description:
+            "Get one version of a mission's program as a base64 .llsp3 file, to read or compare the code.",
+        inputSchema: object(
+            {
+                id: { type: 'string', description: 'Mission id from list_missions' },
+                version: { type: 'string', description: 'Version id from list_missions' }
+            },
+            ['id', 'version']
+        ),
+        annotations: { readOnlyHint: true }
+    }
+];
+TOOLS.push(...MISSION_TOOLS);
 
 class ToolError extends Error {}
 
@@ -316,6 +449,7 @@ export function createMcp({
     challengeProblems,
     safeName,
     homework,
+    missions,
     authors,
     readDefaults,
     sendJson,
@@ -520,6 +654,54 @@ export function createMcp({
     };
     tools.delete_homework = tools.delete_assignment;
 
+    // ---- Missions (team code, kept with the team data) -------------------
+
+    const libraryFiles = async () => (await lessonsApi.context()).files;
+
+    tools.list_missions = async () => ({ missions: await missions.list() });
+
+    tools.save_mission = async ({ mission, id }) => {
+        const result = await missions.save(mission, await libraryFiles(), id);
+        if (result.error) throw new ToolError((result.errors ?? [result.error]).join('; '));
+        return { saved: true, mission: result.mission, warnings: result.warnings };
+    };
+
+    tools.add_mission_version = async ({ id, content_base64, note, saved, team_run }, who) => {
+        const data = decode(content_base64);
+        let files;
+        try {
+            files = readZip(data);
+        } catch {
+            throw new ToolError("That isn't a .llsp3 program (it isn't a zip file)");
+        }
+        if (!files.has('manifest.json')) {
+            throw new ToolError("That isn't a .llsp3 program: it has no manifest.json");
+        }
+        const result = await missions.addVersion(id, data, {
+            note,
+            saved,
+            by: { kind: 'coach', name: who }
+        });
+        if (result.error) throw new ToolError(result.error);
+        let mission = result.mission;
+        if (team_run === true) mission = (await missions.setCurrent(id, result.version.id)).mission;
+        return {
+            saved: true,
+            version: result.version,
+            teamRun: mission.current === result.version.id
+        };
+    };
+
+    tools.get_mission_version = async ({ id, version }) => {
+        const found = await missions.versionFile(id, version);
+        if (!found) throw new ToolError('There is no such mission version. Use list_missions.');
+        return {
+            mission: `M${found.mission.number} ${found.mission.title}`,
+            version: found.version,
+            content_base64: (await fsp.readFile(found.file)).toString('base64')
+        };
+    };
+
     // ---- Fields and robots -----------------------------------------------
 
     tools.get_field_guide = async () =>
@@ -533,6 +715,16 @@ export function createMcp({
     // What uses a field or robot, so it isn't deleted from under them.
     async function usersOf(kind, name) {
         const library = await listLibrary();
+        if (kind === 'programs') {
+            return [
+                ...library.lessons
+                    .filter((e) => e.lesson?.program === name)
+                    .map((e) => `lesson ${e.name}`),
+                ...library.challenges
+                    .filter((e) => e.challenge?.example === name)
+                    .map((e) => `challenge ${e.name}`)
+            ];
+        }
         const key = kind === 'scenes' ? 'field' : 'robot';
         const users = [
             ...library.lessons
@@ -560,7 +752,7 @@ export function createMcp({
         const file = path.join(libraryDir, kind, name);
         if (!fs.existsSync(file)) return;
         const author = await authors.get(kind, name);
-        const what = kind === 'scenes' ? 'field' : 'robot';
+        const what = WHAT[kind];
         if (author !== who) {
             throw new ToolError(
                 `There is already a ${what} called ${name}. Save under another name; a coach can replace it on the coach page.`
@@ -573,6 +765,8 @@ export function createMcp({
         }
     }
 
+    const WHAT = { scenes: 'field', robots: 'robot', programs: 'program' };
+
     async function writeAsset(kind, name, data, who) {
         await fsp.mkdir(path.join(libraryDir, kind), { recursive: true });
         const file = path.join(libraryDir, kind, name);
@@ -583,17 +777,19 @@ export function createMcp({
     }
 
     // A safe file name: robots keep a given .mpd or .ldr, anything else
-    // becomes "<cleaned name>.spk" or ".mpd".
+    // becomes "<cleaned name>.spk", ".llsp3" or ".mpd".
     function assetName(kind, raw, fallbackTitle) {
         const given = String(raw || fallbackTitle || '').trim();
         let name = given;
         if (!(kind === 'robots' && /\.(mpd|ldr)$/i.test(given))) {
+            const ext = { scenes: '.spk', programs: '.llsp3', robots: '.mpd' }[kind];
+            const prefix = { scenes: 'Field ', programs: 'Program ', robots: 'Robot ' }[kind];
             name = given
-                .replace(/\.(spk|mpd|ldr)$/i, '')
+                .replace(/\.(spk|mpd|ldr|llsp3)$/i, '')
                 .replace(/[^\w .()+-]/g, '_')
                 .slice(0, 90);
-            if (!/^\w/.test(name)) name = (kind === 'scenes' ? 'Field ' : 'Robot ') + name;
-            name += kind === 'scenes' ? '.spk' : '.mpd';
+            if (!/^\w/.test(name)) name = prefix + name;
+            name += ext;
         }
         const safe = safeName(kind, name);
         if (!safe) throw new ToolError(`Can't use "${given}" as a file name`);
@@ -714,13 +910,87 @@ export function createMcp({
         };
     };
 
+    tools.upload_program = async ({ name, content_base64, card, replace }, who) => {
+        const data = decode(content_base64);
+        let files;
+        try {
+            files = readZip(data);
+        } catch {
+            throw new ToolError("That isn't a .llsp3 program (it isn't a zip file)");
+        }
+        let manifest;
+        try {
+            manifest = JSON.parse(files.get('manifest.json')?.toString('utf8') ?? '');
+        } catch {
+            throw new ToolError("That isn't a .llsp3 program: it has no readable manifest.json");
+        }
+        if (manifest?.type !== 'word-blocks' || !files.has('scratch.sb3')) {
+            throw new ToolError(
+                'Only word-block programs can be examples (a Python program, or one without scratch.sb3, will not open in the simulator)'
+            );
+        }
+        let cardJson;
+        if (card !== undefined && card !== null) {
+            if (typeof card !== 'object' || typeof card.title !== 'string' || !card.title.trim()) {
+                throw new ToolError('The card needs a title');
+            }
+            const text = (key) =>
+                typeof card[key] === 'string' && card[key].trim() ? card[key].trim() : undefined;
+            let scene;
+            if (text('scene')) {
+                scene = safeName('scenes', card.scene);
+                if (!scene || !fs.existsSync(path.join(libraryDir, 'scenes', scene))) {
+                    throw new ToolError(`There is no field called ${card.scene}`);
+                }
+            }
+            cardJson = {
+                title: card.title.trim(),
+                topic: text('topic') ?? 'Missions',
+                ...(typeof card.order === 'number' ? { order: card.order } : {}),
+                ...(text('summary') ? { summary: text('summary') } : {}),
+                ...(text('what') ? { what: text('what') } : {}),
+                ...(text('why') ? { why: text('why') } : {}),
+                ...(Array.isArray(card.try)
+                    ? {
+                          try: card.try
+                              .filter((x) => typeof x === 'string' && x.trim())
+                              .map((x) => x.trim())
+                      }
+                    : {}),
+                ...(scene ? { scene } : {}),
+                ...(card.hidden === true ? { hidden: true } : {})
+            };
+        }
+        const file = assetName('programs', name, cardJson?.title);
+        await checkWrite('programs', file, replace, who);
+        await writeAsset('programs', file, data, who);
+        const cardFile = path.join(libraryDir, 'programs', file + '.json');
+        if (cardJson) {
+            await fsp.writeFile(cardFile + '.tmp', JSON.stringify(cardJson, null, 2));
+            await fsp.rename(cardFile + '.tmp', cardFile);
+        } else {
+            await fsp.rm(cardFile, { force: true });
+        }
+        return {
+            saved: true,
+            name: file,
+            inExamples: !!cardJson && !cardJson.hidden,
+            ...(cardJson ? { card: cardJson } : {})
+        };
+    };
+
     for (const [kind, what] of [
         ['scenes', 'field'],
-        ['robots', 'robot']
+        ['robots', 'robot'],
+        ['programs', 'program']
     ]) {
         tools[`delete_${what}`] = async ({ name }, who) => {
             const file = safeName(kind, name);
-            if (!file || !fs.existsSync(path.join(libraryDir, kind, file))) {
+            if (
+                !file ||
+                (kind === 'programs' && !file.toLowerCase().endsWith('.llsp3')) ||
+                !fs.existsSync(path.join(libraryDir, kind, file))
+            ) {
                 throw new ToolError(`There is no ${what} called ${name}`);
             }
             if ((await authors.get(kind, file)) !== who) {
@@ -733,6 +1003,9 @@ export function createMcp({
                 throw new ToolError(`${file} is used by ${users.join(', ')}. Change those first.`);
             }
             await fsp.rm(path.join(libraryDir, kind, file), { force: true });
+            if (kind === 'programs') {
+                await fsp.rm(path.join(libraryDir, kind, file + '.json'), { force: true });
+            }
             await authors.remove(kind, file);
             console.log(`${who} deleted ${kind}/${file} through MCP`);
             return { deleted: file };

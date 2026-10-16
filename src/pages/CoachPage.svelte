@@ -10,6 +10,7 @@
     import LessonEditor from '$components/coach/LessonEditor.svelte';
     import TeamPanel from '$components/coach/TeamPanel.svelte';
     import AssignmentsPanel from '$components/coach/AssignmentsPanel.svelte';
+    import MissionsPanel from '$components/coach/MissionsPanel.svelte';
     import AgentsPanel from '$components/coach/AgentsPanel.svelte';
     import SettingsPanel from '$components/coach/SettingsPanel.svelte';
     import ChallengesPanel from '$components/coach/ChallengesPanel.svelte';
@@ -37,6 +38,7 @@
         libraryFileName,
         saveLesson,
         saveLessonCard,
+        isExample,
         type Lesson,
         setDefault,
         type LessonCard,
@@ -78,9 +80,9 @@
         },
         {
             kind: 'programs',
-            title: 'Example programs',
+            title: 'Programs',
             icon: 'icons/Library.svg',
-            empty: 'No example programs yet. Upload a .llsp3 program, then add its explanation.',
+            empty: 'No programs yet. Upload a .llsp3 program.',
             extensions: ['.llsp3'],
             upload: 'Upload a program (.llsp3)'
         }
@@ -91,6 +93,7 @@
         | 'lessons'
         | 'challenges'
         | 'examples'
+        | 'missions'
         | 'assignments'
         | 'students'
         | 'assets'
@@ -101,7 +104,8 @@
     const views: { id: View; label: string }[] = [
         { id: 'lessons', label: 'Lessons' },
         { id: 'challenges', label: 'Challenges' },
-        { id: 'examples', label: 'Example programs' },
+        { id: 'examples', label: 'Programs' },
+        { id: 'missions', label: 'Missions' },
         { id: 'assignments', label: 'Assignments' },
         { id: 'students', label: 'Students' },
         { id: 'assets', label: 'Robots and maps' },
@@ -120,8 +124,8 @@
             about: "Step-by-step activities students open from the Lessons button in the code panel. New and imported lessons are drafts, which students can't see, until you press Publish."
         },
         examples: {
-            title: 'Example programs',
-            about: 'Starter programs students open from the Examples window. Give each one an explanation of what it does and what to try.'
+            title: 'Programs',
+            about: "Every program in the library. Lessons and challenges can load any of them. To show one in students' Examples window, press Add to Examples and explain what it does and what to try."
         },
         assets: {
             title: 'Robots and maps',
@@ -511,6 +515,18 @@
         cardOpen = true;
     }
 
+    async function toggleExample(entry: LibraryEntry) {
+        if (!entry.card) return;
+        const hidden = !entry.card.hidden;
+        await run(
+            `card ${entry.name}`,
+            () => saveLessonCard(entry.name, { ...entry.card!, hidden }),
+            hidden
+                ? `"${entry.card.title}" is no longer in the Examples window.`
+                : `"${entry.card.title}" is in the Examples window.`
+        );
+    }
+
     async function saveCard(card: LessonCard) {
         cardSaving = true;
         await run(
@@ -598,6 +614,8 @@
             <TeamPanel on:print={(e) => printCards(e.detail)} />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'assignments'}
             <AssignmentsPanel />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'missions'}
+            <MissionsPanel />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'settings'}
             <SettingsPanel />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'agents'}
@@ -785,11 +803,19 @@
                                                         >Has a check</span
                                                     >
                                                 {/if}
-                                                {#if active == 'programs' && !entry.card}
-                                                    <span
-                                                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-amber-100 text-amber-800"
-                                                        >No explanation</span
-                                                    >
+                                                {#if active == 'programs'}
+                                                    {#if isExample(entry)}
+                                                        <span
+                                                            class="text-xs font-medium rounded-full px-2 py-0.5 bg-green-100 text-green-800"
+                                                            >In Examples</span
+                                                        >
+                                                    {:else}
+                                                        <span
+                                                            class="text-xs font-medium rounded-full px-2 py-0.5 bg-gray-200 text-gray-700"
+                                                            title="Students don't see it in the Examples window. Lessons and challenges can still use it."
+                                                            >Not in Examples</span
+                                                        >
+                                                    {/if}
                                                 {/if}
                                             </div>
                                         {/if}
@@ -850,8 +876,19 @@
                                                     on:click={() => editCard(entry)}
                                                     >{entry.card
                                                         ? 'Edit explanation'
-                                                        : 'Add an explanation'}</Button
+                                                        : 'Add to Examples'}</Button
                                                 >
+                                                {#if entry.card}
+                                                    <Button
+                                                        size="xs"
+                                                        color="light"
+                                                        disabled={busy != ''}
+                                                        on:click={() => toggleExample(entry)}
+                                                        >{entry.card.hidden
+                                                            ? 'Show in Examples'
+                                                            : 'Hide from Examples'}</Button
+                                                    >
+                                                {/if}
                                             {/if}
                                             {#if hasDefault}
                                                 <Button

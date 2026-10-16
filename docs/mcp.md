@@ -9,32 +9,38 @@ everything an assistant saves is stamped with that coach's email.
 
 ## Tools
 
-| Tool                   | What it does                                                                       |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| `whoami`               | Which coach the connection is signed in as                                         |
-| `get_lesson_guide`     | The lesson guide plus this site's fields (mat sizes), robots and programs          |
-| `get_lesson_schema`    | The JSON schema for `lesson.json`                                                  |
-| `list_library`         | Lessons and challenges (title, draft, author), fields, robots and example programs |
-| `get_lesson`           | One lesson's JSON                                                                  |
-| `check_lesson`         | Errors and warnings for a lesson, without saving                                   |
-| `save_lesson`          | Save a lesson as a draft; `replace` updates your own draft                         |
-| `delete_lesson`        | Delete one of your own drafts                                                      |
-| `get_challenge_schema` | The JSON schema for a challenge                                                    |
-| `get_challenge`        | One challenge's JSON                                                               |
-| `check_challenge`      | Errors and warnings for a challenge, without saving                                |
-| `save_challenge`       | Save a challenge as a draft; its id is the file name without `.json`               |
-| `delete_challenge`     | Delete one of your own draft challenges                                            |
-| `list_assignments`     | Assignments with each student's status on each lesson                              |
-| `save_assignment`      | Save an assignment (title, lessons, type, due date, note) as a draft               |
-| `delete_assignment`    | Delete one of your own draft assignments                                           |
-| `get_field_guide`      | How to describe a field as JSON (`docs/fields.md`)                                 |
-| `check_field`          | Errors and warnings for a field description, without saving                        |
-| `save_field`           | Draw the mat and save the field as a `.spk` scene                                  |
-| `get_field`            | A field's mat size, robot start and objects, and its description if it has one     |
-| `upload_field`         | Add an existing `.spk` scene (base64)                                              |
-| `upload_robot`         | Add an LDraw `.mpd`/`.ldr` robot model (text or base64)                            |
-| `delete_field`         | Delete a field your assistant added, if nothing uses it                            |
-| `delete_robot`         | Delete a robot your assistant added, if nothing uses it                            |
+| Tool                   | What it does                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `whoami`               | Which coach the connection is signed in as                                            |
+| `get_lesson_guide`     | The lesson guide plus this site's fields (mat sizes), robots and programs             |
+| `get_lesson_schema`    | The JSON schema for `lesson.json`                                                     |
+| `list_library`         | Lessons and challenges (title, draft, author), fields, robots and example programs    |
+| `get_lesson`           | One lesson's JSON                                                                     |
+| `check_lesson`         | Errors and warnings for a lesson, without saving                                      |
+| `save_lesson`          | Save a lesson as a draft; `replace` updates your own draft                            |
+| `delete_lesson`        | Delete one of your own drafts                                                         |
+| `get_challenge_schema` | The JSON schema for a challenge                                                       |
+| `get_challenge`        | One challenge's JSON                                                                  |
+| `check_challenge`      | Errors and warnings for a challenge, without saving                                   |
+| `save_challenge`       | Save a challenge as a draft; its id is the file name without `.json`                  |
+| `delete_challenge`     | Delete one of your own draft challenges                                               |
+| `list_assignments`     | Assignments with each student's status on each lesson                                 |
+| `save_assignment`      | Save an assignment (title, lessons, type, due date, note) as a draft                  |
+| `delete_assignment`    | Delete one of your own draft assignments                                              |
+| `get_field_guide`      | How to describe a field as JSON (`docs/fields.md`)                                    |
+| `check_field`          | Errors and warnings for a field description, without saving                           |
+| `save_field`           | Draw the mat and save the field as a `.spk` scene                                     |
+| `get_field`            | A field's mat size, robot start and objects, and its description if it has one        |
+| `upload_field`         | Add an existing `.spk` scene (base64)                                                 |
+| `upload_robot`         | Add an LDraw `.mpd`/`.ldr` robot model (text or base64)                               |
+| `upload_program`       | Add a `.llsp3` example program (base64) with an optional explanation card             |
+| `delete_program`       | Delete an example program your assistant added, if no lesson or challenge uses it     |
+| `list_missions`        | The team's missions with every version of their programs                              |
+| `save_mission`         | Add a mission or change its details                                                   |
+| `add_mission_version`  | Add a version of the team's program for a mission (base64), optionally the competition version |
+| `get_mission_version`  | One version's `.llsp3`, base64                                                        |
+| `delete_field`         | Delete a field your assistant added, if nothing uses it                               |
+| `delete_robot`         | Delete a robot your assistant added, if nothing uses it                               |
 
 Rules: saved lessons, challenges and assignments are always drafts, so students
 only see them after a coach presses **Publish** on the coach page. An assistant
@@ -47,14 +53,23 @@ An assignment's optional `type` is `practice` (going over what was taught) or
 called `list_homework`, `save_homework` (assignment under `homework`) and
 `delete_homework`; those names still work.
 
-Robots and fields have no drafts: they are in everyone's Robot and Field
-pickers as soon as they're saved, marked "From an assistant" on the coach page.
+Robots, fields and example programs have no drafts: they are in everyone's
+Robot and Field pickers and Examples window as soon as they're saved, marked "From an assistant" on the coach page.
 An assistant can only add new names, and replace or delete the ones its own
 coach's assistant added (`LIBRARY_DIR/.assistant-files.json` keeps track; a
 coach replacing, renaming or deleting the file on the coach page takes it
 over). It can't delete one a lesson, challenge or example uses, or the
-default. Fields drawn with `save_field` keep their description in the `.spk`
+default. `upload_program` takes word-block programs saved from the SPIKE app
+or the simulator; its `card` (title, topic, summary, what, why, try, scene) is
+the explanation students see in the Examples window, the same as **Add an
+explanation** on the coach page. Without a card the program still opens, with
+no explanation. Fields drawn with `save_field` keep their description in the `.spk`
 (`field.json`) so `get_field` can hand it back for changes.
+
+Missions are team code, kept with the team data rather than in the public
+library (see [missions.md](missions.md)). Put the team's own mission programs
+in `add_mission_version`, never in `upload_program`, whose catalog anyone can
+download.
 
 ## For coaches: connecting
 

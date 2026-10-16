@@ -76,6 +76,10 @@
                 </li>
                 <li>Which lesson steps you ticked, and your check and challenge results.</li>
                 <li>The programs you hand in.</li>
+                <li>
+                    Versions of team mission programs you save, with your name and the day you saved
+                    them.
+                </li>
             </ul>
             <p>
                 No email addresses, birthdays, photos or locations. The server is run by the team,
@@ -86,8 +90,10 @@
         <section class="flex flex-col gap-2">
             <h2 class="text-lg font-semibold">Who can see it</h2>
             <p>
-                Only the team's coaches, who sign in separately. Coaches may use an AI assistant
-                (such as Claude or ChatGPT) to help plan lessons.
+                Only the team's coaches, who sign in separately. The exception is team mission
+                versions: teammates who are signed in see them with your first name, so the team can
+                build on each other's work. Coaches may use an AI assistant (such as Claude or
+                ChatGPT) to help plan lessons.
                 {#if $settingsStore.aiStudentNames == 'names'}
                     The head coach has allowed it to see students' names and progress, so that
                     information goes to the company that runs the assistant.
@@ -116,7 +122,8 @@
             <h2 class="text-lg font-semibold">How long it's kept</h2>
             <p>
                 Until a coach removes the student from the team, which deletes their progress and
-                programs too. Coaches clear the team at the end of each season.
+                programs too. Mission versions they saved stay with the team's code, without their
+                name. Coaches clear the team at the end of each season.
                 {#if $settingsStore.signOutAfterMinutes > 0}
                     On shared computers, students are signed out automatically after {$settingsStore.signOutAfterMinutes >=
                     60

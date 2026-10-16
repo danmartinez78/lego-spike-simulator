@@ -5,6 +5,7 @@
     import { ArrowDownOutline, ArrowUpOutline, TrashBinOutline } from 'flowbite-svelte-icons';
     import LessonView from '$components/LessonView.svelte';
     import CheckEditor from '$components/coach/CheckEditor.svelte';
+    import TopicPicker from '$components/coach/TopicPicker.svelte';
     import { cleanCheck, type Check } from '$lib/spike/checks';
     import { allChallenges } from '$lib/spike/challenges';
     import { lessonProblem, relatedFor } from '$lib/lessons';
@@ -187,17 +188,14 @@
                 </div>
                 <div>
                     <Label for="lesson-topic" class="mb-1">Topic</Label>
-                    <Input
-                        id="lesson-topic"
-                        bind:value={topic}
-                        list="lesson-topics"
-                        placeholder="Sensors"
-                    />
-                    <datalist id="lesson-topics">
-                        {#each topics as t}
-                            <option value={t}></option>
-                        {/each}
-                    </datalist>
+                    {#key open}
+                        <TopicPicker
+                            id="lesson-topic"
+                            bind:value={topic}
+                            {topics}
+                            placeholder="Sensors"
+                        />
+                    {/key}
                 </div>
                 <div>
                     <Label for="lesson-order" class="mb-1">Order in topic</Label>
