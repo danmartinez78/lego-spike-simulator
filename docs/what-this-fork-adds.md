@@ -251,9 +251,10 @@ speed. `npm run physics` repeats these checks (see
 The original builds to static files that run straight from disk. The fork adds
 a small Node server (`server/server.mjs`, no dependencies beyond Node) and a
 Docker image, `ghcr.io/danmartinez78/lego-spike-simulator`, built by GitHub
-Actions: `:latest` on every push to `master`, and `:branch-<name>` for
-`claude/**` and `feature/**` branches so a branch can be tried in a test
-container first (see the
+Actions: `:latest` on every push to `master`, `:test` for the `test` branch
+that the test container runs, and `:branch-<name>` for `claude/**` and
+`feature/**` branches, so a branch can be tried in a test container first (see
+the
 [README](../README.md#try-a-branch-in-a-test-container)). The server:
 
 -   serves the simulator, the coach page and the privacy notice;

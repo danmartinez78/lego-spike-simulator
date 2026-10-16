@@ -13,9 +13,10 @@
     `/data` on a volume, set `LAN_WRITE_PREFIXES` for the home network, and put
     `/coach`, `/api/admin` and `/mcp` behind Cloudflare Access with
     `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` set (see the README and
-    `docs/mcp.md`). Deploy = try the branch in the test container first
-    (README, "Try a branch in a test container"), then merge to `master`, wait
-    for the Action, and pull the new `:latest` on the server.
+    `docs/mcp.md`). Deploy = push the branch to `test` (the test container
+    always runs `:test`; README, "Try a branch in a test container"), update the
+    test container, then merge to `master`, wait for the Action, and pull the
+    new `:latest` on the server.
 
 ## Built so far
 

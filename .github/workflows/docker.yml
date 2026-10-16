@@ -2,9 +2,10 @@ name: Docker image
 
 on:
     push:
-        # master publishes :latest for the live site. Other branches publish
-        # a :branch-<name> image, so a test container can run them.
-        branches: [master, 'claude/**', 'feature/**']
+        # master publishes :latest for the live site and test publishes :test
+        # for the test container, which always runs :test. Other branches
+        # publish a :branch-<name> image.
+        branches: [master, test, 'claude/**', 'feature/**']
     workflow_dispatch:
 
 permissions:
@@ -28,6 +29,8 @@ jobs:
                   branch="${GITHUB_REF_NAME//\//-}"
                   if [ "$GITHUB_REF_NAME" = "master" ]; then
                       echo "tag=latest" >> "$GITHUB_OUTPUT"
+                  elif [ "$GITHUB_REF_NAME" = "test" ]; then
+                      echo "tag=test" >> "$GITHUB_OUTPUT"
                   else
                       echo "tag=branch-${branch,,}" >> "$GITHUB_OUTPUT"
                   fi

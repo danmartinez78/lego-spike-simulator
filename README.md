@@ -101,28 +101,33 @@ header, because the server refuses coach changes that come from another site.
 
 ### Try a branch in a test container
 
-Changes go to a test container before the live site. Every push to a
-`claude/**` or `feature/**` branch publishes
-`ghcr.io/danmartinez78/lego-spike-simulator:branch-<name>`, where `<name>` is
-the branch name with `/` replaced by `-` (for example
-`branch-feature-camera`). Run it next to the live container, on another port
-and with its own data folder so the live library and team are untouched:
+Changes go to a test container before the live site. The test container
+always runs `ghcr.io/danmartinez78/lego-spike-simulator:test`, which the Docker
+image Action publishes on every push to the `test` branch. Trying a branch means
+pointing `test` at it, so the container never has to be removed and created
+again. Run it once next to the live container, on another port and with its own
+data folder so the live library and team are untouched:
 
 ```
 docker run -d --name lego-spike-simulator-test --restart unless-stopped \
     -p 8094:8080 -v /path/to/test-data:/data \
     -e LAN_WRITE_PREFIXES=192.168.0. \
-    ghcr.io/danmartinez78/lego-spike-simulator:branch-<name>
+    ghcr.io/danmartinez78/lego-spike-simulator:test
 ```
 
-1. Push to the branch and wait for the Docker image Action to finish.
-2. Update only the test container so it pulls the new image (on Unraid:
-   Docker tab, Force update). To try a different branch, remove the test
-   container and run it again with that branch's tag.
+1. Point `test` at the branch to try, for example
+   `git push --force origin feature/camera:test`, and wait for the Docker image
+   Action to finish.
+2. Update only the test container so it pulls the new `:test` image (on
+   Unraid: Docker tab, Force update).
 3. Open `http://<host>:8094`, hard-refresh, and try the change on the
    devices students use.
-4. When it works, merge to `master`, wait for `:latest`, and update the live
-   container the same way.
+4. When it works, merge the branch to `master`, wait for `:latest`, and update
+   the live container the same way.
+
+Pushes to `claude/**` and `feature/**` branches also publish
+`:branch-<name>` (the branch name with `/` replaced by `-`), for running a
+branch somewhere else.
 
 The first start of a new test container downloads the LDraw parts library.
 
