@@ -31,6 +31,8 @@ coding.
     right-click, and a guide with a searchable block reference.
 -   Realism levels that add wheel slip, gyro drift and sensor noise, so programs
     that use sensors beat programs that only count rotations.
+-   A robot that bumps into the table walls and objects (and squares up against
+    a wall), pushes loose blocks, and moves its arms with their motors.
 -   A sensor graph, a measuring tool, a top-down Place view, and an experiment
     panel that compares two programs over five runs each.
 -   Sign in with a code (no email), saved progress on any computer,
@@ -152,6 +154,7 @@ with no server, without the shared library, sign-in or coach page.
 -   [What this fork adds](docs/what-this-fork-adds.md)
 -   [Lessons and challenges format](docs/lessons.md)
 -   [Drawing fields from a description](docs/fields.md)
+-   [Robots with moving arms](docs/robots.md)
 -   [Connecting an AI assistant (MCP)](docs/mcp.md)
 -   [Physics checks](tools/physics/README.md)
 -   [Handoff notes for developers](HANDOFF.md)

@@ -66,9 +66,20 @@ export interface PortConnection {
     port: string;
 }
 
+// A part (usually a submodel such as an arm) that a motor turns. The pivot
+// and axis are in LDraw units in the coordinates of the file the part is in.
+export interface RotatingConnection {
+    hub: string;
+    port: string;
+    pivot: Vertex;
+    axis: Vertex;
+    ratio: number;
+}
+
 export interface Subpart {
     colour: BrickColour;
     port?: PortConnection;
+    rotates?: RotatingConnection;
     gear_ratio?: number;
     matrix: Matrix;
     model: Model | undefined;
@@ -395,6 +406,12 @@ export function saveMPD(model: Model) {
             if (subpart.gear_ratio) {
                 content.push(`0 !SPIKE_GEARING ${-subpart.gear_ratio}`);
             }
+            if (subpart.rotates) {
+                const r = subpart.rotates;
+                content.push(
+                    `0 !SPIKE_ROTATES ${r.hub} ${r.port} ${r.pivot.x} ${r.pivot.y} ${r.pivot.z} ${r.axis.x} ${r.axis.y} ${r.axis.z} ${r.ratio}`
+                );
+            }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const [a, d, g, zero1, b, e, h, zero2, c, f, i, zero3, x, y, z, one] = subpart.matrix;
             const sname = subpart.modelNumber;
@@ -421,6 +438,7 @@ export function loadModel(name: string, content: string): Model {
     let lastPort: string | undefined = undefined;
     let lastHub: string | undefined = undefined;
     let lastGearRatio: string | undefined = undefined;
+    let lastRotates: RotatingConnection | undefined = undefined;
     const model: Model = {
         name: name,
         subparts: [],
@@ -460,6 +478,18 @@ export function loadModel(name: string, content: string): Model {
                 lastHub = parts[2];
                 lastPort = parts[3];
             }
+            if (parts[1] == '!SPIKE_ROTATES' && parts.length >= 10) {
+                const n = parts.slice(4, 11).map((x) => +x);
+                if (n.slice(0, 6).every((x) => Number.isFinite(x))) {
+                    lastRotates = {
+                        hub: parts[2],
+                        port: parts[3].toUpperCase(),
+                        pivot: { x: n[0], y: n[1], z: n[2] },
+                        axis: { x: n[3], y: n[4], z: n[5] },
+                        ratio: Number.isFinite(n[6]) && n[6] != 0 ? n[6] : 1
+                    };
+                }
+            }
         } else if (parts[0] == '1') {
             // subpart
             const colour = parts[1];
@@ -489,11 +519,15 @@ export function loadModel(name: string, content: string): Model {
             if (lastGearRatio) {
                 entry.gear_ratio = -lastGearRatio;
             }
+            if (lastRotates) {
+                entry.rotates = lastRotates;
+            }
             model.subparts.push(entry);
             resolveSubpart(entry);
             lastPort = undefined;
             lastHub = undefined;
             lastGearRatio = undefined;
+            lastRotates = undefined;
         } else if (parts[0] == '2') {
             // line
             const colour = parts[1];
@@ -511,6 +545,7 @@ export function loadModel(name: string, content: string): Model {
             lastPort = undefined;
             lastHub = undefined;
             lastGearRatio = undefined;
+            lastRotates = undefined;
         } else if (parts[0] == '3') {
             // triangle
             const colour = parts[1];
@@ -532,6 +567,7 @@ export function loadModel(name: string, content: string): Model {
             lastPort = undefined;
             lastHub = undefined;
             lastGearRatio = undefined;
+            lastRotates = undefined;
         } else if (parts[0] == '4') {
             // quad
             const colour = parts[1];
@@ -557,6 +593,7 @@ export function loadModel(name: string, content: string): Model {
             lastPort = undefined;
             lastHub = undefined;
             lastGearRatio = undefined;
+            lastRotates = undefined;
         } else if (parts[0] == '5') {
             // optional line
             const colour = parts[1];
@@ -582,6 +619,7 @@ export function loadModel(name: string, content: string): Model {
             lastPort = undefined;
             lastHub = undefined;
             lastGearRatio = undefined;
+            lastRotates = undefined;
         }
     }
     return model;

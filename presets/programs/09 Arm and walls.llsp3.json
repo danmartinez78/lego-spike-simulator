@@ -1,0 +1,17 @@
+{
+  "file": "09 Arm and walls.llsp3",
+  "title": "Arm and walls",
+  "topic": "Attachments",
+  "order": 9,
+  "summary": "Square up on a wall, then lower the arm and push a block.",
+  "what": "Pick the robot \"DrivingBase3 with arm\" first. The robot drives into the wall ahead and squares up against it. Then it turns right, lowers its arm and pushes the red block until the block hits the far wall.",
+  "why": "Teams often drive into a wall on purpose to line the robot up. When the block is stuck against the wall, the robot stops even though the program is still asking its wheels to turn. The arm is on its own motor, so the program turns it with a motor block, not a movement block. The arm is on one side of the robot, so pushing a stuck block also twists the robot a little.",
+  "try": [
+    "The robot starts 10 degrees crooked. Watch the yaw when it hits the wall. Why does it change?",
+    "Lower the arm only 20 degrees instead of 35. Does it still catch the block?",
+    "Lower it 60 degrees and lift it 60. The arm stops when it touches the mat, so where does it end up?",
+    "Skip the \"lower the arm\" block. What does the arm do when it reaches the block?",
+    "Turn bumping off in Settings and run it again. What changes?"
+  ],
+  "scene": "Practice - arm and walls.spk"
+}

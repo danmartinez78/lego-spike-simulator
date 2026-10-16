@@ -429,8 +429,9 @@
                     The library has <b>practice fields</b> for building skills: a line course, color
                     stops, accuracy targets, a turn rose, a wall course and mini missions. For the
                     wall course, choose the robot <i>Driving Base 3 with distance sensor</i>
-                    (sensor on port F). Sensors can see obstacles, but the robot drives through them
-                    rather than pushing them.
+                    (sensor on port F). The robot bumps into walls and stops, and it pushes loose blocks.
+                    To practice with an arm, choose <i>Driving Base 3 with arm</i>: motor F lowers
+                    the arm when it runs clockwise and raises it counterclockwise.
                 </p>
                 <p class="mt-2">
                     The robots and fields you can choose are saved on this site for everyone. Only

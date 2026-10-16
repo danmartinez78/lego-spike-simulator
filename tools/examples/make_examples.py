@@ -367,4 +367,51 @@ save(
     },
 )
 
+# ---------------------------------------------------------------------------
+# 9. Arm and walls (needs the robot with an arm)
+p = Program('Arm and walls')
+p.script(
+    when_program_starts(),
+    setup()
+    + [
+        move('forward', 45, 'cm'),
+        move('back', 10, 'cm'),
+        steer(100, 180, 'degrees'),
+        motor_turn('F', 'clockwise', 35, 'degrees'),
+        move('forward', 55, 'cm'),
+        motor_turn('F', 'counterclockwise', 35, 'degrees'),
+        move('back', 20, 'cm'),
+    ],
+    comment='The robot starts a little crooked. Driving into the wall straightens it out.\n\n'
+    'Then it turns right, lowers the arm on motor F, and pushes the block to the '
+    'other wall. Clockwise lowers the arm. Counterclockwise lifts it.',
+)
+save(
+    p,
+    {
+        'file': '09 Arm and walls.llsp3',
+        'title': 'Arm and walls',
+        'topic': 'Attachments',
+        'order': 9,
+        'summary': 'Square up on a wall, then lower the arm and push a block.',
+        'what': 'Pick the robot "DrivingBase3 with arm" first. The robot drives into the wall '
+        'ahead and squares up against it. Then it turns right, lowers its arm and pushes '
+        'the red block until the block hits the far wall.',
+        'why': 'Teams often drive into a wall on purpose to line the robot up. When the block '
+        'is stuck against the wall, the robot stops even though the program is still asking '
+        'its wheels to turn. The arm is on its own motor, so the program turns it with a '
+        'motor block, not a movement block. The arm is on one side of the robot, so pushing '
+        'a stuck block also twists the robot a little.',
+        'try': [
+            'The robot starts 10 degrees crooked. Watch the yaw when it hits the wall. Why does it change?',
+            'Lower the arm only 20 degrees instead of 35. Does it still catch the block?',
+            'Lower it 60 degrees and lift it 60. The arm stops when it touches the mat, '
+            'so where does it end up?',
+            'Skip the "lower the arm" block. What does the arm do when it reaches the block?',
+            'Turn bumping off in Settings and run it again. What changes?',
+        ],
+        'scene': 'Practice - arm and walls.spk',
+    },
+)
+
 print(json.dumps([e['file'] for e in examples], indent=1))

@@ -73,9 +73,11 @@ text).
 | `type`  | Fields                                                                                                                                   | Notes                                                                                                  |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `wall`  | `x`, `z` (center), `length` (mm), `heading` (0 runs up and down the mat), `layers` (default 6, about 58 mm high), `colour` (default red) | Fixed in place. A distance sensor sees it. Built from 1×8 bricks, so the length rounds to 64 mm steps. |
-| `block` | `x`, `z`, `layers` (default 3), `colour` (default blue)                                                                                  | A loose cube about 64 mm across that the robot can push                                                |
+| `block` | `x`, `z`, `layers` (default 3), `colour` (default blue)                                                                                  | A loose cube about 64 mm across that the robot (or its arm) pushes; it slides without turning          |
 
 Walls also leave a light gray footprint on the mat so they show from above.
+The robot stops when it drives into a wall (or the table's edge) and pushes
+blocks along, so a wall is also a good place to square up against.
 
 ## Tips
 

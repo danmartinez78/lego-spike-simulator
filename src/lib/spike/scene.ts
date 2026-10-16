@@ -1,5 +1,6 @@
 import { type Model } from '$lib/ldraw/components';
 import { type CompiledModel } from '$lib/ldraw/gl';
+import { type MovingPart } from '$lib/spike/attachments';
 import { writable } from 'svelte/store';
 
 export interface Vector {
@@ -15,6 +16,11 @@ export interface SceneObject {
     rotation?: number;
     name: string;
     compiled?: CompiledModel;
+    // A robot with parts that motors turn: the robot without them, the parts,
+    // and how far each part has turned (degrees) in the current run.
+    chassis?: CompiledModel;
+    moving?: MovingPart[];
+    partAngles?: number[];
 }
 
 export interface SceneStore {
@@ -40,7 +46,9 @@ function copyObject(obj: SceneObject): SceneObject {
         position: obj.position ? { ...obj.position } : { x: 0, y: 0, z: 0 },
         rotation: obj.rotation ?? 0,
         name: obj.name,
-        compiled: obj.compiled
+        compiled: obj.compiled,
+        chassis: obj.chassis,
+        moving: obj.moving
     };
 }
 
@@ -62,10 +70,14 @@ export interface Boundary {
     draw: boolean;
     scale: number;
     collisions: boolean;
+    // The robot bumps into the table walls and objects instead of driving
+    // through them, and pushes loose blocks.
+    solid: boolean;
 }
 
 export const boundaryStore = writable<Boundary>({
     draw: true,
     scale: 1.0,
-    collisions: true
+    collisions: true,
+    solid: true
 });

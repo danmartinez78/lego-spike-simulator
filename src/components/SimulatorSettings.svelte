@@ -47,6 +47,15 @@
         });
     }
 
+    function toggleSolid() {
+        boundaryStore.update((old) => {
+            return {
+                ...old,
+                solid: !old.solid
+            };
+        });
+    }
+
     function toggleCollisions() {
         boundaryStore.update((old) => {
             return {
@@ -94,6 +103,9 @@
             on:change={() => updateBoundaryScale()}
         />
         <div class="h-2" />
+        <Toggle size="small" on:change={() => toggleSolid()} checked={$boundaryStore.solid}>
+            Robot bumps into walls and objects (pushes loose blocks)
+        </Toggle>
         <Toggle size="small" on:change={() => toggleBoundary()} checked={$boundaryStore.draw}>
             Draw boundary
         </Toggle>

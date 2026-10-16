@@ -458,6 +458,21 @@ def arg(name):
     return Block('argument_reporter_string_number', fields={'VALUE': name})
 
 
+def motor_turn(port, direction, value, unit='degrees'):
+    """Run one motor (an attachment such as an arm) clockwise or counterclockwise."""
+    return Block(
+        'flippermotor_motorTurnForDirection',
+        {
+            'PORT': Menu('flippermotor_multiple-port-selector', 'field_flippermotor_multiple-port-selector', port),
+            'DIRECTION': Menu(
+                'flippermotor_custom-icon-direction', 'field_flippermotor_custom-icon-direction', direction
+            ),
+            'VALUE': value,
+        },
+        {'UNIT': unit},
+    )
+
+
 def reset_motor_degrees(port, value=0):
     return Block(
         'flippermoremotor_motorSetDegreeCounted',
