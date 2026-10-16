@@ -349,7 +349,22 @@ const MISSION_DETAILS = {
             type: 'string',
             description: 'https address of a video of the mission (optional)'
         },
-        field: { type: 'string', description: 'Field (.spk) from list_library (optional)' },
+        fields: {
+            type: 'array',
+            items: { type: 'string' },
+            description:
+                'Fields (.spk) from list_library that students can load for this mission, such as the color mat and the wireframe; the first is the main one (optional)'
+        },
+        start: {
+            type: 'object',
+            properties: {
+                x: { type: 'number' },
+                z: { type: 'number' },
+                heading: { type: 'number' }
+            },
+            description:
+                "Where the robot starts for this mission, such as its launch area: x and z in mm and heading in degrees, the same terms as get_field's start. Loading a mission field puts the robot here (optional)"
+        },
         robot: { type: 'string', description: 'Robot (.mpd/.ldr) from list_library (optional)' },
         guided: {
             type: 'string',
@@ -364,7 +379,7 @@ const MISSION_TOOLS = [
     {
         name: 'list_missions',
         description:
-            "List the team's missions: number, name, goal, notes, video, field, FIRST's guided mission, which version is used at the competition, and every version of the team's program (number, note, who saved it, when, and which version it was made from). Missions are team code: only coaches and signed-in students see them, never the public library.",
+            "List the team's missions: number, name, goal, notes, video, fields, robot start, FIRST's guided mission, which version is used at the competition, and every version of the team's program (number, note, who saved it, when, and which version it was made from). Missions are team code: only coaches and signed-in students see them, never the public library.",
         inputSchema: object({}),
         annotations: { readOnlyHint: true }
     },

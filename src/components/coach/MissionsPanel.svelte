@@ -10,8 +10,10 @@
         coachMissions,
         deleteMission,
         deleteVersion,
+        missionFields,
         missionLabel,
         newestFirst,
+        startText,
         saveMission,
         setCurrentVersion,
         uploadVersion,
@@ -19,6 +21,7 @@
         versionDownloadUrl,
         type Mission,
         type MissionDetails,
+        type MissionStart,
         type MissionVersion
     } from '$lib/missions';
 
@@ -66,6 +69,8 @@
             notes: '',
             video: '',
             field: '',
+            otherField: '',
+            start: undefined as MissionStart | undefined,
             robot: '',
             guided: ''
         };
@@ -137,7 +142,9 @@
                   goal: mission.goal ?? '',
                   notes: mission.notes ?? '',
                   video: mission.video ?? '',
-                  field: mission.field ?? '',
+                  field: missionFields(mission)[0] ?? '',
+                  otherField: missionFields(mission)[1] ?? '',
+                  start: mission.start,
                   robot: mission.robot ?? '',
                   guided: mission.guided ?? ''
               }
@@ -153,7 +160,8 @@
             goal: form.goal || undefined,
             notes: form.notes || undefined,
             video: form.video || undefined,
-            field: form.field || undefined,
+            fields: [form.field, form.otherField].filter((f) => f),
+            start: form.start,
             robot: form.robot || undefined,
             guided: form.guided || undefined
         };
@@ -366,6 +374,40 @@
                     />
                 </div>
                 <div>
+                    <Label for="mission-other-field" class="mb-1"
+                        >Other field <span class="font-normal text-gray-500">(optional)</span
+                        ></Label
+                    >
+                    <Select
+                        id="mission-other-field"
+                        items={fieldItems}
+                        bind:value={form.otherField}
+                        placeholder=""
+                    />
+                    <p class="text-xs text-gray-500 mt-1">
+                        Students pick either field, such as the color mat or the wireframe.
+                    </p>
+                </div>
+                <div>
+                    <Label class="mb-1">Robot start</Label>
+                    {#if form.start}
+                        <div class="flex flex-row flex-wrap items-center gap-2 text-sm">
+                            <span>{startText(form.start)}</span>
+                            <Button
+                                size="xs"
+                                color="light"
+                                on:click={() => (form.start = undefined)}>Clear</Button
+                            >
+                        </div>
+                    {:else}
+                        <p class="text-sm text-gray-700">The field's own start.</p>
+                    {/if}
+                    <p class="text-xs text-gray-500 mt-1">
+                        To set it, load the field in the simulator, place the robot in the launch
+                        area, then press <b>Start here</b> in the Missions window.
+                    </p>
+                </div>
+                <div>
                     <Label for="mission-robot" class="mb-1">Robot</Label>
                     <Select
                         id="mission-robot"
@@ -399,7 +441,10 @@
                     <div class="text-sm text-gray-500">
                         {[
                             mission.season,
-                            mission.field?.replace(/\.spk$/i, ''),
+                            missionFields(mission)
+                                .map((f) => f.replace(/\.spk$/i, ''))
+                                .join(' or '),
+                            mission.start ? 'robot start set' : '',
                             mission.guided ? "has FIRST's guided mission" : '',
                             mission.video ? 'has a video' : ''
                         ]

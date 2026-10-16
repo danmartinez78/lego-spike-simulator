@@ -4,6 +4,7 @@
 
 import { get, writable } from 'svelte/store';
 import { studentStore } from '$lib/team';
+import { sceneStore } from '$lib/spike/scene';
 
 export interface MissionVersion {
     id: string;
@@ -17,6 +18,14 @@ export interface MissionVersion {
     from?: string;
 }
 
+// x and z in mm from the mat's center, heading in degrees (0 = up the mat,
+// 90 = right), the same terms as the MCP tool get_field.
+export interface MissionStart {
+    x: number;
+    z: number;
+    heading: number;
+}
+
 export interface Mission {
     id: string;
     number: number;
@@ -25,7 +34,12 @@ export interface Mission {
     goal?: string;
     notes?: string;
     video?: string;
+    // The main field; `fields` lists every field students can pick, such as
+    // the color mat and the wireframe, main one first.
     field?: string;
+    fields?: string[];
+    // Where the robot starts, such as the team's launch area.
+    start?: MissionStart;
     robot?: string;
     // FIRST's guided mission, a program in the public library.
     guided?: string;
@@ -38,8 +52,49 @@ export interface Mission {
 
 export type MissionDetails = Pick<
     Mission,
-    'number' | 'title' | 'season' | 'goal' | 'notes' | 'video' | 'field' | 'robot' | 'guided'
+    | 'number'
+    | 'title'
+    | 'season'
+    | 'goal'
+    | 'notes'
+    | 'video'
+    | 'fields'
+    | 'start'
+    | 'robot'
+    | 'guided'
 >;
+
+export function missionFields(mission: Pick<Mission, 'field' | 'fields'>) {
+    return mission.fields ?? (mission.field ? [mission.field] : []);
+}
+
+// The robot faces up the mat at rotation 180 and turning left increases
+// rotation (see PlaceDialog), so heading = 180 - rotation.
+export function robotStart(): MissionStart {
+    const robot = get(sceneStore).robot;
+    const heading = (((180 - (robot.rotation ?? 180)) % 360) + 360) % 360;
+    return {
+        x: Math.round(robot.position?.x ?? 0),
+        z: Math.round(robot.position?.z ?? 0),
+        heading: Math.round(heading * 10) / 10
+    };
+}
+
+export function placeRobotAt(start: MissionStart) {
+    sceneStore.update((scene) => {
+        scene.robot.position = {
+            ...(scene.robot.position ?? { x: 0, y: 0, z: 0 }),
+            x: start.x,
+            z: start.z
+        };
+        scene.robot.rotation = 180 - start.heading;
+        return scene;
+    });
+}
+
+export function startText(start: MissionStart) {
+    return `${Math.round(start.x / 10)} cm, ${Math.round(start.z / 10)} cm from the center, heading ${Math.round(start.heading)}°`;
+}
 
 export function missionLabel(mission: Pick<Mission, 'number' | 'title'>) {
     return `M${String(mission.number).padStart(2, '0')} ${mission.title}`;
