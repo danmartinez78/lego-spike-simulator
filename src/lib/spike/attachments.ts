@@ -145,6 +145,21 @@ export function partMatrix(part: MovingPart, degrees: number): m4.Matrix4 {
     return m4.translate(m, -part.pivot.x, -part.pivot.y, -part.pivot.z);
 }
 
+// The lowest point (mm, robot's drawn frame) of a part's box turned by degrees.
+export function partBottom(part: MovingPart, degrees: number) {
+    const b = part.compiled.bbox;
+    const m = partMatrix(part, degrees);
+    let bottom = Infinity;
+    for (const x of [b.min.x, b.max.x]) {
+        for (const y of [b.min.y, b.max.y]) {
+            for (const z of [b.min.z, b.max.z]) {
+                bottom = Math.min(bottom, m4.transformVector(m, [x, y, z, 1])[1]);
+            }
+        }
+    }
+    return bottom;
+}
+
 // Draw a robot, with its arms where their motors have turned them.
 export function drawRobot(gl: WebGL, robot: SceneObject) {
     if (robot.chassis && robot.moving && robot.moving.length > 0) {

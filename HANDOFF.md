@@ -155,7 +155,8 @@ A reader-facing summary of everything the fork adds is in
     LDraw library).
 -   Bumping and arms: after each 1 ms step `VM.step` calls `turnParts` (each
     `!SPIKE_ROTATES` part's angle = its motor's `Motor.turned` x ratio, kept in
-    `scene.robot.partAngles`) and `collide` (`Collisions.solve`, only when the
+    `scene.robot.partAngles`; a part whose box would go below the mat stops
+    where it touches, and `stallMotor` takes the lost degrees off its motor) and `collide` (`Collisions.solve`, only when the
     Settings toggle `boundaryStore.solid` is on at Run). The robot is the
     chassis box plus one box per arm; table walls are 50 mm high, objects use
     their compiled bbox; anchored objects push the robot back at the contact
@@ -173,7 +174,7 @@ A reader-facing summary of everything the fork adds is in
 ## Known limitations
 
 -   Collisions are boxes seen from above (`src/lib/spike/collide.ts`): no
-    mission models, nothing lifted or tipped, arms pass through the mat and
+    mission models, nothing lifted or tipped, arms pass through
     objects, blocks slide without turning. Tilt/gesture sensors aren't
     simulated; acceleration/stop-method blocks are ignored.
 -   No robot builder in the site (build in BrickLink Studio / LeoCAD, load .io/.mpd).

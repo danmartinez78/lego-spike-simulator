@@ -326,8 +326,36 @@ async function bumping(h: H) {
         40,
         80
     );
+    r = armRun(P.program(P.motorFor('F', 'clockwise', 30, 'degrees')), {});
+    expect('motor F 30°: arm turned (deg)', r.scene.robot.partAngles?.[0] ?? NaN, 30, 0.5);
     r = armRun(P.program(P.motorFor('F', 'clockwise', 90, 'degrees')), {});
-    expect('motor F 90°: arm turned (deg)', r.scene.robot.partAngles?.[0] ?? NaN, 90, 0.5);
+    const stopped = r.scene.robot.partAngles?.[0] ?? NaN;
+    expectRange('motor F 90°: arm stops at the mat (deg)', stopped, 35, 70);
+    expect(
+        'arm stopped: lowest point on the mat (mm)',
+        robotShapes({ ...r.scene.robot, partAngles: [stopped] })[1].bottom,
+        0,
+        0.5
+    );
+    expect(
+        'arm stopped: motor F counter matches the arm (deg)',
+        r.hub.ports.F.motor!.turned,
+        stopped,
+        0.01
+    );
+    r = armRun(
+        P.program(
+            P.motorFor('F', 'clockwise', 90, 'degrees'),
+            P.motorFor('F', 'counterclockwise', 30, 'degrees')
+        ),
+        {}
+    );
+    expect(
+        'stalled arm lifts again (deg)',
+        r.scene.robot.partAngles?.[0] ?? NaN,
+        stopped - 30,
+        0.5
+    );
     const raised = robotShapes({ ...r.scene.robot, partAngles: [0] })[1];
     const lowered = robotShapes({ ...r.scene.robot, partAngles: [50] })[1];
     expectRange('arm up: lowest point (mm)', raised.bottom, 50, 90);
@@ -355,6 +383,6 @@ async function bumping(h: H) {
         'arm lowered: pushes the block (mm)',
         r.scene.objects[0].position!.z - (armFront + 62),
         10,
-        40
+        60
     );
 }

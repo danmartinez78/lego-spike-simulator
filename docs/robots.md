@@ -48,5 +48,9 @@ made by `tools/robots/make_db3_arm.py`:
 1 4 0 0 0 1 0 0 0 1 0 0 0 1 arm.ldr
 ```
 
-Running motor F clockwise lowers the arm; 50 degrees brings the paddle down
-near the mat.
+Running motor F clockwise lowers the arm; about 36 degrees brings the paddle
+down to the mat.
+
+A turning part can't go through the mat. When it touches the mat its motor
+stalls: the part and the motor's degree counter stop there, and the rest of
+the turn is lost, as when a real arm is blocked.

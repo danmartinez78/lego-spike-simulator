@@ -377,9 +377,9 @@ p.script(
         move('forward', 45, 'cm'),
         move('back', 10, 'cm'),
         steer(100, 180, 'degrees'),
-        motor_turn('F', 'clockwise', 50, 'degrees'),
+        motor_turn('F', 'clockwise', 35, 'degrees'),
         move('forward', 55, 'cm'),
-        motor_turn('F', 'counterclockwise', 50, 'degrees'),
+        motor_turn('F', 'counterclockwise', 35, 'degrees'),
         move('back', 20, 'cm'),
     ],
     comment='The robot starts a little crooked. Driving into the wall straightens it out.\n\n'
@@ -404,7 +404,9 @@ save(
         'a stuck block also twists the robot a little.',
         'try': [
             'The robot starts 10 degrees crooked. Watch the yaw when it hits the wall. Why does it change?',
-            'Lower the arm only 20 degrees instead of 50. Does it still catch the block?',
+            'Lower the arm only 20 degrees instead of 35. Does it still catch the block?',
+            'Lower it 60 degrees and lift it 60. The arm stops when it touches the mat, '
+            'so where does it end up?',
             'Skip the "lower the arm" block. What does the arm do when it reaches the block?',
             'Turn bumping off in Settings and run it again. What changes?',
         ],
