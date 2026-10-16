@@ -51,7 +51,13 @@
 
     function setRobotModel(robot: Model | undefined) {
         sceneStore.update((old) => {
-            const newRobot = { ...old.robot, bricks: robot, compiled: undefined };
+            const newRobot = {
+                ...old.robot,
+                bricks: robot,
+                compiled: undefined,
+                chassis: undefined,
+                moving: undefined
+            };
             return {
                 ...old,
                 robot: newRobot

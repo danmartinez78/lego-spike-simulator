@@ -149,12 +149,31 @@ A reader-facing summary of everything the fork adds is in
     (`challengeProblems`), `POST /api/challenges/check`. App side:
     `src/lib/spike/challenges.ts` (falls back to the presets with no server).
 -   Generators: `tools/examples/` (examples, fields, scenes, challenge
-    solutions), `tools/robots/make_db3d.py`.
+    solutions), `tools/robots/make_db3d.py`, `tools/robots/make_db3_arm.py`
+    (Driving Base 3 with arm: medium motor on F on top of the hub, arm built
+    from plain quads in the file, since the cloud sandbox can't download the
+    LDraw library).
+-   Bumping and arms: after each 1 ms step `VM.step` calls `turnParts` (each
+    `!SPIKE_ROTATES` part's angle = its motor's `Motor.turned` x ratio, kept in
+    `scene.robot.partAngles`) and `collide` (`Collisions.solve`, only when the
+    Settings toggle `boundaryStore.solid` is on at Run). The robot is the
+    chassis box plus one box per arm; table walls are 50 mm high, objects use
+    their compiled bbox; anchored objects push the robot back at the contact
+    point (position-based, so it turns and squares up, and `hub.yaw` follows);
+    loose blocks (`anchored: false`) are pushed, and once stuck against
+    something they stop the robot. Pairs overlapping at the start are ignored
+    until they separate. `ScenePreview` compiles the robot as a chassis plus
+    each moving part (`compileRobotParts`, same recenter as the whole robot)
+    and `drawRobot` draws them in the main and sensor views. Format:
+    `docs/robots.md`. Checks: "Bumping" and "Arms" sections of
+    `tools/physics/validate.ts`.
 
 ## Known limitations
 
--   Robots drive through obstacles (no object physics); tilt/gesture sensors
-    aren't simulated; acceleration/stop-method blocks are ignored.
+-   Collisions are boxes seen from above (`src/lib/spike/collide.ts`): no
+    mission models, nothing lifted or tipped, arms pass through the mat and
+    objects, blocks slide without turning. Tilt/gesture sensors aren't
+    simulated; acceleration/stop-method blocks are ignored.
 -   No robot builder in the site (build in BrickLink Studio / LeoCAD, load .io/.mpd).
 -   Progress on lessons and challenges is per browser unless the student signs in.
 -   The BIOGLOW wireframe in the live library is FIRST material (site only, not in the repo).

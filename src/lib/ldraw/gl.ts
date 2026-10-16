@@ -43,6 +43,8 @@ export interface CompileOptions {
     maxDepth?: number;
     wireframe?: boolean;
     select?: number[] | undefined;
+    // Subparts (by id) to leave out, such as arms drawn on their own.
+    exclude?: Set<number>;
 }
 
 export interface PipeLine {
@@ -79,6 +81,7 @@ export class WebGLCompiler {
     compiledLines: number;
     compiledTriangles: number;
     parentColour: BrickColour;
+    compileExclude: Set<number> | undefined;
 
     constructor() {
         this.parentColour = {
@@ -93,6 +96,7 @@ export class WebGLCompiler {
         this.compileVertices = [];
         this.compiledLines = 0;
         this.compiledTriangles = 0;
+        this.compileExclude = undefined;
     }
 
     getColour(colour: BrickColour, edge: boolean): Colour {
@@ -422,6 +426,9 @@ export class WebGLCompiler {
         }
         const oldParent = this.parentColour;
         for (const subpart of model.subparts) {
+            if (this.compileExclude?.has(subpart.id)) {
+                continue;
+            }
             this.parentColour = this.getParentColour(subpart.colour);
             if (subpart.model) {
                 const oldMatrix = this.compileMatrix;
@@ -538,6 +545,9 @@ export class WebGLCompiler {
         }
         const oldParent = this.parentColour;
         for (const subpart of model.subparts) {
+            if (this.compileExclude?.has(subpart.id)) {
+                continue;
+            }
             this.parentColour = this.getParentColour(subpart.colour);
             if (subpart.model) {
                 const oldMatrix = this.compileMatrix;
@@ -699,6 +709,9 @@ export class WebGLCompiler {
         }
         const oldParent = this.parentColour;
         for (const subpart of model.subparts) {
+            if (this.compileExclude?.has(subpart.id)) {
+                continue;
+            }
             this.parentColour = this.getParentColour(subpart.colour);
             if (subpart.model) {
                 const oldMatrix = this.compileMatrix;
@@ -724,6 +737,7 @@ export class WebGLCompiler {
         const maxDepth = options?.maxDepth ?? 1000;
         const wireframe = options?.wireframe ?? false;
         const selected = options?.select;
+        this.compileExclude = options?.exclude;
         let roffset: Vertex = { x: 0, y: 0, z: 0 };
         this.compiledLines = 0;
         this.compiledTriangles = 0;
@@ -856,6 +870,7 @@ export class WebGLCompiler {
         this.compileMatrix = m4.identity();
         this.compileColours = [];
         this.compileVertices = [];
+        this.compileExclude = undefined;
         return compiledModel;
     }
 }
@@ -1649,6 +1664,9 @@ export class WebGL extends WebGLCompiler {
         this.drawQuads(model.quads);
         const oldParent = this.parentColour;
         for (const subpart of model.subparts) {
+            if (this.compileExclude?.has(subpart.id)) {
+                continue;
+            }
             this.parentColour = this.getParentColour(subpart.colour);
             if (subpart.model) {
                 this.pushMatrix();

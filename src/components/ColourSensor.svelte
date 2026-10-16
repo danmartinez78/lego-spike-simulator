@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { drawRobot } from '$lib/spike/attachments';
     import { onDestroy, onMount } from 'svelte';
     import { Button, Dropdown, DropdownItem } from 'flowbite-svelte';
     import { WebGL, type MapTexture } from '$lib/ldraw/gl';
@@ -347,11 +348,7 @@
             if (obj.rotation) {
                 gl.rotate(obj.rotation, 0.0, 1.0, 0.0);
             }
-            if (obj.compiled) {
-                gl.drawCompiled(obj.compiled);
-            } else {
-                gl.drawBox(100, 100, 100);
-            }
+            drawRobot(gl, obj);
             gl.popMatrix();
             gl.setBrightness(1.0);
         }

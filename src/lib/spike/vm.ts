@@ -1,9 +1,11 @@
 import * as Blockly from 'blockly/core';
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { mbitfont } from '$lib/spike/font';
 import { SoundLibrary } from '$lib/blockly/audio';
 import { type Vertex } from '$lib/ldraw/components';
-import { type SceneStore } from '$lib/spike/scene';
+import { boundaryStore, type SceneStore } from '$lib/spike/scene';
+import { Collisions } from '$lib/spike/collide';
+import { partAngle } from '$lib/spike/attachments';
 import * as m4 from '$lib/ldraw/m4';
 import { realism } from '$lib/spike/realism';
 
@@ -2112,6 +2114,9 @@ export class Motor {
     id: number;
     position: number;
     relativePosition: number;
+    // Degrees turned since the program started, never wrapped or reset by a
+    // block, for parts the motor turns (arms and other attachments).
+    turned: number;
     motorSpeed: number;
     rpm: number;
     on: boolean;
@@ -2125,6 +2130,7 @@ export class Motor {
         this.id = id;
         this.position = 0;
         this.relativePosition = 0;
+        this.turned = 0;
         this.motorSpeed = 0.75;
         this.rpm = 135 * this.motorSpeed;
         this.on = false;
@@ -2136,6 +2142,7 @@ export class Motor {
     reset() {
         this.position = 0;
         this.relativePosition = 0;
+        this.turned = 0;
         this.motorSpeed = 0.75;
         this.rpm = 135 * this.motorSpeed;
         this.on = false;
@@ -2231,9 +2238,11 @@ export class Motor {
         if (reverse) {
             this.position -= delta * 360;
             this.relativePosition -= delta * 360;
+            this.turned -= delta * 360;
         } else {
             this.position += delta * 360;
             this.relativePosition += delta * 360;
+            this.turned += delta * 360;
         }
         while (this.position >= 360) {
             this.position -= 360;
@@ -2866,6 +2875,8 @@ export class VM {
     timerStart: number;
     deltaTime: number;
     wait: number;
+    // Bumping into walls and objects, when the setting is on.
+    collisions: Collisions | undefined;
     sleepTasks: SleepTask[];
 
     constructor(
@@ -3055,6 +3066,7 @@ export class VM {
             this.wait = startDelay;
             this.clearBroadcast();
             this.alignWheelsToModel();
+            this.collisions = get(boundaryStore).solid ? new Collisions() : undefined;
             this.runThreads();
         } else if (this.state == 'paused') {
             this.unpause();
@@ -3129,6 +3141,8 @@ export class VM {
                 // Motors turn for the whole step before any sleep that ends
                 // with it stops them, so timed moves aren't a step short.
                 this.moveRobot(stepTime, scene);
+                this.turnParts(scene);
+                this.collide(scene);
                 this.driftGyro(stepTime);
                 this.simTime += stepTime;
                 // Read the sensors every sensorInterval of simulated time, so
@@ -3144,6 +3158,41 @@ export class VM {
                 duration -= stepTime;
             }
             this.deltaTime = duration;
+        }
+    }
+
+    // Arms and other parts follow the degrees their motor has turned.
+    turnParts(scene: SceneStore) {
+        const moving = scene.robot.moving;
+        if (!moving || moving.length == 0) {
+            return;
+        }
+        scene.robot.partAngles = moving.map((part) => {
+            const motor = this.hub.ports[part.port as PortType]?.motor;
+            return partAngle(part, motor ? motor.turned : 0);
+        });
+    }
+
+    collide(scene: SceneStore) {
+        if (!this.collisions) {
+            return;
+        }
+        const turned = this.collisions.solve(scene);
+        if (turned != 0) {
+            // The gyro feels the robot turn when it bumps into something.
+            this.hub.yaw -= turned;
+            while (this.hub.yaw >= 180.0) {
+                this.hub.yaw -= 360.0;
+            }
+            while (this.hub.yaw < -180.0) {
+                this.hub.yaw += 360.0;
+            }
+            while (scene.robot.rotation! >= 360.0) {
+                scene.robot.rotation! -= 360.0;
+            }
+            while (scene.robot.rotation! < 0.0) {
+                scene.robot.rotation! += 360.0;
+            }
         }
     }
 

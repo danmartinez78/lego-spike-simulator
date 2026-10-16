@@ -53,7 +53,9 @@ import {
 } from '$lib/ldraw/components';
 import * as m4 from '$lib/ldraw/m4';
 import { realismStore, applyPreset, beginRealismRun, type PresetName } from '$lib/spike/realism';
-import { copyScene, type SceneStore } from '$lib/spike/scene';
+import { copyScene, type SceneObject, type SceneStore } from '$lib/spike/scene';
+import { WebGLCompiler } from '$lib/ldraw/gl';
+import { compileRobotParts, offsetRobotParts, type RobotParts } from '$lib/spike/attachments';
 import { robotToMat } from '$lib/spike/runs';
 
 export const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -113,6 +115,9 @@ export interface Robot {
     model: Model;
     hub: Hub;
     lightOffsets: Record<string, { x: number; z: number }>;
+    // The robot's shape and its arms, around the same origin as the wheels,
+    // with the ground at y = 0.
+    parts: RobotParts;
 }
 
 function partMatrix(forward: m4.Matrix4) {
@@ -197,7 +202,42 @@ export function loadRobot(file: string): Robot {
         const p = m4.transformVector(partMatrix(t.forward), [0, 0, 0, 1]);
         lightOffsets[port] = { x: p[0] - cx, z: p[2] - cz };
     }
-    return { model, hub, lightOffsets };
+    const compiler = new WebGLCompiler();
+    const full = compiler.compileModel(model, { rescale: false });
+    const parts = compileRobotParts(compiler, model, full);
+    offsetRobotParts(parts, {
+        x: -full.recenter.x - cx,
+        y: -full.bbox.min.y,
+        z: -full.recenter.z - cz
+    });
+    return { model, hub, lightOffsets, parts };
+}
+
+// A box standing on the mat (mm), centered at x, z: a wall when anchored, a
+// block the robot can push when not.
+export function boxObject(
+    x: number,
+    z: number,
+    width: number,
+    depth: number,
+    height: number,
+    anchored: boolean
+): SceneObject {
+    return {
+        anchored,
+        name: anchored ? 'wall' : 'block',
+        position: { x, y: 0, z },
+        rotation: 0,
+        // Only the box is used for bumping.
+        compiled: {
+            bbox: {
+                min: { x: -width / 2, y: 0, z: -depth / 2 },
+                max: { x: width / 2, y: height, z: depth / 2 },
+                radius: 0
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any
+    };
 }
 
 export interface Mat {
@@ -223,6 +263,7 @@ export interface Rollout {
     timedOut: boolean;
     hub: Hub;
     vm: VM;
+    scene: SceneStore;
 }
 
 export function setRealism(preset: PresetName, seed = 0) {
@@ -241,6 +282,10 @@ export function rollout(
         startRotation?: number;
         start?: { x: number; z: number; rotation: number };
         onFrame?: (s: Sample, vm: VM) => void;
+        // Bump into walls and objects (the table is width x height mm).
+        solid?: boolean;
+        table?: { width: number; height: number };
+        objects?: SceneObject[];
     } = {}
 ): Rollout {
     const fps = opts.fps ?? Number(process.env.FPS ?? 60);
@@ -252,9 +297,13 @@ export function rollout(
             anchored: false,
             name: 'Robot',
             position: { x: opts.start?.x ?? 0, y: 0, z: opts.start?.z ?? 0 },
-            rotation: opts.start?.rotation ?? opts.startRotation ?? 0
+            rotation: opts.start?.rotation ?? opts.startRotation ?? 0,
+            chassis: opts.solid ? robot.parts.chassis : undefined,
+            moving: robot.parts.parts
         },
-        objects: []
+        objects: opts.objects ?? [],
+        mapWidth: opts.table?.width,
+        mapHeight: opts.table?.height
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
     const run = beginRealismRun();
@@ -336,7 +385,8 @@ export function rollout(
         seconds: Math.max(0, run_t - idle),
         timedOut,
         hub,
-        vm
+        vm,
+        scene
     };
 }
 

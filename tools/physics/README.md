@@ -14,6 +14,12 @@ the VM the way `SpikeSimulator.svelte` does.
     overshoot has no left/right bias, and that wheel slip varies run to run.
 -   The colour sensor examples (stop at a line, follow a line) on a drawn mat,
     in all three settings.
+-   **Bumping**: driving into the table wall stops at it, driving in at an
+    angle squares up (and the gyro sees it), a wall on the field stops the
+    robot, a loose block is pushed and stops at the table wall, and a robot
+    that starts touching a wall can drive away.
+-   **Arms** (Driving Base 3 with arm): motor F turns the arm, the raised arm
+    passes over a block and the lowered arm pushes it.
 
 It exits non-zero if a check fails. Limits: there is no WebGL, so the colour
 sensor reads a mat function in the script and the distance sensor isn't

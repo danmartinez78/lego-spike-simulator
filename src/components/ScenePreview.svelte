@@ -4,6 +4,7 @@
     import { WebGL, type MapTexture } from '$lib/ldraw/gl';
     import { brickColour, type Quad } from '$lib/ldraw/components';
     import { type SceneStore, type SceneObject } from '$lib/spike/scene';
+    import { compileRobotParts, drawRobot } from '$lib/spike/attachments';
     import * as m4 from '$lib/ldraw/m4';
     import { showFps } from '$lib/debug';
     import { VideoCameraOutline } from 'flowbite-svelte-icons';
@@ -424,11 +425,7 @@
             if (obj.rotation) {
                 gl.rotate(obj.rotation, 0.0, 1.0, 0.0);
             }
-            if (obj.compiled) {
-                gl.drawCompiled(obj.compiled);
-            } else {
-                gl.drawBox(100, 100, 100);
-            }
+            drawRobot(gl, obj);
             gl.popMatrix();
             gl.setBrightness(1.0);
         }
@@ -484,6 +481,12 @@
         if (obj.bricks) {
             if (!obj.compiled || forceCompile) {
                 obj.compiled = gl.compileModel(obj.bricks, { rescale: false });
+                obj.chassis = undefined;
+            }
+            if (!obj.chassis) {
+                const parts = compileRobotParts(gl, obj.bricks, obj.compiled);
+                obj.chassis = parts.chassis;
+                obj.moving = parts.parts;
             }
         }
         if (!obj.position && obj.compiled) {

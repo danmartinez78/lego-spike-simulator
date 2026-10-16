@@ -3,6 +3,7 @@
 // if a check fails. Run with: node tools/physics/run.mjs
 import * as P from './prog';
 import { realismStore, presets, type PresetName } from '$lib/spike/realism';
+import { robotShapes } from '$lib/spike/collide';
 
 type H = typeof import('./harness');
 
@@ -223,6 +224,137 @@ export default async function (h: H) {
         expectRange(`${p}: stop at a line, worst miss (mm)`, worstStop, 0, 5);
         expectRange(`${p}: follow a line, worst wander (mm)`, worstFollow, 0, 30);
     }
+    await bumping(h);
     console.log(failures ? `\n${failures} check(s) failed` : '\nAll checks passed');
     return failures == 0;
+}
+
+// Bumping into the table walls and objects, pushing blocks, and arms.
+async function bumping(h: H) {
+    h.setRealism('ideal');
+    const robot = h.loadRobot(h.repo + '/presets/robots/DrivingBase3.mpd');
+    const front = robot.parts.chassis.bbox.max.z; // forward is +z
+    const table = { width: 2360, height: 1140 };
+    const wallZ = table.height / 2;
+    const pair = P.pair('CD');
+    const run = (prog: object, opts: object) =>
+        h.quiet(() =>
+            h.rollout(
+                robot,
+                h.quiet(() => h.compile(prog)),
+                { maxSeconds: 60, solid: true, table, ...opts }
+            )
+        );
+    console.log('\nBumping into walls and objects (ideal)');
+    const startZ = wallZ - front - 300;
+    let r = run(P.program(pair, P.move('forward', 60, 'cm')), {
+        start: { x: 0, z: startZ, rotation: 0 }
+    });
+    expect('drive into the table wall: stops at the wall (mm)', r.end.z + front, wallZ, 1.5);
+    expect('drive into the table wall: heading', wrap(r.end.rotation), 0, 0.1);
+
+    for (const angle of [12, -20]) {
+        r = run(P.program(pair, P.move('forward', 80, 'cm')), {
+            start: { x: 0, z: startZ, rotation: angle }
+        });
+        expect(`square up from ${angle}°: heading`, wrap(r.end.rotation), 0, 1);
+        expect(`square up from ${angle}°: gyro sees the turn`, wrap(r.end.yaw), angle, 1);
+        expect(`square up from ${angle}°: against the wall (mm)`, r.end.z + front, wallZ, 3);
+    }
+
+    // A fixed wall (anchored object) 200 mm ahead.
+    r = run(P.program(pair, P.move('forward', 40, 'cm')), {
+        start: { x: 0, z: 0, rotation: 0 },
+        objects: [h.boxObject(0, front + 200 + 25, 400, 50, 58, true)]
+    });
+    expect('drive into a wall on the field: stops at it (mm)', r.end.z + front, front + 200, 1.5);
+
+    // A loose block 100 mm ahead, pushed 300 mm further.
+    r = run(P.program(pair, P.move('forward', 40, 'cm')), {
+        start: { x: 0, z: 0, rotation: 0 },
+        objects: [h.boxObject(0, front + 100 + 32, 64, 64, 29, false)]
+    });
+    let block = r.scene.objects[0].position!;
+    expect('push a block: block ends at the robot (mm)', block.z - 32 - (r.end.z + front), 0, 1.5);
+    expect(
+        'push a block: robot drove the whole way (mm)',
+        r.end.z,
+        (400 * (2 * Math.PI * 28)) / 175,
+        2
+    );
+    expect('push a block: block kept its line (mm)', block.x, 0, 1);
+
+    // The same block pushed into the table wall stops there, and so does the robot.
+    r = run(P.program(pair, P.move('forward', 60, 'cm')), {
+        start: { x: 0, z: startZ, rotation: 0 },
+        objects: [h.boxObject(0, startZ + front + 100 + 32, 64, 64, 29, false)]
+    });
+    block = r.scene.objects[0].position!;
+    expect('push a block into the table wall: block at the wall (mm)', block.z + 32, wallZ, 2);
+    expect(
+        'push a block into the table wall: robot behind it (mm)',
+        r.end.z + front,
+        wallZ - 64,
+        3
+    );
+
+    // A robot that starts touching a wall isn't thrown off it.
+    r = run(P.program(pair, P.move('back', 10, 'cm')), {
+        start: { x: 0, z: wallZ - front + 20, rotation: 0 }
+    });
+    expect(
+        'start overlapping the wall: backs away normally (mm)',
+        r.end.z,
+        wallZ - front + 20 - (100 * 2 * Math.PI * 28) / 175,
+        1.5
+    );
+
+    console.log('\nArms (Driving Base 3 with arm, motor F)');
+    const arm = h.loadRobot(h.repo + '/presets/robots/DrivingBase3 with arm.mpd');
+    const armRun = (prog: object, opts: object) =>
+        h.quiet(() =>
+            h.rollout(
+                arm,
+                h.quiet(() => h.compile(prog)),
+                { maxSeconds: 60, solid: true, ...opts }
+            )
+        );
+    const armFront = arm.parts.chassis.bbox.max.z;
+    expectRange(
+        'arm sticks out in front of the robot (mm)',
+        arm.parts.parts[0]?.compiled.bbox.max.z - armFront,
+        40,
+        80
+    );
+    r = armRun(P.program(P.motorFor('F', 'clockwise', 90, 'degrees')), {});
+    expect('motor F 90°: arm turned (deg)', r.scene.robot.partAngles?.[0] ?? NaN, 90, 0.5);
+    const raised = robotShapes({ ...r.scene.robot, partAngles: [0] })[1];
+    const lowered = robotShapes({ ...r.scene.robot, partAngles: [50] })[1];
+    expectRange('arm up: lowest point (mm)', raised.bottom, 50, 90);
+    expectRange('arm lowered 50°: lowest point (mm)', lowered.bottom, -30, 15);
+    const blockAhead = () => [h.boxObject(0, armFront + 30 + 32, 64, 64, 29, false)];
+    r = armRun(P.program(P.pair('CD'), P.move('forward', 2.5, 'cm')), {
+        start: { x: 0, z: 0, rotation: 0 },
+        objects: blockAhead()
+    });
+    expect(
+        'arm up: passes over a block (block moved, mm)',
+        r.scene.objects[0].position!.z - (armFront + 62),
+        0,
+        0.5
+    );
+    r = armRun(
+        P.program(
+            P.motorFor('F', 'clockwise', 50, 'degrees'),
+            P.pair('CD'),
+            P.move('forward', 4, 'cm')
+        ),
+        { start: { x: 0, z: 0, rotation: 0 }, objects: blockAhead() }
+    );
+    expectRange(
+        'arm lowered: pushes the block (mm)',
+        r.scene.objects[0].position!.z - (armFront + 62),
+        10,
+        40
+    );
 }
