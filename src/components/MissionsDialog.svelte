@@ -10,6 +10,7 @@
     import { askConfirm } from '$lib/confirm';
     import {
         currentProgram,
+        entryTitle,
         fetchEntry,
         libraryStore,
         loadRobotFromLibrary,
@@ -20,7 +21,12 @@
         coachFetchVersion,
         coachMissions,
         fetchVersion,
+        missionFields,
         missionLabel,
+        placeRobotAt,
+        robotStart,
+        saveMission,
+        startText,
         missionsStore,
         newestFirst,
         openedVersion,
@@ -48,8 +54,9 @@
     $: versions = selected ? newestFirst(selected.versions) : [];
     $: guidedAvailable =
         !!selected?.guided && $libraryStore.index.programs.some((p) => p.name == selected?.guided);
-    $: fieldAvailable =
-        !!selected?.field && $libraryStore.index.scenes.some((s) => s.name == selected?.field);
+    $: fields = selected
+        ? missionFields(selected).filter((f) => $libraryStore.index.scenes.some((s) => s.name == f))
+        : [];
     // The version this student last opened, if it belongs to this mission.
     $: from = $openedVersion?.mission == selected?.id ? $openedVersion?.version : undefined;
     $: fromVersion = selected?.versions.find((v) => v.id == from);
@@ -141,11 +148,12 @@
         }
     }
 
-    async function setUpField(mission: Mission) {
+    async function setUpField(mission: Mission, field: string) {
         busy = true;
         message = '';
         try {
-            if (mission.field) await loadSceneFromLibrary(mission.field);
+            await loadSceneFromLibrary(field);
+            if (mission.start) placeRobotAt(mission.start);
             if (mission.robot) await loadRobotFromLibrary(mission.robot);
             modalOpen = false;
             dispatch('setup');
@@ -191,6 +199,38 @@
             message = `Saved as version ${number}. The team can open it now.`;
         } catch (e) {
             message = `Could not save: ${(e as Error).message}`;
+        } finally {
+            busy = false;
+        }
+    }
+
+    // Coaches: the robot's spot in the simulator becomes the mission's start.
+    async function setStart(mission: Mission, clear = false) {
+        busy = true;
+        message = '';
+        try {
+            const start = clear ? undefined : robotStart();
+            await saveMission(
+                {
+                    number: mission.number,
+                    title: mission.title,
+                    season: mission.season,
+                    goal: mission.goal,
+                    notes: mission.notes,
+                    video: mission.video,
+                    fields: missionFields(mission),
+                    start,
+                    robot: mission.robot,
+                    guided: mission.guided
+                },
+                mission.id
+            );
+            await loadMissions(true);
+            message = start
+                ? `The robot now starts at ${startText(start)} when this mission's field loads.`
+                : "The robot now starts at the field's own start.";
+        } catch (e) {
+            message = `Could not save the start: ${(e as Error).message}`;
         } finally {
             busy = false;
         }
@@ -338,17 +378,19 @@
                                 Watch the mission video
                             </a>
                         {/if}
-                        {#if fieldAvailable}
+                        {#each fields as field}
                             <Button
                                 size="sm"
                                 color="light"
                                 disabled={busy}
-                                on:click={() => selected && setUpField(selected)}
+                                on:click={() => selected && setUpField(selected, field)}
                             >
                                 <MapPinAltOutline class="w-5 h-5 me-2 text-gray-500" />
-                                Load the mission field
+                                {fields.length == 1
+                                    ? 'Load the mission field'
+                                    : `Load ${entryTitle(field)}`}
                             </Button>
-                        {/if}
+                        {/each}
                         {#if guidedAvailable}
                             <Button
                                 size="sm"
@@ -359,6 +401,37 @@
                             >
                         {/if}
                     </div>
+
+                    {#if coach}
+                        <section
+                            class="rounded-xl border border-dashed border-gray-300 px-4 py-3 flex flex-wrap items-center gap-3 text-sm"
+                        >
+                            <div class="flex-1 min-w-48">
+                                <div class="font-medium text-gray-900">Robot start</div>
+                                <div class="text-gray-600">
+                                    {selected.start
+                                        ? startText(selected.start)
+                                        : "The field's own start"}. Place the robot in the launch
+                                    area in the simulator, then press Start here.
+                                </div>
+                            </div>
+                            <Button
+                                size="xs"
+                                color="alternative"
+                                disabled={busy}
+                                on:click={() => selected && setStart(selected)}>Start here</Button
+                            >
+                            {#if selected.start}
+                                <Button
+                                    size="xs"
+                                    color="light"
+                                    disabled={busy}
+                                    on:click={() => selected && setStart(selected, true)}
+                                    >Use the field's start</Button
+                                >
+                            {/if}
+                        </section>
+                    {/if}
 
                     <section>
                         <h4

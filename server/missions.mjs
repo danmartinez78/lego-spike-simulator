@@ -2,7 +2,7 @@
 // Team code, so it lives in TEAM_DIR with the roster and progress, not in the
 // public library, and only coaches and signed-in students can read it.
 //
-//   missions/<id>/mission.json            number, title, goal, notes, video, field...
+//   missions/<id>/mission.json            number, title, goal, notes, video, fields, start...
 //   missions/<id>/versions.json           every saved version, oldest first
 //   missions/<id>/versions/<version>.llsp3
 //
@@ -17,6 +17,7 @@ import crypto from 'node:crypto';
 
 const MAX_PROGRAM = 5e6;
 const TEXT_LIMITS = { title: 80, season: 40, goal: 2000, notes: 4000, video: 500 };
+const MAX_FIELDS = 4;
 
 function isText(value) {
     return typeof value === 'string' && value.trim().length > 0;
@@ -64,8 +65,51 @@ export function cleanMission(input, files) {
     if (mission.video && !isWebAddress(mission.video)) {
         errors.push('"video" must be a web address starting with https://');
     }
+    // Fields students can pick from, such as the color mat and the wireframe.
+    // `field` (one name) is the older form and comes first.
+    const fields = [];
+    for (const value of [input.field, ...(Array.isArray(input.fields) ? input.fields : [])]) {
+        if (value === undefined || value === null || value === '') continue;
+        if (typeof value !== 'string' || !value.toLowerCase().endsWith('.spk')) {
+            errors.push('"fields" must be field (.spk) file names from the library');
+            continue;
+        }
+        if (fields.includes(value)) continue;
+        fields.push(value);
+        if (files && !files.scenes.includes(value)) {
+            warnings.push(`"fields": ${value} isn't in the library`);
+        }
+    }
+    if (input.fields !== undefined && input.fields !== null && !Array.isArray(input.fields)) {
+        errors.push('"fields" must be a list of field (.spk) file names');
+    }
+    if (fields.length > MAX_FIELDS) errors.push(`A mission can offer up to ${MAX_FIELDS} fields`);
+    if (fields.length > 0) {
+        mission.fields = fields;
+        mission.field = fields[0];
+    }
+    // Where the robot starts, in the same terms as get_field: x and z in mm
+    // from the mat's center, heading in degrees (0 = up the mat, 90 = right).
+    if (input.start !== undefined && input.start !== null) {
+        const { x, z, heading } = input.start;
+        if (
+            typeof input.start !== 'object' ||
+            ![x, z, heading].every((n) => typeof n === 'number' && Number.isFinite(n)) ||
+            Math.abs(x) > 5000 ||
+            Math.abs(z) > 5000
+        ) {
+            errors.push(
+                '"start" must be { x, z, heading } in mm and degrees, like get_field\'s start'
+            );
+        } else {
+            mission.start = {
+                x: Math.round(x),
+                z: Math.round(z),
+                heading: Math.round((((heading % 360) + 360) % 360) * 10) / 10
+            };
+        }
+    }
     for (const [key, kind, ext] of [
-        ['field', 'scenes', '.spk'],
         ['robot', 'robots', ''],
         ['guided', 'programs', '.llsp3']
     ]) {
