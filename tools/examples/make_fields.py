@@ -126,8 +126,8 @@ class Field:
             }
         )
 
-    def block(self, name, x, z, colour=1, size=2):
-        """A cube of 2x4 bricks (about 6.4 cm square, size layers high) to push or detect."""
+    def block(self, name, x, z, colour=1, size=2, rotation=0):
+        """A stack of 2x4 bricks (5 x 8 cm, size + 1 layers high) to push, pull or detect."""
         lines = ['0 FILE main.ldr', '0 main', '0 Name: main.ldr']
         for layer in range(size + 1):
             for col in (-40, 40):
@@ -135,7 +135,12 @@ class Field:
                     lines.append(f'1 {colour} {col} {-24 * (layer + 1)} {row} 1 0 0 0 1 0 0 0 1 3001.dat')
         self.models[name] = '\n'.join(lines) + '\n'
         self.objects.append(
-            {'anchored': False, 'position': {'x': x, 'y': (size + 1) * 24 * 0.4 / 2, 'z': z}, 'rotation': 0, 'name': name}
+            {
+                'anchored': False,
+                'position': {'x': x, 'y': (size + 1) * 24 * 0.4 / 2, 'z': z},
+                'rotation': rotation,
+                'name': name,
+            }
         )
 
     def save(self):
@@ -303,4 +308,16 @@ f.wall('Block wall', -100, 0, 400, heading=0, layers=4)
 f.block('Red block', -450, -10, colour=4)
 f.draw.rectangle([px(-200), pz(-110), px(-110), pz(90)], outline=RED, width=6)
 f.label(-520, 130, '2. lower the arm and push the block to the wall', 26)
+f.save()
+
+# 8. Hook and pull -----------------------------------------------------------
+# For the "Hook and pull" example and the robot with a hook.
+f = Field('Practice - hook and pull')
+f.title('HOOK AND PULL  (use the robot with a hook)')
+f.draw.rectangle([px(-600 - 150), pz(300 - 170), px(-600 + 150), pz(300 + 170)], fill=(225, 238, 250))
+f.label(-600, 300 + 200, 'HOME', 34, BLUE)
+f.start_box(-600, 300, 0, label='')
+f.block('Blue block', -600, -100, colour=1, rotation=90)
+f.draw.rectangle([px(-600 - 70), pz(-100 - 45), px(-600 + 70), pz(-100 + 45)], outline=BLUE, width=6)
+f.label(-600, -190, 'hook the block and pull it home', 26)
 f.save()

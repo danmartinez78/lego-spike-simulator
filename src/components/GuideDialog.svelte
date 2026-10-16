@@ -432,6 +432,8 @@
                     (sensor on port F). The robot bumps into walls and stops, and it pushes loose blocks.
                     To practice with an arm, choose <i>Driving Base 3 with arm</i>: motor F lowers
                     the arm when it runs clockwise and raises it counterclockwise.
+                    <i>Driving Base 3 with hook</i> works the same way: lower the hook behind a block
+                    and back up to pull it.
                 </p>
                 <p class="mt-2">
                     The robots and fields you can choose are saved on this site for everyone. Only

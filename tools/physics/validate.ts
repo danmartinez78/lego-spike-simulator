@@ -4,6 +4,15 @@
 import * as P from './prog';
 import { realismStore, presets, type PresetName } from '$lib/spike/realism';
 import { robotShapes } from '$lib/spike/collide';
+import type { SceneObject } from '$lib/spike/scene';
+
+// The lowest point of a robot's arms (mm).
+const armBottom = (robot: SceneObject) =>
+    Math.min(
+        ...robotShapes(robot)
+            .slice(1)
+            .map((s) => s.bottom)
+    );
 
 type H = typeof import('./harness');
 
@@ -333,7 +342,7 @@ async function bumping(h: H) {
     expectRange('motor F 90°: arm stops at the mat (deg)', stopped, 35, 70);
     expect(
         'arm stopped: lowest point on the mat (mm)',
-        robotShapes({ ...r.scene.robot, partAngles: [stopped] })[1].bottom,
+        armBottom({ ...r.scene.robot, partAngles: [stopped] }),
         0,
         0.5
     );
@@ -356,10 +365,10 @@ async function bumping(h: H) {
         stopped - 30,
         0.5
     );
-    const raised = robotShapes({ ...r.scene.robot, partAngles: [0] })[1];
-    const lowered = robotShapes({ ...r.scene.robot, partAngles: [50] })[1];
-    expectRange('arm up: lowest point (mm)', raised.bottom, 50, 90);
-    expectRange('arm lowered 50°: lowest point (mm)', lowered.bottom, -30, 15);
+    const raised = armBottom({ ...r.scene.robot, partAngles: [0] });
+    const lowered = armBottom({ ...r.scene.robot, partAngles: [50] });
+    expectRange('arm up: lowest point (mm)', raised, 50, 90);
+    expectRange('arm lowered 50°: lowest point (mm)', lowered, -30, 15);
     const blockAhead = () => [h.boxObject(0, armFront + 30 + 32, 64, 64, 29, false)];
     r = armRun(P.program(P.pair('CD'), P.move('forward', 2.5, 'cm')), {
         start: { x: 0, z: 0, rotation: 0 },
@@ -384,5 +393,49 @@ async function bumping(h: H) {
         r.scene.objects[0].position!.z - (armFront + 62),
         10,
         60
+    );
+
+    console.log('\nHooks (Driving Base 3 with hook, motor F)');
+    const hook = h.loadRobot(h.repo + '/presets/robots/DrivingBase3 with hook.mpd');
+    expect('hook is two boxes (beam and hook)', hook.parts.parts[0]?.boxes.length ?? 0, 2, 0);
+    const hookRun = (prog: object, objects: SceneObject[]) =>
+        h.quiet(() =>
+            h.rollout(
+                hook,
+                h.quiet(() => h.compile(prog)),
+                { maxSeconds: 60, solid: true, start: { x: 0, z: 0, rotation: 0 }, objects }
+            )
+        );
+    // A block between the robot and the hook, 48 mm deep.
+    const between = () => [h.boxObject(0, hook.parts.chassis.bbox.max.z + 35, 80, 48, 29, false)];
+    r = hookRun(P.program(P.motorFor('F', 'clockwise', 90, 'degrees')), []);
+    const hookDown = r.scene.robot.partAngles?.[0] ?? NaN;
+    expectRange('hook stops at the mat (deg)', hookDown, 10, 30);
+    expectRange(
+        'hook down: beam stays above a block (mm)',
+        robotShapes({ ...r.scene.robot, partAngles: [hookDown] })[1].bottom,
+        30,
+        60
+    );
+    r = hookRun(
+        P.program(
+            P.motorFor('F', 'clockwise', 20, 'degrees'),
+            P.pair('CD'),
+            P.move('back', 10, 'cm')
+        ),
+        between()
+    );
+    expect(
+        'hook down, back 10 cm: block pulled along (mm)',
+        r.scene.objects[0].position!.z - (hook.parts.chassis.bbox.max.z + 35),
+        r.end.z,
+        3
+    );
+    r = hookRun(P.program(P.pair('CD'), P.move('back', 10, 'cm')), between());
+    expect(
+        'hook up, back 10 cm: block stays (mm)',
+        r.scene.objects[0].position!.z - (hook.parts.chassis.bbox.max.z + 35),
+        0,
+        0.5
     );
 }
