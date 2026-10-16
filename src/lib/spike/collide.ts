@@ -5,7 +5,7 @@
 // that drives into a wall at an angle squares up against it. Loose blocks
 // are pushed instead, and stop at walls and other objects.
 
-import { partBoxes } from '$lib/spike/attachments';
+import { partBoxes, type MovingPart } from '$lib/spike/attachments';
 import type { SceneObject, SceneStore } from '$lib/spike/scene';
 
 type Point = [number, number];
@@ -122,6 +122,29 @@ function obstacles(scene: SceneStore): Obstacle[] {
         }
     }
     return list;
+}
+
+// Whether a moving part of the robot, turned to degrees, would be inside a
+// wall or an object (so its motor can't turn it there).
+export function partHits(scene: SceneStore, part: MovingPart, degrees: number): boolean {
+    const robot = scene.robot;
+    if (!robot.position) {
+        return false;
+    }
+    const { x, y, z } = robot.position;
+    const rotation = robot.rotation ?? 0;
+    const list = obstacles(scene);
+    for (const b of partBoxes(part, degrees)) {
+        const shape = {
+            poly: box(x, z, rotation, b.min, b.max),
+            bottom: y + b.min.y,
+            top: y + b.max.y
+        };
+        if (list.some((o) => contact(shape, o.shape))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function centroid(poly: Point[]): Point {

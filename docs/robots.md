@@ -35,8 +35,8 @@ A moving part bumps into walls and pushes blocks like the rest of the robot
 when it is low enough to touch them. For bumping, each LEGO part in it (each
 `.dat` line) is a box of its own, and so are the pieces a file draws itself,
 so a block fits under the beam of a hook and the hook can pull it. The mat
-stops a moving part (see below), but objects don't: an arm turned into an
-object goes through it.
+stops a moving part (see below), and with bumping on so do walls and objects:
+a hook lowered onto a block comes to rest on top of it.
 
 ## Examples
 

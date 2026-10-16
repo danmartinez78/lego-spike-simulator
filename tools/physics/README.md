@@ -21,8 +21,9 @@ the VM the way `SpikeSimulator.svelte` does.
 -   **Arms** (Driving Base 3 with arm): motor F turns the arm, the arm stops at
     the mat, the raised arm passes over a block and the lowered arm pushes it.
 -   **Hooks** (Driving Base 3 with hook): the hook is two boxes, stops at the
-    mat with the beam above a block, and pulls the block when the robot backs
-    up with the hook down (not with it up).
+    mat with the beam above a block, rests on top of a block it is lowered
+    onto, and pulls the block when the robot backs up with the hook down (not
+    with it up).
 
 It exits non-zero if a check fails. Limits: there is no WebGL, so the colour
 sensor reads a mat function in the script and the distance sensor isn't

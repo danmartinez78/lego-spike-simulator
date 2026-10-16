@@ -248,7 +248,8 @@ with hand-worked geometry, and fixed what did not match:
 -   **Arms move.** A part of a robot model that a motor turns, such as an arm,
     turns with that motor in the 3D view and the sensor views, and it bumps and
     pushes like the rest of the robot when it is low enough. It stops at the
-    mat: the motor stalls there instead of turning the arm through it. The robot file
+    mat, and on top of walls and blocks: the motor stalls there instead of
+    turning the arm through them. The robot file
     marks it (see [robots.md](robots.md)); "Driving Base 3 with arm" has one on
     port F.
 -   To try it: the example "Arm and walls" on the field "Practice - arm and
@@ -263,7 +264,7 @@ with hand-worked geometry, and fixed what did not match:
 -   Settings has "Robot bumps into walls and objects" to turn this off.
 -   Limits: objects are boxes (a mission model's shape isn't followed), blocks
     slide without turning, nothing can be lifted or tipped over, and an arm
-    turns through objects (only the robot gets pushed).
+    that is lowered onto something stops on it instead of pushing it down.
 
 As in the original, the robot does not move until the program sets a movement
 speed. `npm run physics` repeats these checks (see
@@ -373,8 +374,7 @@ Assignments are called homework in the code, file names and API paths.
 
 -   The robot bumps into walls and objects and pushes loose blocks, but only
     as boxes seen from above: there are no mission models that can be lifted,
-    flipped or tripped, arms pass through objects, and blocks slide
-    without turning. Tilt and gesture sensors are not simulated, and
+    flipped or tripped, and blocks slide without turning. Tilt and gesture sensors are not simulated, and
     acceleration and stop-method blocks are ignored.
 -   The robot models are LEGO's Driving Base 3 variants, not the team's own
     robot, so distances and turns that work in the simulator still need trying

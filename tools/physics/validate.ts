@@ -431,6 +431,24 @@ async function bumping(h: H) {
         r.end.z,
         3
     );
+    // A block right under the hook's tip: the hook comes to rest on it.
+    const under = () => [h.boxObject(0, hook.parts.chassis.bbox.max.z + 80, 80, 48, 29, false)];
+    r = hookRun(P.program(P.motorFor('F', 'clockwise', 20, 'degrees')), under());
+    const resting = r.scene.robot.partAngles?.[0] ?? NaN;
+    expectRange('hook lowered onto a block: stops early (deg)', resting, 1, 15);
+    expect(
+        'hook rests on the block top (mm)',
+        armBottom({ ...r.scene.robot, partAngles: [resting] }),
+        29,
+        0.5
+    );
+    expect('hook on the block: robot not pushed (mm)', r.end.z, 0, 0.01);
+    expect(
+        'hook on the block: block not moved (mm)',
+        r.scene.objects[0].position!.z - (hook.parts.chassis.bbox.max.z + 80),
+        0,
+        0.01
+    );
     r = hookRun(P.program(P.pair('CD'), P.move('back', 10, 'cm')), between());
     expect(
         'hook up, back 10 cm: block stays (mm)',
