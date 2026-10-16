@@ -186,9 +186,12 @@
             theme: 'spike',
             media: 'blockly/media/',
             comments: true,
+            // The mouse wheel scrolls the blocks; Ctrl + wheel (or a trackpad
+            // pinch) zooms.
+            move: { scrollbars: true, drag: true, wheel: true },
             zoom: {
                 controls: true,
-                wheel: false,
+                wheel: true,
                 startScale: 0.675,
                 maxScale: 3,
                 minScale: 0.3,

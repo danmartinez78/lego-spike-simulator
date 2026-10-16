@@ -29,7 +29,7 @@ export interface Mission {
     robot?: string;
     // FIRST's guided mission, a program in the public library.
     guided?: string;
-    // The version the team runs, picked by a coach.
+    // The version the robot runs at the competition, picked by a coach.
     current?: string;
     versions: MissionVersion[];
     created: string;
@@ -168,8 +168,18 @@ export async function deleteMission(id: string) {
     await coachRequest('DELETE', `/${encodeURIComponent(id)}`);
 }
 
-export async function uploadVersion(id: string, program: Blob, note: string, saved?: string) {
-    const query = new URLSearchParams({ note, ...(saved ? { saved } : {}) });
+export async function uploadVersion(
+    id: string,
+    program: Blob,
+    note: string,
+    saved?: string,
+    from?: string
+) {
+    const query = new URLSearchParams({
+        note,
+        ...(saved ? { saved } : {}),
+        ...(from ? { from } : {})
+    });
     return (await coachRequest('POST', `/${encodeURIComponent(id)}/versions?${query}`, program))
         .mission as Mission;
 }
@@ -191,6 +201,16 @@ export async function deleteVersion(id: string, version: string) {
             `/${encodeURIComponent(id)}/versions/${encodeURIComponent(version)}`
         )
     ).mission as Mission;
+}
+
+export async function coachFetchVersion(id: string, version: string): Promise<Blob> {
+    const response = await fetch(versionDownloadUrl(id, version), {
+        credentials: 'same-origin',
+        redirect: 'manual',
+        cache: 'no-store'
+    });
+    if (!response.ok) throw new Error(await errorOf(response));
+    return await response.blob();
 }
 
 export function versionDownloadUrl(id: string, version: string) {

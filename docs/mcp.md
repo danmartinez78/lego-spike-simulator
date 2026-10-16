@@ -37,7 +37,7 @@ everything an assistant saves is stamped with that coach's email.
 | `delete_program`       | Delete an example program your assistant added, if no lesson or challenge uses it     |
 | `list_missions`        | The team's missions with every version of their programs                              |
 | `save_mission`         | Add a mission or change its details                                                   |
-| `add_mission_version`  | Add a version of the team's program for a mission (base64), optionally the team's run |
+| `add_mission_version`  | Add a version of the team's program for a mission (base64), optionally the competition version |
 | `get_mission_version`  | One version's `.llsp3`, base64                                                        |
 | `delete_field`         | Delete a field your assistant added, if nothing uses it                               |
 | `delete_robot`         | Delete a robot your assistant added, if nothing uses it                               |

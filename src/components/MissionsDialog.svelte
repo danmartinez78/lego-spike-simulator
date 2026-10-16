@@ -1,7 +1,9 @@
 <script lang="ts">
-    // The team's missions, for signed-in students: what each mission asks for,
-    // its video, and every saved version of the team's program for it. Students
-    // open a version, improve it in the simulator and save it as a new version.
+    // The team's missions, for signed-in students and coaches: what each mission
+    // asks for, its video, and every saved version of the team's program for it.
+    // Students open a version, improve it in the simulator and save it as a new
+    // version. Coaches signed in to the coach page get the same window, and can
+    // also pick the version to use at the competition.
     import { createEventDispatcher } from 'svelte';
     import { Button, Input, Modal } from 'flowbite-svelte';
     import { MapPinAltOutline, VideoCameraOutline } from 'flowbite-svelte-icons';
@@ -15,6 +17,8 @@
         programRequest
     } from '$lib/library';
     import {
+        coachFetchVersion,
+        coachMissions,
         fetchVersion,
         missionLabel,
         missionsStore,
@@ -22,6 +26,8 @@
         openedVersion,
         refreshMissions,
         saveVersion,
+        setCurrentVersion,
+        uploadVersion,
         versionDate,
         type Mission,
         type MissionVersion
@@ -48,14 +54,25 @@
     $: from = $openedVersion?.mission == selected?.id ? $openedVersion?.version : undefined;
     $: fromVersion = selected?.versions.find((v) => v.id == from);
 
-    $: openDialog(modalOpen, !!$studentStore);
+    // A student's sign-in wins on a shared computer; otherwise a coach signed in
+    // to the coach page (Cloudflare Access or the home network) is a coach here too.
+    $: coach = !$studentStore && !!$libraryStore.writer;
 
-    async function openDialog(open: boolean, signedIn: boolean) {
-        if (!open || !signedIn) return;
+    $: openDialog(modalOpen, !!$studentStore, coach);
+
+    async function loadMissions(asCoach: boolean) {
+        if (!asCoach) return await refreshMissions();
+        const missions = await coachMissions();
+        missionsStore.set(missions);
+        return missions;
+    }
+
+    async function openDialog(open: boolean, student: boolean, asCoach: boolean) {
+        if (!open || !(student || asCoach)) return;
         loading = true;
         message = '';
         try {
-            const missions = await refreshMissions();
+            const missions = await loadMissions(asCoach);
             if (!missions.some((m) => m.id == selectedId)) selectedId = missions[0]?.id;
         } catch (e) {
             message = `Could not load the missions: ${(e as Error).message}`;
@@ -87,7 +104,10 @@
         busy = true;
         message = '';
         try {
-            programRequest.set({ blob: await fetchVersion(mission.id, version.id), merge: false });
+            const blob = coach
+                ? await coachFetchVersion(mission.id, version.id)
+                : await fetchVersion(mission.id, version.id);
+            programRequest.set({ blob, merge: false });
             openedVersion.set({ mission: mission.id, version: version.id });
             modalOpen = false;
         } catch (e) {
@@ -149,12 +169,44 @@
         busy = true;
         message = '';
         try {
-            const version = await saveVersion(mission.id, program, note.trim(), from);
-            openedVersion.set({ mission: mission.id, version: version.id });
+            let number: number;
+            if (coach) {
+                const saved = await uploadVersion(
+                    mission.id,
+                    program,
+                    note.trim(),
+                    undefined,
+                    from
+                );
+                const version = newestFirst(saved.versions)[0];
+                number = version.number;
+                openedVersion.set({ mission: mission.id, version: version.id });
+                await loadMissions(true);
+            } else {
+                const version = await saveVersion(mission.id, program, note.trim(), from);
+                number = version.number;
+                openedVersion.set({ mission: mission.id, version: version.id });
+            }
             note = '';
-            message = `Saved as version ${version.number}. Your coach and team can open it now.`;
+            message = `Saved as version ${number}. The team can open it now.`;
         } catch (e) {
             message = `Could not save: ${(e as Error).message}`;
+        } finally {
+            busy = false;
+        }
+    }
+
+    async function toggleCompetition(mission: Mission, version: MissionVersion) {
+        busy = true;
+        message = '';
+        try {
+            await setCurrentVersion(
+                mission.id,
+                mission.current == version.id ? undefined : version.id
+            );
+            await loadMissions(true);
+        } catch (e) {
+            message = `Could not change the competition version: ${(e as Error).message}`;
         } finally {
             busy = false;
         }
@@ -175,14 +227,22 @@
 >
     <svelte:fragment slot="header">
         <div class="flex flex-col">
-            <h3 class="text-lg font-semibold text-gray-900">Team missions</h3>
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                Team missions
+                {#if coach}
+                    <span
+                        class="text-xs font-medium rounded-full px-2 py-0.5 bg-blue-100 text-blue-800"
+                        >Coach</span
+                    >
+                {/if}
+            </h3>
             <p class="text-sm text-gray-500">
                 Our team's programs for this season's missions. Open one, make it better, save a new
                 version.
             </p>
         </div>
     </svelte:fragment>
-    {#if !$studentStore}
+    {#if !$studentStore && !coach}
         <div class="p-6 flex flex-col gap-3 items-start text-gray-800">
             <p>
                 Missions are for our team only. Sign in with the code from your coach to see them.
@@ -327,7 +387,7 @@
                                             {#if selected.current == version.id}
                                                 <span
                                                     class="text-xs font-medium rounded-full px-2 py-0.5 bg-green-600 text-white"
-                                                    >Team's run</span
+                                                    >Competition version</span
                                                 >
                                             {/if}
                                             {#if from == version.id}
@@ -344,6 +404,21 @@
                                                 : ''}
                                         </div>
                                     </div>
+                                    {#if coach}
+                                        <Button
+                                            size="xs"
+                                            color={selected.current == version.id
+                                                ? 'green'
+                                                : 'alternative'}
+                                            disabled={busy}
+                                            title="The version the robot runs at the competition"
+                                            on:click={() =>
+                                                selected && toggleCompetition(selected, version)}
+                                            >{selected.current == version.id
+                                                ? 'Stop using at competition'
+                                                : 'Use at competition'}</Button
+                                        >
+                                    {/if}
                                     <Button
                                         size="xs"
                                         color="light"

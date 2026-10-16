@@ -212,8 +212,9 @@
                 <p>
                     Students open a version from the <b>Missions</b> button, improve it in the
                     simulator and save it as a new version with a note on what changed. Nothing is
-                    overwritten. Press <b>Make it the team's run</b> on the version the robot should
-                    run, and <b>Download</b> it for the SPIKE app.
+                    overwritten. Press <b>Use at competition</b> on the version the robot should run
+                    at the competition, and <b>Download</b> it for the SPIKE app. Coaches signed in here
+                    can also open and save versions from the simulator's Missions button.
                 </p>
                 <Button size="xs" color="light" class="self-start" on:click={() => go('missions')}
                     >Go to Missions</Button

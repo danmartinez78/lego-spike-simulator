@@ -3,6 +3,7 @@
     // Team code, kept with the roster rather than in the public library.
     import { onMount } from 'svelte';
     import { Button, Input, Label, Select, Spinner, Textarea } from 'flowbite-svelte';
+    import { FileCodeOutline, UploadOutline } from 'flowbite-svelte-icons';
     import { askConfirm } from '$lib/confirm';
     import { libraryStore } from '$lib/library';
     import {
@@ -35,7 +36,26 @@
     let uploadFor = '';
     let uploadNote = '';
     let uploadDate = '';
-    let uploadFile: FileList | undefined = undefined;
+    let uploadFile: File | undefined = undefined;
+    let dragging = false;
+
+    function pickFile(files: FileList | null | undefined) {
+        const file = files?.[0];
+        if (!file) return;
+        if (!/\.llsp3$/i.test(file.name)) {
+            failed = true;
+            message = `${file.name} isn't a SPIKE program. Pick a .llsp3 file saved in the SPIKE app.`;
+            return;
+        }
+        message = '';
+        uploadFile = file;
+    }
+
+    function sizeText(bytes: number) {
+        return bytes < 1024 * 1024
+            ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+            : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    }
 
     function emptyForm() {
         return {
@@ -175,7 +195,7 @@
     }
 
     async function upload(mission: Mission) {
-        const file = uploadFile?.[0];
+        const file = uploadFile;
         if (!file) {
             failed = true;
             message = 'Pick a .llsp3 file first.';
@@ -207,8 +227,8 @@
         await run(
             async () => replace(await setCurrentVersion(mission.id, current)),
             current
-                ? `Version ${version.number} is now the team's run for ${missionLabel(mission)}.`
-                : `${missionLabel(mission)} has no team's run picked.`
+                ? `Version ${version.number} is now the one to use at the competition for ${missionLabel(mission)}.`
+                : `${missionLabel(mission)} has no competition version picked.`
         );
     }
 
@@ -415,34 +435,79 @@
 
             {#if uploadFor == mission.id}
                 <form
-                    class="rounded-lg border border-blue-200 p-3 flex flex-col gap-3"
+                    class="rounded-xl border border-gray-200 bg-gray-50 p-4 flex flex-col gap-4"
                     on:submit|preventDefault={() => upload(mission)}
                 >
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-900">
+                            Add version {mission.versions.reduce(
+                                (n, v) => Math.max(n, v.number),
+                                0
+                            ) + 1} from a file
+                        </h4>
+                        <p class="text-xs text-gray-500">
+                            A program saved in the SPIKE app, such as one from the team's Drive
+                            folder.
+                        </p>
+                    </div>
+                    <label
+                        for="upload-file-{mission.id}"
+                        class="flex items-center gap-3 rounded-lg border-2 border-dashed px-4 py-4 cursor-pointer transition-colors {dragging
+                            ? 'border-blue-500 bg-blue-50'
+                            : uploadFile
+                              ? 'border-green-300 bg-white'
+                              : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50'}"
+                        on:dragover|preventDefault={() => (dragging = true)}
+                        on:dragleave={() => (dragging = false)}
+                        on:drop|preventDefault={(e) => {
+                            dragging = false;
+                            pickFile(e.dataTransfer?.files);
+                        }}
+                    >
+                        {#if uploadFile}
+                            <FileCodeOutline class="w-8 h-8 shrink-0 text-green-600" />
+                            <span class="flex-1 min-w-0">
+                                <span class="block text-sm font-medium text-gray-900 truncate"
+                                    >{uploadFile.name}</span
+                                >
+                                <span class="block text-xs text-gray-500"
+                                    >{sizeText(uploadFile.size)} · click to pick a different file</span
+                                >
+                            </span>
+                        {:else}
+                            <UploadOutline class="w-8 h-8 shrink-0 text-gray-400" />
+                            <span class="flex-1">
+                                <span class="block text-sm font-medium text-gray-900"
+                                    >Choose a .llsp3 file</span
+                                >
+                                <span class="block text-xs text-gray-500">or drop it here</span>
+                            </span>
+                        {/if}
+                        <input
+                            id="upload-file-{mission.id}"
+                            type="file"
+                            accept=".llsp3"
+                            class="sr-only"
+                            on:change={(e) => pickFile(e.currentTarget.files)}
+                        />
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-[1fr_12rem] gap-3">
                         <div>
-                            <Label for="upload-file-{mission.id}" class="mb-1"
-                                >Program (.llsp3)</Label
+                            <Label for="upload-note-{mission.id}" class="mb-1"
+                                >What changed or where it came from</Label
                             >
-                            <input
-                                id="upload-file-{mission.id}"
-                                type="file"
-                                accept=".llsp3"
-                                class="block w-full text-sm"
-                                bind:files={uploadFile}
-                            />
-                        </div>
-                        <div>
-                            <Label for="upload-note-{mission.id}" class="mb-1">What it is</Label>
                             <Input
                                 id="upload-note-{mission.id}"
                                 size="sm"
                                 bind:value={uploadNote}
+                                maxlength={300}
                                 placeholder="Saturday meeting"
                             />
                         </div>
                         <div>
                             <Label for="upload-date-{mission.id}" class="mb-1"
-                                >Saved on (optional)</Label
+                                >Saved on <span class="font-normal text-gray-500">(optional)</span
+                                ></Label
                             >
                             <Input
                                 id="upload-date-{mission.id}"
@@ -452,10 +517,12 @@
                             />
                         </div>
                     </div>
-                    <div class="flex flex-row gap-2">
-                        <Button type="submit" size="xs" disabled={busy}>Add version</Button>
-                        <Button size="xs" color="light" on:click={() => (uploadFor = '')}
+                    <div class="flex flex-row justify-end gap-2">
+                        <Button size="sm" color="alternative" on:click={() => (uploadFor = '')}
                             >Cancel</Button
+                        >
+                        <Button type="submit" size="sm" disabled={busy || !uploadFile}
+                            >Add version</Button
                         >
                     </div>
                 </form>
@@ -471,7 +538,7 @@
                                     {#if mission.current == version.id}
                                         <span
                                             class="text-xs font-medium rounded-full px-2 py-0.5 bg-green-600 text-white"
-                                            >Team's run</span
+                                            >Competition version</span
                                         >
                                     {/if}
                                     <span class="text-gray-800">{version.note}</span>
@@ -487,10 +554,11 @@
                                     size="xs"
                                     color={mission.current == version.id ? 'green' : 'light'}
                                     disabled={busy}
+                                    title="The version the robot runs at the competition"
                                     on:click={() => toggleCurrent(mission, version)}
                                     >{mission.current == version.id
-                                        ? "Team's run"
-                                        : "Make it the team's run"}</Button
+                                        ? 'Stop using at competition'
+                                        : 'Use at competition'}</Button
                                 >
                                 <Button
                                     size="xs"

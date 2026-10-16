@@ -331,7 +331,8 @@ export function createMissions({ teamDir, listFiles, sendJson, send, readBody })
                 note: url.searchParams.get('note'),
                 from: url.searchParams.get('from'),
                 saved: url.searchParams.get('saved'),
-                by: { kind: 'coach', name: who }
+                // A coach signed in from the home network has no email to show.
+                by: { kind: 'coach', name: who.startsWith('lan ') ? 'Coach' : who }
             });
             sendJson(
                 res,

@@ -364,7 +364,7 @@ const MISSION_TOOLS = [
     {
         name: 'list_missions',
         description:
-            "List the team's missions: number, name, goal, notes, video, field, FIRST's guided mission, which version is the team's run, and every version of the team's program (number, note, who saved it, when, and which version it was made from). Missions are team code: only coaches and signed-in students see them, never the public library.",
+            "List the team's missions: number, name, goal, notes, video, field, FIRST's guided mission, which version is used at the competition, and every version of the team's program (number, note, who saved it, when, and which version it was made from). Missions are team code: only coaches and signed-in students see them, never the public library.",
         inputSchema: object({}),
         annotations: { readOnlyHint: true }
     },
@@ -383,7 +383,7 @@ const MISSION_TOOLS = [
     {
         name: 'add_mission_version',
         description:
-            "Add a version of the team's program for a mission: a .llsp3 file (from the SPIKE app or the simulator), base64-encoded, with a note on what it is or what changed. Versions are never overwritten. saved (YYYY-MM-DD) records the day the team saved it, if not today. team_run: true makes it the version the team runs.",
+            "Add a version of the team's program for a mission: a .llsp3 file (from the SPIKE app or the simulator), base64-encoded, with a note on what it is or what changed. Versions are never overwritten. saved (YYYY-MM-DD) records the day the team saved it, if not today. team_run: true makes it the version used at the competition.",
         inputSchema: object(
             {
                 id: { type: 'string', description: 'Mission id from list_missions' },
@@ -395,7 +395,7 @@ const MISSION_TOOLS = [
                 },
                 team_run: {
                     type: 'boolean',
-                    description: "Make it the team's run (optional)"
+                    description: 'Use it at the competition (optional)'
                 }
             },
             ['id', 'content_base64', 'note']

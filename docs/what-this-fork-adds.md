@@ -163,7 +163,7 @@ signs in on a browser. The tabs are:
     takes it out again without deleting it.
 -   **Missions.** The team's missions and every version of their programs, kept
     out of the public library. Add versions from SPIKE app files with the day
-    they were saved, mark the team's run, and download any version.
+    they were saved, mark the version to use at the competition, and download any version.
 -   **Assignments.** Pick lessons, an optional due date and a type (practice or
     prep for the next meeting), and optionally require the check to pass before
     hand-in. A grid shows every student's status on every lesson, with a link to

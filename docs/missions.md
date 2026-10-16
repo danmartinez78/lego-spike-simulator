@@ -3,6 +3,8 @@
 Missions hold the team's own programs for the season's missions on the
 competition field. They are team code, so they are kept apart from the public
 library: only coaches and students signed in with their code can see them.
+A coach signed in to the coach page is also a coach in the simulator, so the
+Missions button works for them without a student code.
 Anyone who opens the site without signing in sees a "Sign in" message instead.
 
 ## For students
@@ -16,8 +18,8 @@ Below that is every saved **version** of the team's program, newest first,
 with who saved it, when, and what changed. **Open** loads a version into the
 code panel. After improving it in the simulator, students type what they
 changed and press **Save version**. Versions are never overwritten, and a new
-version remembers which one it was made from. The version marked **Team's run**
-is the one the robot runs at the competition.
+version remembers which one it was made from. The version marked **Competition
+version** is the one the robot runs at the competition.
 
 ## For coaches
 
@@ -28,8 +30,11 @@ The coach page's **Missions** tab:
     mission (a program from the public Programs tab).
 -   **Add a version from a file** brings in a `.llsp3` saved in the SPIKE app,
     with a note such as "Saturday meeting" and the day it was saved.
--   **Make it the team's run** marks the version the robot runs; **Download**
-    saves any version as a `.llsp3` for the SPIKE app.
+-   **Use at competition** marks the version the robot runs at the competition
+    (one per mission); **Download** saves any version as a `.llsp3` for the
+    SPIKE app.
+-   In the simulator, coaches see the same Missions window as students, with a
+    **Coach** badge and the **Use at competition** button on each version.
 -   Coaches can delete versions and missions. Students can only add versions.
 
 Coaches' AI assistants can do the same through the MCP tools `list_missions`,

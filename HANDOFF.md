@@ -101,7 +101,7 @@ A reader-facing summary of everything the fork adds is in
     (`mission.json`, `versions.json`, `versions/<id>.llsp3`) by
     `server/missions.mjs`, served on `/api/student/missions` (needs a valid
     `X-Student-Code`) and `/api/admin/missions`. Versions are append-only for
-    students; coaches mark `current` (the team's run), download, and delete.
+    students; coaches mark `current` ("Use at competition"; coaches signed in to the coach page also use the simulator's Missions window), download, and delete.
     Removing a student relabels their versions "A former teammate". MCP tools:
     `list_missions`, `save_mission`, `add_mission_version`,
     `get_mission_version`. The robot model still doesn't match the team's real
