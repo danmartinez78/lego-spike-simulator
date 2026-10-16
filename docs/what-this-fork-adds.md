@@ -59,8 +59,8 @@ assignments, and a coach page to run it all.
 -   **Block help.** Hovering a block shows a plain-English tooltip, and
     right-click "Explain this block" opens a card with a preview, an example,
     common mistakes and notes on how the simulator treats it.
--   **Example programs** (Examples button): eight programs from "Drive a square"
-    to "Mission template", each with an explanation of what it does, why it
+-   **Example programs** (Examples button): nine programs from "Drive a square"
+    to "Arm and walls", each with an explanation of what it does, why it
     works and things to try.
 -   **Team missions** (Missions button, signed-in students only): the team's
     own programs for the season's missions, with what the robot has to do, a
@@ -250,6 +250,10 @@ with hand-worked geometry, and fixed what did not match:
     pushes like the rest of the robot when it is low enough. The robot file
     marks it (see [robots.md](robots.md)); "Driving Base 3 with arm" has one on
     port F.
+-   To try it: the example "Arm and walls" on the field "Practice - arm and
+    walls", with the robot "DrivingBase3 with arm". The robot squares up on a
+    wall, then lowers its arm and pushes a block to another wall. That field's
+    walls are 4 bricks high so the raised arm reaches over them.
 -   Settings has "Robot bumps into walls and objects" to turn this off.
 -   Limits: objects are boxes (a mission model's shape isn't followed), blocks
     slide without turning, nothing can be lifted or tipped over, and an arm
@@ -317,8 +321,8 @@ All of this is in `presets/` and is copied into the library on first start.
     port F, and Driving Base 3 with an arm on port F (running the motor
     clockwise lowers the arm).
 -   **Fields:** start box, line oval, line course, color stops, accuracy
-    targets, turn rose, wall course and mini missions.
--   **Example programs:** eight, from "Drive a square" to "Mission template",
+    targets, turn rose, wall course, mini missions, and arm and walls.
+-   **Example programs:** nine, from "Drive a square" to "Arm and walls",
     each with an explanation.
 -   **Challenges:** eight, covering driving, sensors, the gyro and missions,
     each tested against a reference solution.

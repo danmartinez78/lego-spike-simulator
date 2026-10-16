@@ -166,7 +166,9 @@ A reader-facing summary of everything the fork adds is in
     each moving part (`compileRobotParts`, same recenter as the whole robot)
     and `drawRobot` draws them in the main and sensor views. Format:
     `docs/robots.md`. Checks: "Bumping" and "Arms" sections of
-    `tools/physics/validate.ts`.
+    `tools/physics/validate.ts`. Demo: example 9 "Arm and walls" on
+    "Practice - arm and walls" (walls 4 bricks high, below the raised arm's
+    56 mm; a taller wall catches the off-center arm and spins the robot).
 
 ## Known limitations
 

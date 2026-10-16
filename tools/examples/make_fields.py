@@ -290,3 +290,17 @@ f.block('Cube 2', 100, 0, colour=1, size=1)
 f.label(-450, -40, 'stop beside cube 1', 24, (120, 120, 120))
 f.label(100, 80, 'stop beside cube 2', 24, (120, 120, 120))
 f.save()
+
+# 7. Arm and walls ----------------------------------------------------------
+# For the "Arm and walls" example and the robot with an arm. The walls are
+# 4 bricks high, low enough for the raised arm to reach over them.
+f = Field('Practice - arm and walls')
+f.title('ARM AND WALLS  (use the robot with an arm)')
+f.start_box(-800, 300, 10)
+f.wall('Square-up wall', -800, -150, 500, heading=90, layers=4)
+f.label(-800, -210, '1. drive into the wall to straighten up', 26)
+f.wall('Block wall', -100, 0, 400, heading=0, layers=4)
+f.block('Red block', -450, -10, colour=4)
+f.draw.rectangle([px(-200), pz(-110), px(-110), pz(90)], outline=RED, width=6)
+f.label(-520, 130, '2. lower the arm and push the block to the wall', 26)
+f.save()
