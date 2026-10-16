@@ -10,8 +10,9 @@
         programRequest,
         currentProgram,
         saveProgram,
-        deleteEntry,
         libraryFileName,
+        isExample,
+        saveLessonCard,
         type LibraryEntry,
         type LessonCard
     } from '$lib/library';
@@ -155,15 +156,16 @@
 
     async function remove(entry: LibraryEntry) {
         if (
-            !(await askConfirm(`Delete the example "${cardOf(entry).title}"?`, {
-                confirmLabel: 'Delete',
-                danger: true
-            }))
+            !(await askConfirm(
+                `Take "${cardOf(entry).title}" out of the examples? The program stays in the coach page's Programs tab, with its explanation, for lessons and challenges.`,
+                { confirmLabel: 'Take out' }
+            ))
         ) {
             return;
         }
         try {
-            await deleteEntry('programs', entry.name);
+            await saveLessonCard(entry.name, { ...cardOf(entry), hidden: true });
+            await refreshLibrary();
             selected = undefined;
         } catch (e) {
             message = (e as Error).message;
@@ -174,15 +176,16 @@
         if (open) {
             message = '';
             refreshLibrary().then((state) => {
-                if (!selected && state.index.programs.length > 0) {
-                    selected = grouped(state.index.programs)[0].entries[0];
+                const examples = state.index.programs.filter(isExample);
+                if (!selected && examples.length > 0) {
+                    selected = grouped(examples)[0].entries[0];
                 }
             });
         }
     }
 
     $: openDialog(modalOpen);
-    $: groups = grouped($libraryStore.index.programs);
+    $: groups = grouped($libraryStore.index.programs.filter(isExample));
     $: card = selected ? cardOf(selected) : undefined;
     $: allEntries = groups.flatMap((g) => g.entries);
     $: position = selected ? allEntries.findIndex((e) => e.name == selected?.name) + 1 : 0;
@@ -463,7 +466,8 @@
                         {#if $libraryStore.writer}
                             <button
                                 class="ml-auto text-sm text-red-600 hover:text-red-800 hover:underline"
-                                on:click={() => selected && remove(selected)}>Delete example</button
+                                on:click={() => selected && remove(selected)}
+                                >Take out of examples</button
                             >
                         {/if}
                     {/if}

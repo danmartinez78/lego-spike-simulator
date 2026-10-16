@@ -27,7 +27,7 @@
         { id: 'start', label: 'Getting started' },
         { id: 'lessons', label: 'Lessons', tab: 'Lessons' },
         { id: 'challenges', label: 'Challenges', tab: 'Challenges' },
-        { id: 'examples', label: 'Example programs', tab: 'Example programs' },
+        { id: 'examples', label: 'Programs', tab: 'Programs' },
         { id: 'assignments', label: 'Assignments', tab: 'Assignments' },
         { id: 'students', label: 'Students', tab: 'Students' },
         { id: 'assets', label: 'Robots and maps', tab: 'Robots and maps' },
@@ -178,15 +178,19 @@
             </section>
 
             <section data-section="examples" class="flex flex-col gap-2">
-                <h3 class="text-base font-semibold text-gray-900">Example programs</h3>
+                <h3 class="text-base font-semibold text-gray-900">Programs</h3>
                 <p>
-                    Programs students open from the Examples window to see how something is done.
-                    Upload a .llsp3 file saved from the SPIKE app or the simulator, then press
-                    <b>Add an explanation</b> to say what it does and what to try changing. Programs
-                    without one still open, but students get no explanation.
+                    Every program in the library, such as a mission run. Upload a .llsp3 file saved
+                    from the SPIKE app or the simulator. Lessons and challenges can load any of
+                    them.
+                </p>
+                <p>
+                    To show one in students' Examples window, press <b>Add to Examples</b> and say
+                    what it does and what to try changing. <b>Hide from Examples</b> takes it out of
+                    that window but keeps it, and its explanation, for lessons and challenges.
                 </p>
                 <Button size="xs" color="light" class="self-start" on:click={() => go('examples')}
-                    >Go to Example programs</Button
+                    >Go to Programs</Button
                 >
             </section>
 

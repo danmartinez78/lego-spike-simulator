@@ -24,7 +24,7 @@ Lessons are step-by-step activities; challenges are short goals with hints and n
 To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).
 Assignments: list_assignments shows each assignment with team statistics (and each student's progress if the head coach allows it); save_assignment makes a draft assignment of published lessons, optionally typed as practice or prep for the next meeting, that a coach publishes on the Assignments tab.
 Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models.
-Example programs: upload_program adds a .llsp3 program (from the SPIKE app or the simulator) with an explanation card students see in the Examples window. These are available to everyone as soon as they are saved.`;
+Programs: upload_program adds a .llsp3 program (from the SPIKE app or the simulator) to the program catalog that lessons, challenges and missions use; with an explanation card it is also an example in students' Examples window. These are available to everyone as soon as they are saved.`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
 const object = (properties, required = []) => ({ type: 'object', properties, required });
@@ -271,7 +271,7 @@ const ASSET_TOOLS = [
     {
         name: 'upload_program',
         description:
-            "Add a SPIKE program (.llsp3, saved from the SPIKE app or the simulator) to the example programs, base64-encoded, with an optional explanation card students see in the Examples window. A lesson's program or a challenge's example can then use it.",
+            "Add a SPIKE program (.llsp3, saved from the SPIKE app or the simulator) to the program catalog, base64-encoded. Lessons, challenges and missions can then use it. With a card (an explanation), it is also shown in students' Examples window, unless the card has hidden: true.",
         inputSchema: object(
             {
                 name: { type: 'string', description: 'File name ending in .llsp3' },
@@ -279,7 +279,7 @@ const ASSET_TOOLS = [
                 card: {
                     type: 'object',
                     description:
-                        'Explanation for students (optional). Without one the program still opens, with no explanation.',
+                        'Explanation for students (optional). Without one the program is only in the catalog, not in the Examples window.',
                     properties: {
                         title: { type: 'string', description: 'Shown in the Examples window' },
                         topic: {
@@ -295,7 +295,12 @@ const ASSET_TOOLS = [
                             items: { type: 'string' },
                             description: 'Things to try changing'
                         },
-                        scene: { type: 'string', description: 'A field (.spk) to load with it' }
+                        scene: { type: 'string', description: 'A field (.spk) to load with it' },
+                        hidden: {
+                            type: 'boolean',
+                            description:
+                                'Keep the card but leave the program out of the Examples window'
+                        }
                     },
                     required: ['title']
                 },
@@ -792,7 +797,6 @@ export function createMcp({
             );
         }
         let cardJson;
-        const warnings = [];
         if (card !== undefined && card !== null) {
             if (typeof card !== 'object' || typeof card.title !== 'string' || !card.title.trim()) {
                 throw new ToolError('The card needs a title');
@@ -820,12 +824,9 @@ export function createMcp({
                               .map((x) => x.trim())
                       }
                     : {}),
-                ...(scene ? { scene } : {})
+                ...(scene ? { scene } : {}),
+                ...(card.hidden === true ? { hidden: true } : {})
             };
-        } else {
-            warnings.push(
-                'No card: the program opens from the Examples window, but students see no explanation. Upload it again with a card and replace: true to add one.'
-            );
         }
         const file = assetName('programs', name, cardJson?.title);
         await checkWrite('programs', file, replace, who);
@@ -837,7 +838,12 @@ export function createMcp({
         } else {
             await fsp.rm(cardFile, { force: true });
         }
-        return { saved: true, name: file, ...(cardJson ? { card: cardJson } : {}), warnings };
+        return {
+            saved: true,
+            name: file,
+            inExamples: !!cardJson && !cardJson.hidden,
+            ...(cardJson ? { card: cardJson } : {})
+        };
     };
 
     for (const [kind, what] of [

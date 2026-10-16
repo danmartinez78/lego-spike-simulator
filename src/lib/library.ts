@@ -25,6 +25,14 @@ export interface LessonCard {
     why?: string;
     try?: string[];
     scene?: string;
+    // Kept in the program catalog but left out of the Examples window.
+    hidden?: boolean;
+}
+
+// A program is an example when it has an explanation that isn't hidden.
+// Others are only in the catalog, for lessons and challenges to use.
+export function isExample(entry: LibraryEntry) {
+    return !!entry.card && !entry.card.hidden;
 }
 
 // A lesson students work through step by step (schemas/lesson-v1.json).
