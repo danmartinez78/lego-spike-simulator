@@ -9,7 +9,8 @@
 //   /api/library       list of shared robots and scenes (LIBRARY_DIR)
 //   /api/library/{robots|scenes}/<file>   download one entry
 //   /api/admin/...     write operations (upload, delete, rename, set default, roster)
-//   /api/student/...   student sign-in with a roster code (TEAM_DIR)
+//   /api/student/...   student sign-in with a roster code (TEAM_DIR), and the
+//                      team's missions for signed-in students (server/missions.mjs)
 //   /mcp               MCP server for coaches' AI assistants (same sign-in as /api/admin)
 //   /api/lessons/...   lesson authoring guide, schema and checker (read-only)
 //   /api/challenges/... challenge schema and checker (read-only)
@@ -30,6 +31,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createTeam } from './team.mjs';
 import { createHomework } from './homework.mjs';
+import { createMissions } from './missions.mjs';
 import { challengeProblems, lessonProblems } from './lesson-rules.mjs';
 import { createLessonsApi } from './lessons-api.mjs';
 import { createMcp } from './mcp.mjs';
@@ -471,6 +473,10 @@ async function handleAdmin(req, res, parts) {
         await team.handleAdmin(req, res, parts.slice(1), who);
         return;
     }
+    if (parts[0] === 'missions') {
+        await missions.handleAdmin(req, res, parts.slice(1), who);
+        return;
+    }
     if (parts[0] === 'homework' || parts[0] === 'progress') {
         await homework.handleAdmin(req, res, parts[0] === 'homework' ? parts.slice(1) : parts, who);
         return;
@@ -658,6 +664,10 @@ async function handle(req, res) {
             sendJson(res, 429, { error: 'Too many tries. Wait 10 minutes, then try again.' });
             return;
         }
+        if (parts[2] === 'missions') {
+            await missions.handleStudent(req, res, parts.slice(3), student);
+            return;
+        }
         await homework.handleStudent(req, res, parts.slice(2), student);
         return;
     }
@@ -765,7 +775,10 @@ const team = createTeam({
     teamDir: TEAM_DIR,
     sendJson,
     readBody,
-    onRemove: (id) => homework.removeStudent(id)
+    onRemove: async (id) => {
+        await homework.removeStudent(id);
+        await missions.removeStudent(id);
+    }
 });
 const authors = createAuthors(LIBRARY_DIR);
 const homework = createHomework({
@@ -785,6 +798,13 @@ const lessonsApi = createLessonsApi({
     send,
     readBody
 });
+const missions = createMissions({
+    teamDir: TEAM_DIR,
+    listFiles: async () => (await lessonsApi.context()).files,
+    sendJson,
+    send,
+    readBody
+});
 const mcp = createMcp({
     libraryDir: LIBRARY_DIR,
     schemasDir: path.join(here, '..', 'schemas'),
@@ -795,6 +815,7 @@ const mcp = createMcp({
     challengeProblems,
     safeName,
     homework,
+    missions,
     authors,
     readDefaults,
     sendJson,

@@ -52,7 +52,15 @@
             'Draw a new field from a description, or read one back to change it'
         ],
         ['upload_field, upload_robot', 'Add an existing .spk scene or .mpd/.ldr robot model'],
-        ['upload_program', 'Add a .llsp3 example program, such as a mission, with its explanation'],
+        [
+            'upload_program',
+            'Add a .llsp3 to the public Programs catalog, with an explanation to show it in Examples'
+        ],
+        ['list_missions, save_mission', "The team's missions, and adding or changing one"],
+        [
+            'add_mission_version, get_mission_version',
+            "Add a version of the team's program for a mission, or read one"
+        ],
         [
             'delete_field, delete_robot, delete_program',
             'Delete a field, robot or program your assistant added'
@@ -97,8 +105,9 @@ If you can make web requests, check it by POSTing it to ${checkUrl} and fix ever
         <h2 class="text-lg font-semibold">AI assistants</h2>
         <p class="text-gray-600 text-sm">
             An AI assistant can write lessons and challenges for you (checks included), set
-            assignments and see how students are getting on, and add robots and fields. There are
-            two ways to use one. Lessons, challenges and assignments it makes arrive as
+            assignments and see how students are getting on, add robots and fields, and add versions
+            of the team's mission programs. There are two ways to use one. Lessons, challenges and
+            assignments it makes arrive as
             <strong>drafts</strong>: students can't see them until you look them over and press
             Publish. Robots and fields go into the library straight away, marked "From an assistant"
             on the Robots and maps tab.

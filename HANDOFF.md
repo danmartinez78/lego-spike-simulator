@@ -30,7 +30,7 @@ A reader-facing summary of everything the fork adds is in
     ▶×5 results window with A vs B comparison.
 -   Example programs with lesson cards (book button), coach-only saving.
 -   Coach tools page at `/coach` (`src/pages/CoachPage.svelte`), with tabs Lessons,
-    Challenges, Example programs, Assignments,
+    Challenges, Programs, Missions, Assignments,
     Students, Robots and maps, and AI assistants: upload, rename,
     download and delete robots, scenes and programs, choose what loads on open,
     mat previews for scenes, and a lesson card form. Roadmap for the next steps
@@ -91,6 +91,21 @@ A reader-facing summary of everything the fork adds is in
     `*_homework` names still work as aliases. An assignment with `checkFirst`
     blocks hand-in (server and app) until the lesson's check has passed, for
     lessons that have a check.
+-   Programs tab = the public program catalog (`library/programs`). A program is
+    in the students' Examples window only when its card exists and isn't
+    `"hidden": true` (`isExample()` in `src/lib/library.ts`); lessons and
+    challenges can load any catalog program. Everything in `/api/library` is
+    public, so team code never goes there.
+-   Team missions (coach page Missions tab, Missions button for signed-in
+    students; `docs/missions.md`): stored in `TEAM_DIR/missions/<id>/`
+    (`mission.json`, `versions.json`, `versions/<id>.llsp3`) by
+    `server/missions.mjs`, served on `/api/student/missions` (needs a valid
+    `X-Student-Code`) and `/api/admin/missions`. Versions are append-only for
+    students; coaches mark `current` (the team's run), download, and delete.
+    Removing a student relabels their versions "A former teammate". MCP tools:
+    `list_missions`, `save_mission`, `add_mission_version`,
+    `get_mission_version`. The robot model still doesn't match the team's real
+    robot, so a version that works in the sim needs checking on the robot.
 -   Before going public (pre-release): `/api/admin` refuses writes whose
     `Origin` is another site (it compares with `Host` or `X-Forwarded-Host`, so
     the proxy must pass the original host); drafts are left out of the public

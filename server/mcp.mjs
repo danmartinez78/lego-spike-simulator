@@ -24,6 +24,7 @@ Lessons are step-by-step activities; challenges are short goals with hints and n
 To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).
 Assignments: list_assignments shows each assignment with team statistics (and each student's progress if the head coach allows it); save_assignment makes a draft assignment of published lessons, optionally typed as practice or prep for the next meeting, that a coach publishes on the Assignments tab.
 Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models.
+Missions: list_missions, save_mission and add_mission_version manage the team's missions and every version of the team's program for them. They are team code, kept apart from the public library; only coaches and signed-in students see them.
 Programs: upload_program adds a .llsp3 program (from the SPIKE app or the simulator) to the program catalog that lessons, challenges and missions use; with an explanation card it is also an example in students' Examples window. These are available to everyone as soon as they are saved.`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
@@ -271,7 +272,7 @@ const ASSET_TOOLS = [
     {
         name: 'upload_program',
         description:
-            "Add a SPIKE program (.llsp3, saved from the SPIKE app or the simulator) to the program catalog, base64-encoded. Lessons, challenges and missions can then use it. With a card (an explanation), it is also shown in students' Examples window, unless the card has hidden: true.",
+            "Add a SPIKE program (.llsp3, saved from the SPIKE app or the simulator) to the public program catalog, base64-encoded. Anyone who opens the site can download catalog programs, so put the team's own mission code in add_mission_version instead. Lessons and challenges can use catalog programs, and a mission can point at one as FIRST's guided mission. With a card (an explanation), it is also shown in students' Examples window, unless the card has hidden: true.",
         inputSchema: object(
             {
                 name: { type: 'string', description: 'File name ending in .llsp3' },
@@ -333,6 +334,89 @@ const ASSET_TOOLS = [
 ];
 TOOLS.push(...ASSET_TOOLS);
 
+const MISSION_DETAILS = {
+    type: 'object',
+    properties: {
+        number: { type: 'integer', description: 'Mission number, 1 to 99' },
+        title: { type: 'string', description: 'Mission name, like "Window to the Past"' },
+        season: { type: 'string', description: 'Season, like "2026-27" (optional)' },
+        goal: { type: 'string', description: 'What the robot has to do' },
+        notes: {
+            type: 'string',
+            description: 'Team notes: launch area, attachments, ports, tips (optional)'
+        },
+        video: {
+            type: 'string',
+            description: 'https address of a video of the mission (optional)'
+        },
+        field: { type: 'string', description: 'Field (.spk) from list_library (optional)' },
+        robot: { type: 'string', description: 'Robot (.mpd/.ldr) from list_library (optional)' },
+        guided: {
+            type: 'string',
+            description:
+                "FIRST's guided mission: a public program (.llsp3) from list_library (optional)"
+        }
+    },
+    required: ['number', 'title']
+};
+
+const MISSION_TOOLS = [
+    {
+        name: 'list_missions',
+        description:
+            "List the team's missions: number, name, goal, notes, video, field, FIRST's guided mission, which version is the team's run, and every version of the team's program (number, note, who saved it, when, and which version it was made from). Missions are team code: only coaches and signed-in students see them, never the public library.",
+        inputSchema: object({}),
+        annotations: { readOnlyHint: true }
+    },
+    {
+        name: 'save_mission',
+        description:
+            "Add a mission, or change one's details by passing its id from list_missions (send all the details again; they replace the old ones). Signed-in students see it at once in their Missions window. Versions are added with add_mission_version.",
+        inputSchema: object(
+            {
+                mission: MISSION_DETAILS,
+                id: { type: 'string', description: 'Id of the mission to change (optional)' }
+            },
+            ['mission']
+        )
+    },
+    {
+        name: 'add_mission_version',
+        description:
+            "Add a version of the team's program for a mission: a .llsp3 file (from the SPIKE app or the simulator), base64-encoded, with a note on what it is or what changed. Versions are never overwritten. saved (YYYY-MM-DD) records the day the team saved it, if not today. team_run: true makes it the version the team runs.",
+        inputSchema: object(
+            {
+                id: { type: 'string', description: 'Mission id from list_missions' },
+                content_base64: { type: 'string', description: 'The .llsp3 file, base64' },
+                note: { type: 'string', description: 'What it is, like "Saturday meeting"' },
+                saved: {
+                    type: 'string',
+                    description: 'Day the team saved it, YYYY-MM-DD (optional)'
+                },
+                team_run: {
+                    type: 'boolean',
+                    description: "Make it the team's run (optional)"
+                }
+            },
+            ['id', 'content_base64', 'note']
+        )
+    },
+    {
+        name: 'get_mission_version',
+        description:
+            "Get one version of a mission's program as a base64 .llsp3 file, to read or compare the code.",
+        inputSchema: object(
+            {
+                id: { type: 'string', description: 'Mission id from list_missions' },
+                version: { type: 'string', description: 'Version id from list_missions' }
+            },
+            ['id', 'version']
+        ),
+        annotations: { readOnlyHint: true }
+    }
+];
+TOOLS.push(...MISSION_TOOLS);
+
 class ToolError extends Error {}
 
 /** A file name from a title. Lessons keep the title, like libraryFileName() in
@@ -365,6 +449,7 @@ export function createMcp({
     challengeProblems,
     safeName,
     homework,
+    missions,
     authors,
     readDefaults,
     sendJson,
@@ -568,6 +653,54 @@ export function createMcp({
         return { ...result, homework: result.assignment };
     };
     tools.delete_homework = tools.delete_assignment;
+
+    // ---- Missions (team code, kept with the team data) -------------------
+
+    const libraryFiles = async () => (await lessonsApi.context()).files;
+
+    tools.list_missions = async () => ({ missions: await missions.list() });
+
+    tools.save_mission = async ({ mission, id }) => {
+        const result = await missions.save(mission, await libraryFiles(), id);
+        if (result.error) throw new ToolError((result.errors ?? [result.error]).join('; '));
+        return { saved: true, mission: result.mission, warnings: result.warnings };
+    };
+
+    tools.add_mission_version = async ({ id, content_base64, note, saved, team_run }, who) => {
+        const data = decode(content_base64);
+        let files;
+        try {
+            files = readZip(data);
+        } catch {
+            throw new ToolError("That isn't a .llsp3 program (it isn't a zip file)");
+        }
+        if (!files.has('manifest.json')) {
+            throw new ToolError("That isn't a .llsp3 program: it has no manifest.json");
+        }
+        const result = await missions.addVersion(id, data, {
+            note,
+            saved,
+            by: { kind: 'coach', name: who }
+        });
+        if (result.error) throw new ToolError(result.error);
+        let mission = result.mission;
+        if (team_run === true) mission = (await missions.setCurrent(id, result.version.id)).mission;
+        return {
+            saved: true,
+            version: result.version,
+            teamRun: mission.current === result.version.id
+        };
+    };
+
+    tools.get_mission_version = async ({ id, version }) => {
+        const found = await missions.versionFile(id, version);
+        if (!found) throw new ToolError('There is no such mission version. Use list_missions.');
+        return {
+            mission: `M${found.mission.number} ${found.mission.title}`,
+            version: found.version,
+            content_base64: (await fsp.readFile(found.file)).toString('base64')
+        };
+    };
 
     // ---- Fields and robots -----------------------------------------------
 

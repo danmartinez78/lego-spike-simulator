@@ -26,7 +26,9 @@
     import { lessonsOpen } from '$lib/lessons';
     import { ClipboardCheckOutline } from 'flowbite-svelte-icons';
     import { challengesOpen } from '$lib/spike/challenges';
-    import { AwardOutline } from 'flowbite-svelte-icons';
+    import { AwardOutline, FlagOutline } from 'flowbite-svelte-icons';
+    import MissionsDialog from '$components/MissionsDialog.svelte';
+    import { missionsOpen } from '$lib/missions';
     import * as Blockly from 'blockly/core';
     // Import the list of blocks so it gets loaded into blockly
     import 'blockly/blocks';
@@ -514,6 +516,7 @@
 />
 <LessonsDialog bind:modalOpen={$lessonsOpen} on:setup={() => (simulatorOpen = true)} />
 <ChallengesDialog bind:modalOpen={$challengesOpen} on:started={() => (simulatorOpen = true)} />
+<MissionsDialog bind:modalOpen={$missionsOpen} on:setup={() => (simulatorOpen = true)} />
 
 <div class="relative h-full w-full overflow-hidden flex flex-row">
     <!-- flex-col-reverse so that the buttons are higher in z order -->
@@ -567,6 +570,10 @@
                 <AwardOutline class="w-7 h-7" />
             </ToolButton>
             <Tooltip>Challenges: goals the simulator checks for you</Tooltip>
+            <ToolButton label="Missions" on:click={() => missionsOpen.set(true)}>
+                <FlagOutline class="w-7 h-7" />
+            </ToolButton>
+            <Tooltip>Missions: our team's programs for this season's missions</Tooltip>
             <ToolButton label="Help" on:click={() => openGuide()}>
                 <QuestionCircleOutline class="w-7 h-7" />
             </ToolButton>

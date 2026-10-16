@@ -4,6 +4,7 @@
         | 'lessons'
         | 'challenges'
         | 'examples'
+        | 'missions'
         | 'assignments'
         | 'students'
         | 'assets'
@@ -28,6 +29,7 @@
         { id: 'lessons', label: 'Lessons', tab: 'Lessons' },
         { id: 'challenges', label: 'Challenges', tab: 'Challenges' },
         { id: 'examples', label: 'Programs', tab: 'Programs' },
+        { id: 'missions', label: 'Missions', tab: 'Missions' },
         { id: 'assignments', label: 'Assignments', tab: 'Assignments' },
         { id: 'students', label: 'Students', tab: 'Students' },
         { id: 'assets', label: 'Robots and maps', tab: 'Robots and maps' },
@@ -191,6 +193,30 @@
                 </p>
                 <Button size="xs" color="light" class="self-start" on:click={() => go('examples')}
                     >Go to Programs</Button
+                >
+            </section>
+
+            <section data-section="missions" class="flex flex-col gap-2">
+                <h3 class="text-base font-semibold text-gray-900">Missions</h3>
+                <p>
+                    The team's own programs for this season's missions. They are team code, so only
+                    coaches and students signed in with their code can see them, and they are never
+                    in the public library.
+                </p>
+                <p>
+                    <b>New mission</b> sets the number and name, what the robot has to do, a video,
+                    the field and, if you have it, FIRST's guided mission from the Programs tab.
+                    <b>Add a version from a file</b> brings in a program the team saved in the SPIKE
+                    app, with the day it was saved.
+                </p>
+                <p>
+                    Students open a version from the <b>Missions</b> button, improve it in the
+                    simulator and save it as a new version with a note on what changed. Nothing is
+                    overwritten. Press <b>Make it the team's run</b> on the version the robot should
+                    run, and <b>Download</b> it for the SPIKE app.
+                </p>
+                <Button size="xs" color="light" class="self-start" on:click={() => go('missions')}
+                    >Go to Missions</Button
                 >
             </section>
 

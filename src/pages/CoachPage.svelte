@@ -10,6 +10,7 @@
     import LessonEditor from '$components/coach/LessonEditor.svelte';
     import TeamPanel from '$components/coach/TeamPanel.svelte';
     import AssignmentsPanel from '$components/coach/AssignmentsPanel.svelte';
+    import MissionsPanel from '$components/coach/MissionsPanel.svelte';
     import AgentsPanel from '$components/coach/AgentsPanel.svelte';
     import SettingsPanel from '$components/coach/SettingsPanel.svelte';
     import ChallengesPanel from '$components/coach/ChallengesPanel.svelte';
@@ -92,6 +93,7 @@
         | 'lessons'
         | 'challenges'
         | 'examples'
+        | 'missions'
         | 'assignments'
         | 'students'
         | 'assets'
@@ -103,6 +105,7 @@
         { id: 'lessons', label: 'Lessons' },
         { id: 'challenges', label: 'Challenges' },
         { id: 'examples', label: 'Programs' },
+        { id: 'missions', label: 'Missions' },
         { id: 'assignments', label: 'Assignments' },
         { id: 'students', label: 'Students' },
         { id: 'assets', label: 'Robots and maps' },
@@ -611,6 +614,8 @@
             <TeamPanel on:print={(e) => printCards(e.detail)} />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'assignments'}
             <AssignmentsPanel />
+        {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'missions'}
+            <MissionsPanel />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'settings'}
             <SettingsPanel />
         {:else if !loading && $libraryStore.available && $libraryStore.writer && view == 'agents'}
