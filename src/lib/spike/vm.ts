@@ -4,7 +4,7 @@ import { mbitfont } from '$lib/spike/font';
 import { SoundLibrary } from '$lib/blockly/audio';
 import { type Vertex } from '$lib/ldraw/components';
 import { boundaryStore, type SceneStore } from '$lib/spike/scene';
-import { Collisions } from '$lib/spike/collide';
+import { Collisions, partHits } from '$lib/spike/collide';
 import { partAngle, partBottom } from '$lib/spike/attachments';
 import * as m4 from '$lib/ldraw/m4';
 import { realism } from '$lib/spike/realism';
@@ -3162,7 +3162,9 @@ export class VM {
     }
 
     // Arms and other parts follow the degrees their motor has turned. A part
-    // can't go through the mat: its motor stalls where the part touches it.
+    // can't go through the mat, or (with bumping on) into walls and objects:
+    // its motor stalls where the part touches, so a hook lowered onto a block
+    // rests on top of it.
     turnParts(scene: SceneStore) {
         const moving = scene.robot.moving;
         if (!moving || moving.length == 0) {
@@ -3177,27 +3179,36 @@ export class VM {
             }
             const angle = partAngle(part, motor.turned);
             const last = previous[i] ?? 0;
-            if (part.ratio == 0 || lift + partBottom(part, angle) >= 0) {
+            if (part.ratio == 0 || angle == last) {
                 return angle;
             }
-            if (lift + partBottom(part, last) < 0) {
+            const inMat = (a: number) => lift + partBottom(part, a) < 0;
+            const blocked = (a: number) =>
+                inMat(a) || (this.collisions !== undefined && partHits(scene, part, a));
+            if (!blocked(angle)) {
+                return angle;
+            }
+            if (inMat(last)) {
                 // Already in the mat (placed that way): only let it come out.
-                const out = partBottom(part, angle) >= partBottom(part, last);
-                if (out) {
+                if (partBottom(part, angle) >= partBottom(part, last)) {
                     return angle;
                 }
                 this.stallMotor(motor, (last - angle) / part.ratio);
                 return last;
             }
-            // Find where the part touches the mat between the two angles.
+            if (blocked(last)) {
+                // Already touching something it was pushed into: let it move.
+                return angle;
+            }
+            // Find where the part touches between the two angles.
             let ok = last;
             let bad = angle;
             for (let k = 0; k < 20; k++) {
                 const mid = (ok + bad) / 2;
-                if (lift + partBottom(part, mid) >= 0) {
-                    ok = mid;
-                } else {
+                if (blocked(mid)) {
                     bad = mid;
+                } else {
+                    ok = mid;
                 }
             }
             this.stallMotor(motor, (ok - angle) / part.ratio);

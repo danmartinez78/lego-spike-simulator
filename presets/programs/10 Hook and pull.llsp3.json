@@ -1,0 +1,16 @@
+{
+  "file": "10 Hook and pull.llsp3",
+  "title": "Hook and pull",
+  "topic": "Attachments",
+  "order": 10,
+  "summary": "Reach over a block, drop the hook behind it, and pull it home.",
+  "what": "Pick the robot \"DrivingBase3 with hook\" first. The robot drives out with its hook up, lowers the hook behind the blue block, and backs up, pulling the block into the home area. Then it lifts the hook and leaves the block there.",
+  "why": "An attachment can only pull something it gets behind. The hook rides over the block when it is up, and drops into the gap between the block and the robot when it comes down. The hook stops when it reaches the mat, even if the motor is asked to turn further.",
+  "try": [
+    "Drive out only 20 cm before lowering the hook. What happens to the block?",
+    "Lift the hook before backing up. Does the block come with you?",
+    "Lower the hook 60 degrees instead of 20. Watch motor F in the hub panel. Why does it stop near 18?",
+    "Back up 60 cm instead of 40. Where does the block end up?"
+  ],
+  "scene": "Practice - hook and pull.spk"
+}

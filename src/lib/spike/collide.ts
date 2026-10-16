@@ -1,12 +1,11 @@
 // Keeps the robot out of the table walls and the objects on the field, seen
-// from above. The robot and each object are boxes (the robot's arms are
-// boxes of their own). When the robot ends a step inside something, it is
+// from above. The robot and each object are boxes (each brick of an arm is
+// a box of its own, so a block fits under a hook and can be pulled). When the robot ends a step inside something, it is
 // pushed back out at the point of contact, which also turns it, so a robot
 // that drives into a wall at an angle squares up against it. Loose blocks
 // are pushed instead, and stop at walls and other objects.
 
-import * as m4 from '$lib/ldraw/m4';
-import { partMatrix } from '$lib/spike/attachments';
+import { partBoxes, type MovingPart } from '$lib/spike/attachments';
 import type { SceneObject, SceneStore } from '$lib/spike/scene';
 
 type Point = [number, number];
@@ -66,7 +65,7 @@ function objectShape(obj: SceneObject): Shape | undefined {
     };
 }
 
-// The robot's chassis, then one box per arm at its current angle.
+// The robot's chassis, then each arm's boxes at its current angle.
 export function robotShapes(robot: SceneObject): Shape[] {
     const body = robot.chassis ?? robot.compiled;
     if (!body || !robot.position) {
@@ -79,24 +78,13 @@ export function robotShapes(robot: SceneObject): Shape[] {
         { poly: box(x, z, rotation, b.min, b.max), bottom: y + b.min.y, top: y + b.max.y }
     ];
     (robot.moving ?? []).forEach((part, i) => {
-        const pb = part.compiled.bbox;
-        const m = partMatrix(part, robot.partAngles?.[i] ?? 0);
-        const min = { x: Infinity, y: Infinity, z: Infinity };
-        const max = { x: -Infinity, y: -Infinity, z: -Infinity };
-        for (const cx of [pb.min.x, pb.max.x]) {
-            for (const cy of [pb.min.y, pb.max.y]) {
-                for (const cz of [pb.min.z, pb.max.z]) {
-                    const p = m4.transformVector(m, [cx, cy, cz, 1]);
-                    min.x = Math.min(min.x, p[0]);
-                    min.y = Math.min(min.y, p[1]);
-                    min.z = Math.min(min.z, p[2]);
-                    max.x = Math.max(max.x, p[0]);
-                    max.y = Math.max(max.y, p[1]);
-                    max.z = Math.max(max.z, p[2]);
-                }
-            }
+        for (const b of partBoxes(part, robot.partAngles?.[i] ?? 0)) {
+            shapes.push({
+                poly: box(x, z, rotation, b.min, b.max),
+                bottom: y + b.min.y,
+                top: y + b.max.y
+            });
         }
-        shapes.push({ poly: box(x, z, rotation, min, max), bottom: y + min.y, top: y + max.y });
     });
     return shapes;
 }
@@ -134,6 +122,29 @@ function obstacles(scene: SceneStore): Obstacle[] {
         }
     }
     return list;
+}
+
+// Whether a moving part of the robot, turned to degrees, would be inside a
+// wall or an object (so its motor can't turn it there).
+export function partHits(scene: SceneStore, part: MovingPart, degrees: number): boolean {
+    const robot = scene.robot;
+    if (!robot.position) {
+        return false;
+    }
+    const { x, y, z } = robot.position;
+    const rotation = robot.rotation ?? 0;
+    const list = obstacles(scene);
+    for (const b of partBoxes(part, degrees)) {
+        const shape = {
+            poly: box(x, z, rotation, b.min, b.max),
+            bottom: y + b.min.y,
+            top: y + b.max.y
+        };
+        if (list.some((o) => contact(shape, o.shape))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function centroid(poly: Point[]): Point {

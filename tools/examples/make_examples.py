@@ -414,4 +414,46 @@ save(
     },
 )
 
+# ---------------------------------------------------------------------------
+# 10. Hook and pull (needs the robot with a hook)
+p = Program('Hook and pull')
+p.script(
+    when_program_starts(),
+    setup()
+    + [
+        move('forward', 30, 'cm'),
+        motor_turn('F', 'clockwise', 20, 'degrees'),
+        move('back', 40, 'cm'),
+        motor_turn('F', 'counterclockwise', 20, 'degrees'),
+        move('back', 5, 'cm'),
+    ],
+    comment='Drive out with the hook up, so it passes over the block. Lower the hook '
+    'behind the block, then back up to pull the block home.\n\n'
+    'Clockwise lowers the hook on motor F. Counterclockwise lifts it.',
+)
+save(
+    p,
+    {
+        'file': '10 Hook and pull.llsp3',
+        'title': 'Hook and pull',
+        'topic': 'Attachments',
+        'order': 10,
+        'summary': 'Reach over a block, drop the hook behind it, and pull it home.',
+        'what': 'Pick the robot "DrivingBase3 with hook" first. The robot drives out with its '
+        'hook up, lowers the hook behind the blue block, and backs up, pulling the block '
+        'into the home area. Then it lifts the hook and leaves the block there.',
+        'why': 'An attachment can only pull something it gets behind. The hook rides over the '
+        'block when it is up, and drops into the gap between the block and the robot when '
+        'it comes down. The hook stops when it reaches the mat, even if the motor is asked '
+        'to turn further.',
+        'try': [
+            'Drive out only 20 cm before lowering the hook. What happens to the block?',
+            'Lift the hook before backing up. Does the block come with you?',
+            'Lower the hook 60 degrees instead of 20. Watch motor F in the hub panel. Why does it stop near 18?',
+            'Back up 60 cm instead of 40. Where does the block end up?',
+        ],
+        'scene': 'Practice - hook and pull.spk',
+    },
+)
+
 print(json.dumps([e['file'] for e in examples], indent=1))

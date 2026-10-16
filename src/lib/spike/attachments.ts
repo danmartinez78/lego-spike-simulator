@@ -16,6 +16,14 @@ export interface MovingPart {
     pivot: Vertex;
     axis: Vertex;
     compiled: CompiledModel;
+    // The part's shape for bumping: one box per brick (or per piece drawn
+    // right in the file), so a block can sit under a hook's beam.
+    boxes: Box[];
+}
+
+export interface Box {
+    min: Vertex;
+    max: Vertex;
 }
 
 export interface RobotParts {
@@ -79,6 +87,71 @@ function shift(model: CompiledModel, offset: Vertex): CompiledModel {
     return model;
 }
 
+type Mat = m4.Matrix4 | number[];
+
+function growBox(box: Box | undefined, p: ArrayLike<number>): Box {
+    if (!box) {
+        return { min: { x: p[0], y: p[1], z: p[2] }, max: { x: p[0], y: p[1], z: p[2] } };
+    }
+    box.min = {
+        x: Math.min(box.min.x, p[0]),
+        y: Math.min(box.min.y, p[1]),
+        z: Math.min(box.min.z, p[2])
+    };
+    box.max = {
+        x: Math.max(box.max.x, p[0]),
+        y: Math.max(box.max.y, p[1]),
+        z: Math.max(box.max.z, p[2])
+    };
+    return box;
+}
+
+// Every corner of a model's own triangles and quads, and of everything
+// inside it, in the frame given by matrix.
+function allPoints(model: Model, matrix: Mat, add: (p: ArrayLike<number>) => void) {
+    const corner = (v: Vertex) => add(m4.transformVector(matrix as m4.Matrix4, [v.x, v.y, v.z, 1]));
+    for (const t of model.triangles) {
+        corner(t.p1);
+        corner(t.p2);
+        corner(t.p3);
+    }
+    for (const q of model.quads) {
+        corner(q.p1);
+        corner(q.p2);
+        corner(q.p3);
+        corner(q.p4);
+    }
+    for (const sub of model.subparts) {
+        if (sub.model) {
+            allPoints(sub.model, m4.multiply(matrix as m4.Matrix4, sub.matrix), add);
+        }
+    }
+}
+
+// One box per LEGO part (.dat), and one for the pieces a file draws itself.
+function collectBoxes(model: Model, matrix: Mat, boxes: Box[]) {
+    let own: Box | undefined;
+    allPoints({ ...model, subparts: [] }, matrix, (p) => (own = growBox(own, p)));
+    if (own) {
+        boxes.push(own);
+    }
+    for (const sub of model.subparts) {
+        if (!sub.model) {
+            continue;
+        }
+        const m = m4.multiply(matrix as m4.Matrix4, sub.matrix);
+        if (sub.modelNumber.toLowerCase().endsWith('.dat')) {
+            let box: Box | undefined;
+            allPoints(sub.model, m, (p) => (box = growBox(box, p)));
+            if (box) {
+                boxes.push(box);
+            }
+        } else {
+            collectBoxes(sub.model, m, boxes);
+        }
+    }
+}
+
 // full is the whole robot compiled as usual (recentered, not rescaled).
 export function compileRobotParts(
     compiler: WebGLCompiler,
@@ -113,6 +186,35 @@ export function compileRobotParts(
             full.recenter
         );
         const frame = m4.multiply(base, r.parent);
+        const shift3 = (b: Box): Box => ({
+            min: {
+                x: b.min.x + full.recenter.x,
+                y: b.min.y + full.recenter.y,
+                z: b.min.z + full.recenter.z
+            },
+            max: {
+                x: b.max.x + full.recenter.x,
+                y: b.max.y + full.recenter.y,
+                z: b.max.z + full.recenter.z
+            }
+        });
+        // The base frame only flips and scales, so a box stays a box.
+        const raw: Box[] = [];
+        collectBoxes(single, base, raw);
+        const boxes = raw.map((b) =>
+            shift3({
+                min: {
+                    x: Math.min(b.min.x, b.max.x),
+                    y: Math.min(b.min.y, b.max.y),
+                    z: Math.min(b.min.z, b.max.z)
+                },
+                max: {
+                    x: Math.max(b.min.x, b.max.x),
+                    y: Math.max(b.min.y, b.max.y),
+                    z: Math.max(b.min.z, b.max.z)
+                }
+            })
+        );
         const rot = r.subpart.rotates!;
         const p = m4.transformVector(frame, [rot.pivot.x, rot.pivot.y, rot.pivot.z, 1]);
         const a = m4.transformVector(frame, [rot.axis.x, rot.axis.y, rot.axis.z, 0]);
@@ -127,7 +229,8 @@ export function compileRobotParts(
                 z: p[2] + full.recenter.z
             },
             axis: { x: a[0] / length, y: a[1] / length, z: a[2] / length },
-            compiled
+            compiled,
+            boxes
         });
     }
     return { chassis, parts };
@@ -145,19 +248,27 @@ export function partMatrix(part: MovingPart, degrees: number): m4.Matrix4 {
     return m4.translate(m, -part.pivot.x, -part.pivot.y, -part.pivot.z);
 }
 
-// The lowest point (mm, robot's drawn frame) of a part's box turned by degrees.
-export function partBottom(part: MovingPart, degrees: number) {
-    const b = part.compiled.bbox;
+// The part's boxes at its angle, as boxes lined up with the robot (mm, the
+// robot's drawn frame). A part with no boxes uses its whole outline.
+export function partBoxes(part: MovingPart, degrees: number): Box[] {
     const m = partMatrix(part, degrees);
-    let bottom = Infinity;
-    for (const x of [b.min.x, b.max.x]) {
-        for (const y of [b.min.y, b.max.y]) {
-            for (const z of [b.min.z, b.max.z]) {
-                bottom = Math.min(bottom, m4.transformVector(m, [x, y, z, 1])[1]);
+    const boxes = part.boxes.length > 0 ? part.boxes : [part.compiled.bbox];
+    return boxes.map((b) => {
+        let out: Box | undefined;
+        for (const x of [b.min.x, b.max.x]) {
+            for (const y of [b.min.y, b.max.y]) {
+                for (const z of [b.min.z, b.max.z]) {
+                    out = growBox(out, m4.transformVector(m, [x, y, z, 1]));
+                }
             }
         }
-    }
-    return bottom;
+        return out!;
+    });
+}
+
+// The lowest point (mm, robot's drawn frame) of a part turned by degrees.
+export function partBottom(part: MovingPart, degrees: number) {
+    return Math.min(...partBoxes(part, degrees).map((b) => b.min.y));
 }
 
 // Draw a robot, with its arms where their motors have turned them.
@@ -193,5 +304,9 @@ export function offsetRobotParts(parts: RobotParts, d: Vertex) {
     }
     for (const part of parts.parts) {
         part.pivot = { x: part.pivot.x + d.x, y: part.pivot.y + d.y, z: part.pivot.z + d.z };
+        part.boxes = part.boxes.map((b) => ({
+            min: { x: b.min.x + d.x, y: b.min.y + d.y, z: b.min.z + d.z },
+            max: { x: b.max.x + d.x, y: b.max.y + d.y, z: b.max.z + d.z }
+        }));
     }
 }

@@ -32,10 +32,13 @@ pins, the arm's tip) in one submodel so it turns as one piece. A moving part
 inside another moving part isn't supported.
 
 A moving part bumps into walls and pushes blocks like the rest of the robot
-when it is low enough to touch them. It isn't stopped by the mat or by
-objects, so an arm turned too far goes through them.
+when it is low enough to touch them. For bumping, each LEGO part in it (each
+`.dat` line) is a box of its own, and so are the pieces a file draws itself,
+so a block fits under the beam of a hook and the hook can pull it. The mat
+stops a moving part (see below), and with bumping on so do walls and objects:
+a hook lowered onto a block comes to rest on top of it.
 
-## Example
+## Examples
 
 `presets/robots/DrivingBase3 with arm.mpd` is Driving Base 3 with a medium
 motor on port F lying on top of the hub and an arm with a paddle in front,
@@ -54,3 +57,9 @@ down to the mat.
 A turning part can't go through the mat. When it touches the mat its motor
 stalls: the part and the motor's degree counter stop there, and the rest of
 the turn is lost, as when a real arm is blocked.
+
+`presets/robots/DrivingBase3 with hook.mpd` is made the same way
+(`make_db3_arm.py ... hook`): a longer beam with a 40 mm hook at its tip. The
+raised hook passes over a block; lowered, it reaches the mat at about 18
+degrees with the beam still 38 mm up, so backing up pulls a block that is
+between the hook and the robot.

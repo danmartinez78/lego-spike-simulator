@@ -150,15 +150,16 @@ A reader-facing summary of everything the fork adds is in
     `src/lib/spike/challenges.ts` (falls back to the presets with no server).
 -   Generators: `tools/examples/` (examples, fields, scenes, challenge
     solutions), `tools/robots/make_db3d.py`, `tools/robots/make_db3_arm.py`
-    (Driving Base 3 with arm: medium motor on F on top of the hub, arm built
+    (Driving Base 3 with arm or hook: medium motor on F on top of the hub, arm built
     from plain quads in the file, since the cloud sandbox can't download the
     LDraw library).
 -   Bumping and arms: after each 1 ms step `VM.step` calls `turnParts` (each
     `!SPIKE_ROTATES` part's angle = its motor's `Motor.turned` x ratio, kept in
-    `scene.robot.partAngles`; a part whose box would go below the mat stops
-    where it touches, and `stallMotor` takes the lost degrees off its motor) and `collide` (`Collisions.solve`, only when the
+    `scene.robot.partAngles`; a part whose box would go below the mat, or (bumping on)
+    into a wall or object (`partHits`), stops where it touches, and `stallMotor` takes the lost degrees off its motor) and `collide` (`Collisions.solve`, only when the
     Settings toggle `boundaryStore.solid` is on at Run). The robot is the
-    chassis box plus one box per arm; table walls are 50 mm high, objects use
+    chassis box plus one box per brick of each arm (`MovingPart.boxes`: one
+    per `.dat` part and one per file's own geometry, so a hook can pull); table walls are 50 mm high, objects use
     their compiled bbox; anchored objects push the robot back at the contact
     point (position-based, so it turns and squares up, and `hub.yaw` follows);
     loose blocks (`anchored: false`) are pushed, and once stuck against
@@ -169,13 +170,16 @@ A reader-facing summary of everything the fork adds is in
     `docs/robots.md`. Checks: "Bumping" and "Arms" sections of
     `tools/physics/validate.ts`. Demo: example 9 "Arm and walls" on
     "Practice - arm and walls" (walls 4 bricks high, below the raised arm's
-    56 mm; a taller wall catches the off-center arm and spins the robot).
+    56 mm; a taller wall catches the off-center arm and spins the robot) and
+    example 10 "Hook and pull" on "Practice - hook and pull" with
+    `DrivingBase3 with hook.mpd` (hook stops at the mat at about 18 degrees,
+    beam 38 mm up; the block is turned 90 degrees so its 48 mm side fits
+    between the hook and the chassis).
 
 ## Known limitations
 
 -   Collisions are boxes seen from above (`src/lib/spike/collide.ts`): no
-    mission models, nothing lifted or tipped, arms pass through
-    objects, blocks slide without turning. Tilt/gesture sensors aren't
+    mission models, nothing lifted or tipped, blocks slide without turning. Tilt/gesture sensors aren't
     simulated; acceleration/stop-method blocks are ignored.
 -   No robot builder in the site (build in BrickLink Studio / LeoCAD, load .io/.mpd).
 -   Progress on lessons and challenges is per browser unless the student signs in.
