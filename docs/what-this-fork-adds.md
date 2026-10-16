@@ -66,7 +66,8 @@ assignments, and a coach page to run it all.
     own programs for the season's missions, with what the robot has to do, a
     video, the mission field and FIRST's guided mission. Students open any saved
     version, improve it in the simulator and save a new version with a note;
-    nothing is overwritten. See [missions.md](missions.md).
+    nothing is overwritten. They can also save where the robot starts, such as
+    the team's launch area. See [missions.md](missions.md).
 
 ### Lessons
 

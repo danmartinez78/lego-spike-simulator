@@ -14,8 +14,11 @@ Each one shows what the robot has to do, the team's notes, a link to the
 mission video, and buttons to load the mission field and to open FIRST's
 guided mission if the coach added it. A mission can offer more than one field,
 such as the color mat and the wireframe, with a button for each. Loading a field
-puts the robot at the mission's start, such as the team's launch area, when the
-coach has set one.
+puts the robot at the mission's start, such as the team's launch area, when one
+has been set. Students can set it themselves: load the field, move the robot
+into the launch area with **Place**, then press **Save the robot's spot**. It
+changes the start for the whole team, so the window asks first when it moves an
+existing one.
 
 Below that is every saved **version** of the team's program, newest first,
 with who saved it, when, and what changed. **Open** loads a version into the
@@ -33,7 +36,7 @@ The coach page's **Missions** tab:
     as the wireframe), the robot, and FIRST's guided mission (a program from the
     public Programs tab).
 -   **Robot start:** in the simulator, load the field, place the robot in the
-    launch area, then press **Start here** in the Missions window. **Use the
+    launch area, then press **Save the robot's spot** in the Missions window. **Use the
     field's start** clears it.
 -   **Add a version from a file** brings in a `.llsp3` saved in the SPIKE app,
     with a note such as "Saturday meeting" and the day it was saved.
@@ -42,7 +45,8 @@ The coach page's **Missions** tab:
     SPIKE app.
 -   In the simulator, coaches see the same Missions window as students, with a
     **Coach** badge and the **Use at competition** button on each version.
--   Coaches can delete versions and missions. Students can only add versions.
+-   Coaches can delete versions and missions. Students can add versions and
+    set the robot start, nothing else.
 
 Coaches' AI assistants can do the same through the MCP tools `list_missions`,
 `save_mission`, `add_mission_version` and `get_mission_version` (see
@@ -71,6 +75,6 @@ email). Students see a student's first name and "Coach". When a coach removes a
 student from the team, their versions stay, labeled "A former teammate".
 
 The API is `/api/student/missions` (signed-in students: list, get a version,
-add a version) and `/api/admin/missions` (coaches: everything else). The code is
+add a version, `PUT <id>/start` with `{ "start": {...} | null }`) and `/api/admin/missions` (coaches: everything else). The code is
 in `server/missions.mjs`, `src/lib/missions.ts`, `src/components/MissionsDialog.svelte`
 and `src/components/coach/MissionsPanel.svelte`.

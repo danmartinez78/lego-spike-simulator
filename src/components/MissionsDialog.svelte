@@ -26,6 +26,7 @@
         placeRobotAt,
         robotStart,
         saveMission,
+        saveStudentStart,
         startText,
         missionsStore,
         newestFirst,
@@ -204,31 +205,48 @@
         }
     }
 
-    // Coaches: the robot's spot in the simulator becomes the mission's start.
+    // The robot's spot in the simulator becomes the mission's start, for
+    // coaches and students alike, since students practice the launch.
     async function setStart(mission: Mission, clear = false) {
+        const start = clear ? undefined : robotStart();
+        const question = clear
+            ? "Start this mission from the field's own start again? This changes it for the whole team."
+            : mission.start
+              ? `Move this mission's start to where the robot is now (${start && startText(start)})? This changes it for the whole team.`
+              : undefined;
+        if (
+            question &&
+            !(await askConfirm(question, {
+                confirmLabel: clear ? "Use the field's start" : 'Move the start'
+            }))
+        )
+            return;
         busy = true;
         message = '';
         try {
-            const start = clear ? undefined : robotStart();
-            await saveMission(
-                {
-                    number: mission.number,
-                    title: mission.title,
-                    season: mission.season,
-                    goal: mission.goal,
-                    notes: mission.notes,
-                    video: mission.video,
-                    fields: missionFields(mission),
-                    start,
-                    robot: mission.robot,
-                    guided: mission.guided
-                },
-                mission.id
-            );
-            await loadMissions(true);
+            if (coach) {
+                await saveMission(
+                    {
+                        number: mission.number,
+                        title: mission.title,
+                        season: mission.season,
+                        goal: mission.goal,
+                        notes: mission.notes,
+                        video: mission.video,
+                        fields: missionFields(mission),
+                        start,
+                        robot: mission.robot,
+                        guided: mission.guided
+                    },
+                    mission.id
+                );
+                await loadMissions(true);
+            } else {
+                await saveStudentStart(mission.id, start);
+            }
             message = start
-                ? `The robot now starts at ${startText(start)} when this mission's field loads.`
-                : "The robot now starts at the field's own start.";
+                ? `Saved. Loading this mission's field now puts the robot at ${startText(start)}.`
+                : "Saved. Loading this mission's field now puts the robot at the field's own start.";
         } catch (e) {
             message = `Could not save the start: ${(e as Error).message}`;
         } finally {
@@ -277,8 +295,8 @@
                 {/if}
             </h3>
             <p class="text-sm text-gray-500">
-                Our team's programs for this season's missions. Open one, make it better, save a new
-                version.
+                Our team's programs for this season's missions. Open a version, improve it in the
+                simulator, then save it as a new version.
             </p>
         </div>
     </svelte:fragment>
@@ -324,6 +342,19 @@
             </nav>
 
             <section class="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+                {#if message}
+                    <div
+                        class="sticky top-0 z-10 -mt-1 flex items-start gap-3 rounded-lg bg-gray-800 px-3 py-2 text-sm text-white shadow"
+                        role="status"
+                    >
+                        <span class="flex-1">{message}</span>
+                        <button
+                            class="text-gray-300 hover:text-white"
+                            aria-label="Dismiss"
+                            on:click={() => (message = '')}>✕</button
+                        >
+                    </div>
+                {/if}
                 {#if selected}
                     <header class="flex flex-col gap-1">
                         <div class="flex items-center gap-2 text-xs">
@@ -366,72 +397,76 @@
                         </section>
                     {/if}
 
-                    <div class="flex flex-wrap gap-2">
-                        {#if selected.video}
-                            <a
-                                href={selected.video}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100"
-                            >
-                                <VideoCameraOutline class="w-5 h-5 text-gray-500" />
-                                Watch the mission video
-                            </a>
-                        {/if}
-                        {#each fields as field}
-                            <Button
-                                size="sm"
-                                color="light"
-                                disabled={busy}
-                                on:click={() => selected && setUpField(selected, field)}
-                            >
-                                <MapPinAltOutline class="w-5 h-5 me-2 text-gray-500" />
-                                {fields.length == 1
-                                    ? 'Load the mission field'
-                                    : `Load ${entryTitle(field)}`}
-                            </Button>
-                        {/each}
-                        {#if guidedAvailable}
-                            <Button
-                                size="sm"
-                                color="light"
-                                disabled={busy}
-                                on:click={() => selected && openGuided(selected)}
-                                >Open FIRST's guided mission</Button
-                            >
-                        {/if}
-                    </div>
-
-                    {#if coach}
-                        <section
-                            class="rounded-xl border border-dashed border-gray-300 px-4 py-3 flex flex-wrap items-center gap-3 text-sm"
-                        >
-                            <div class="flex-1 min-w-48">
-                                <div class="font-medium text-gray-900">Robot start</div>
-                                <div class="text-gray-600">
-                                    {selected.start
-                                        ? startText(selected.start)
-                                        : "The field's own start"}. Place the robot in the launch
-                                    area in the simulator, then press Start here.
-                                </div>
-                            </div>
-                            <Button
-                                size="xs"
-                                color="alternative"
-                                disabled={busy}
-                                on:click={() => selected && setStart(selected)}>Start here</Button
-                            >
-                            {#if selected.start}
+                    {#if selected.video || fields.length > 0 || guidedAvailable}
+                        <div class="flex flex-wrap gap-2">
+                            {#if selected.video}
+                                <a
+                                    href={selected.video}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100"
+                                >
+                                    <VideoCameraOutline class="w-5 h-5 text-gray-500" />
+                                    Watch the mission video
+                                </a>
+                            {/if}
+                            {#each fields as field}
                                 <Button
-                                    size="xs"
+                                    size="sm"
                                     color="light"
                                     disabled={busy}
-                                    on:click={() => selected && setStart(selected, true)}
-                                    >Use the field's start</Button
+                                    on:click={() => selected && setUpField(selected, field)}
+                                >
+                                    <MapPinAltOutline class="w-5 h-5 me-2 text-gray-500" />
+                                    {fields.length == 1
+                                        ? 'Load the mission field'
+                                        : `Load ${entryTitle(field)}`}
+                                </Button>
+                            {/each}
+                            {#if guidedAvailable}
+                                <Button
+                                    size="sm"
+                                    color="light"
+                                    disabled={busy}
+                                    on:click={() => selected && openGuided(selected)}
+                                    >Open FIRST's guided mission</Button
                                 >
                             {/if}
-                        </section>
+                        </div>
                     {/if}
+
+                    <section
+                        class="rounded-xl border border-dashed border-gray-300 px-4 py-3 flex flex-wrap items-center gap-3 text-sm"
+                    >
+                        <div class="flex-1 min-w-48">
+                            <div class="font-medium text-gray-900">Where the robot starts</div>
+                            <div class="text-gray-700 first-letter:uppercase">
+                                {selected.start
+                                    ? startText(selected.start)
+                                    : "the field's own start"}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                To change it, load the mission field, move the robot into the launch
+                                area with the Place button, then press Save the robot's spot.
+                            </div>
+                        </div>
+                        <Button
+                            size="xs"
+                            color="alternative"
+                            disabled={busy}
+                            on:click={() => selected && setStart(selected)}
+                            >Save the robot's spot</Button
+                        >
+                        {#if selected.start}
+                            <Button
+                                size="xs"
+                                color="light"
+                                disabled={busy}
+                                on:click={() => selected && setStart(selected, true)}
+                                >Use the field's start</Button
+                            >
+                        {/if}
+                    </section>
 
                     <section>
                         <h4
@@ -466,7 +501,7 @@
                                             {#if from == version.id}
                                                 <span
                                                     class="text-xs font-medium rounded-full px-2 py-0.5 bg-gray-200 text-gray-700"
-                                                    >Open now</span
+                                                    >In the code panel</span
                                                 >
                                             {/if}
                                         </div>
@@ -534,14 +569,6 @@
                             >
                         </div>
                     </section>
-                {/if}
-                {#if message}
-                    <div
-                        class="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-800"
-                        role="status"
-                    >
-                        {message}
-                    </div>
                 {/if}
             </section>
         </div>

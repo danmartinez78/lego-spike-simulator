@@ -392,7 +392,9 @@
                     <Label class="mb-1">Robot start</Label>
                     {#if form.start}
                         <div class="flex flex-row flex-wrap items-center gap-2 text-sm">
-                            <span>{startText(form.start)}</span>
+                            <span class="inline-block first-letter:uppercase"
+                                >{startText(form.start)}</span
+                            >
                             <Button
                                 size="xs"
                                 color="light"
@@ -403,8 +405,9 @@
                         <p class="text-sm text-gray-700">The field's own start.</p>
                     {/if}
                     <p class="text-xs text-gray-500 mt-1">
-                        To set it, load the field in the simulator, place the robot in the launch
-                        area, then press <b>Start here</b> in the Missions window.
+                        To set it, load the mission field in the simulator, move the robot into the
+                        launch area, then press <b>Save the robot's spot</b> in the Missions window.
+                        Students can do this too.
                     </p>
                 </div>
                 <div>

@@ -37,6 +37,28 @@ export function isWebAddress(value) {
  * library's programs, scenes and robots, for warnings about missing ones.
  * @returns {{ errors: string[], warnings: string[], mission: object }}
  */
+// Where the robot starts, in the same terms as get_field: x and z in mm from
+// the mat's center, heading in degrees (0 = up the mat, 90 = right).
+export function cleanStart(start) {
+    const { x, z, heading } = start && typeof start === 'object' ? start : {};
+    if (
+        ![x, z, heading].every((n) => typeof n === 'number' && Number.isFinite(n)) ||
+        Math.abs(x) > 5000 ||
+        Math.abs(z) > 5000
+    ) {
+        return {
+            error: '"start" must be { x, z, heading } in mm and degrees, like get_field\'s start'
+        };
+    }
+    return {
+        start: {
+            x: Math.round(x),
+            z: Math.round(z),
+            heading: Math.round((((heading % 360) + 360) % 360) * 10) / 10
+        }
+    };
+}
+
 export function cleanMission(input, files) {
     const errors = [];
     const warnings = [];
@@ -88,26 +110,10 @@ export function cleanMission(input, files) {
         mission.fields = fields;
         mission.field = fields[0];
     }
-    // Where the robot starts, in the same terms as get_field: x and z in mm
-    // from the mat's center, heading in degrees (0 = up the mat, 90 = right).
     if (input.start !== undefined && input.start !== null) {
-        const { x, z, heading } = input.start;
-        if (
-            typeof input.start !== 'object' ||
-            ![x, z, heading].every((n) => typeof n === 'number' && Number.isFinite(n)) ||
-            Math.abs(x) > 5000 ||
-            Math.abs(z) > 5000
-        ) {
-            errors.push(
-                '"start" must be { x, z, heading } in mm and degrees, like get_field\'s start'
-            );
-        } else {
-            mission.start = {
-                x: Math.round(x),
-                z: Math.round(z),
-                heading: Math.round((((heading % 360) + 360) % 360) * 10) / 10
-            };
-        }
+        const result = cleanStart(input.start);
+        if (result.error) errors.push(result.error);
+        else mission.start = result.start;
     }
     for (const [key, kind, ext] of [
         ['robot', 'robots', ''],
@@ -206,6 +212,26 @@ export function createMissions({ teamDir, listFiles, sendJson, send, readBody })
         };
         await writeJson(path.join(dirOf(newId), 'mission.json'), stored);
         return { mission: await load(newId), warnings };
+    }
+
+    /** Set or clear (start null) where the robot starts, keeping everything else. */
+    async function setStart(id, start) {
+        const file = path.join(dirOf(id), 'mission.json');
+        const mission = validId(id) ? await readJson(file, undefined) : undefined;
+        if (!mission) return { error: 'No such mission', status: 404 };
+        let cleaned;
+        if (start !== undefined && start !== null) {
+            const result = cleanStart(start);
+            if (result.error) return { error: result.error, status: 400 };
+            cleaned = result.start;
+        }
+        const { start: _old, ...rest } = mission;
+        await writeJson(file, {
+            ...rest,
+            ...(cleaned ? { start: cleaned } : {}),
+            updated: new Date().toISOString()
+        });
+        return { mission: await load(id) };
     }
 
     /**
@@ -441,6 +467,21 @@ export function createMissions({ teamDir, listFiles, sendJson, send, readBody })
             );
             return;
         }
+        // Students place the robot in the launch area too, since they practice the run.
+        if (parts[1] === 'start' && parts.length === 2 && req.method === 'PUT') {
+            const result = await setStart(id, (await readJsonBody(req))?.start);
+            if (!result.error) {
+                console.log(
+                    `Student ${student.id.slice(0, 8)} set the robot start of mission ${id}`
+                );
+            }
+            sendJson(
+                res,
+                result.error ? result.status : 200,
+                result.error ? { error: result.error } : { mission: forStudents(result.mission) }
+            );
+            return;
+        }
         if (parts[1] === 'versions' && parts.length === 3 && req.method === 'GET') {
             await sendVersion(res, id, parts[2], false);
             return;
@@ -470,6 +511,7 @@ export function createMissions({ teamDir, listFiles, sendJson, send, readBody })
         save,
         addVersion,
         setCurrent,
+        setStart,
         versionFile,
         removeStudent,
         handleAdmin,
