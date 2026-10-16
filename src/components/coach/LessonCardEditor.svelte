@@ -2,6 +2,7 @@
     // Form for the explanation (lesson card) shown with an example program in the Examples window.
     import { createEventDispatcher } from 'svelte';
     import { Button, Input, Label, Modal, Select, Textarea } from 'flowbite-svelte';
+    import TopicPicker from '$components/coach/TopicPicker.svelte';
     import type { LessonCard } from '$lib/library';
 
     export let open = false;
@@ -96,12 +97,9 @@
             </div>
             <div>
                 <Label for="card-topic" class="mb-1">Topic</Label>
-                <Input id="card-topic" bind:value={topic} list="card-topics" placeholder="Basics" />
-                <datalist id="card-topics">
-                    {#each topics as t}
-                        <option value={t}></option>
-                    {/each}
-                </datalist>
+                {#key open}
+                    <TopicPicker id="card-topic" bind:value={topic} {topics} placeholder="Basics" />
+                {/key}
             </div>
             <div>
                 <Label for="card-order" class="mb-1">Order in topic</Label>
