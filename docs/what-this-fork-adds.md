@@ -180,7 +180,8 @@ signs in on a browser. The tabs are:
 
 Coaches can connect Claude, or any assistant that speaks MCP, to `/mcp` and ask
 it to write lessons and challenges, set assignments, read team progress, and
-add robots and fields, including drawing a new practice mat from a short
+add robots, fields and example programs (such as a mission program with an
+explanation for students), including drawing a new practice mat from a short
 description. Each coach signs in as themselves, everything the assistant saves
 is a draft stamped with that coach's email, and nothing reaches students until a
 coach publishes it. By default an assistant sees only per-lesson statistics, not

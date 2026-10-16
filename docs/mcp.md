@@ -33,6 +33,8 @@ everything an assistant saves is stamped with that coach's email.
 | `get_field`            | A field's mat size, robot start and objects, and its description if it has one     |
 | `upload_field`         | Add an existing `.spk` scene (base64)                                              |
 | `upload_robot`         | Add an LDraw `.mpd`/`.ldr` robot model (text or base64)                            |
+| `upload_program`       | Add a `.llsp3` example program (base64) with an optional explanation card          |
+| `delete_program`       | Delete an example program your assistant added, if no lesson or challenge uses it  |
 | `delete_field`         | Delete a field your assistant added, if nothing uses it                            |
 | `delete_robot`         | Delete a robot your assistant added, if nothing uses it                            |
 
@@ -47,13 +49,17 @@ An assignment's optional `type` is `practice` (going over what was taught) or
 called `list_homework`, `save_homework` (assignment under `homework`) and
 `delete_homework`; those names still work.
 
-Robots and fields have no drafts: they are in everyone's Robot and Field
-pickers as soon as they're saved, marked "From an assistant" on the coach page.
+Robots, fields and example programs have no drafts: they are in everyone's
+Robot and Field pickers and Examples window as soon as they're saved, marked "From an assistant" on the coach page.
 An assistant can only add new names, and replace or delete the ones its own
 coach's assistant added (`LIBRARY_DIR/.assistant-files.json` keeps track; a
 coach replacing, renaming or deleting the file on the coach page takes it
 over). It can't delete one a lesson, challenge or example uses, or the
-default. Fields drawn with `save_field` keep their description in the `.spk`
+default. `upload_program` takes word-block programs saved from the SPIKE app
+or the simulator; its `card` (title, topic, summary, what, why, try, scene) is
+the explanation students see in the Examples window, the same as **Add an
+explanation** on the coach page. Without a card the program still opens, with
+no explanation. Fields drawn with `save_field` keep their description in the `.spk`
 (`field.json`) so `get_field` can hand it back for changes.
 
 ## For coaches: connecting

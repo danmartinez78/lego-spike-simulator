@@ -52,7 +52,11 @@
             'Draw a new field from a description, or read one back to change it'
         ],
         ['upload_field, upload_robot', 'Add an existing .spk scene or .mpd/.ldr robot model'],
-        ['delete_field, delete_robot', 'Delete a field or robot your assistant added']
+        ['upload_program', 'Add a .llsp3 example program, such as a mission, with its explanation'],
+        [
+            'delete_field, delete_robot, delete_program',
+            'Delete a field, robot or program your assistant added'
+        ]
     ];
 
     const claudeCode = `claude mcp add --transport http spike ${mcpUrl}`;

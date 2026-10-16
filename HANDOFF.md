@@ -66,7 +66,9 @@ A reader-facing summary of everything the fork adds is in
     them) and reads progress, and adds robots and fields: `save_field` draws a
     mat from a JSON description (`server/fields.mjs`, format in
     `docs/fields.md`; PNG inside `mat.jpg`, which browsers decode by content)
-    into a `.spk` (`server/zip.mjs`). Which robots and fields an assistant
+    into a `.spk` (`server/zip.mjs`). `upload_program` adds an example
+    program (`.llsp3`, word blocks only) with its explanation card
+    (`<name>.llsp3.json`). Which robots, fields and programs an assistant
     added is in `LIBRARY_DIR/.assistant-files.json` (`server/authors.mjs`).
 -   Students (coach page, Students tab): paste names, each gets a random code
     (`WORD-WORD-NN`); print cut-out code cards, copy one

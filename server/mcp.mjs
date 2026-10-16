@@ -7,8 +7,8 @@
 // stamped with that coach's identity and starts as a draft, so publishing stays
 // a click on the coach page, and an assistant can only replace or delete its
 // own coach's drafts. Lessons, challenges and assignments work the same way.
-// Robots and fields (maps) have no drafts: they go straight into the library
-// for everyone, so an assistant can only add new ones and replace or delete
+// Robots, fields (maps) and example programs have no drafts: they go straight
+// into the library for everyone, so an assistant can only add new ones and replace or delete
 // the ones its coach's assistant added (server/authors.mjs keeps track).
 
 import fs from 'node:fs';
@@ -23,7 +23,8 @@ const INSTRUCTIONS = `Tools for coaches using the LEGO SPIKE simulator.
 Lessons are step-by-step activities; challenges are short goals with hints and no steps. Both can have a check that the simulator runs over five runs.
 To write either: read get_lesson_guide first (it explains both formats and lists this site's fields with their mat sizes, robots, programs, lessons and challenges), write the JSON, run check_lesson or check_challenge until there are no errors, then save_lesson or save_challenge. Saved work is a draft that students can't see until a coach publishes it on the coach page (/coach).
 Assignments: list_assignments shows each assignment with team statistics (and each student's progress if the head coach allows it); save_assignment makes a draft assignment of published lessons, optionally typed as practice or prep for the next meeting, that a coach publishes on the Assignments tab.
-Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models. These are available to everyone as soon as they are saved.`;
+Fields (maps): read get_field_guide, then check_field and save_field to draw a practice mat from a short JSON description (lines, shapes, text, the robot's start, walls and blocks). upload_field and upload_robot add existing .spk scenes and .mpd/.ldr robot models.
+Example programs: upload_program adds a .llsp3 program (from the SPIKE app or the simulator) with an explanation card students see in the Examples window. These are available to everyone as soon as they are saved.`;
 
 /** @param {Record<string, unknown>} properties @param {string[]} [required] */
 const object = (properties, required = []) => ({ type: 'object', properties, required });
@@ -266,6 +267,49 @@ const ASSET_TOOLS = [
             },
             ['name']
         )
+    },
+    {
+        name: 'upload_program',
+        description:
+            "Add a SPIKE program (.llsp3, saved from the SPIKE app or the simulator) to the example programs, base64-encoded, with an optional explanation card students see in the Examples window. A lesson's program or a challenge's example can then use it.",
+        inputSchema: object(
+            {
+                name: { type: 'string', description: 'File name ending in .llsp3' },
+                content_base64: { type: 'string', description: 'The .llsp3 file, base64' },
+                card: {
+                    type: 'object',
+                    description:
+                        'Explanation for students (optional). Without one the program still opens, with no explanation.',
+                    properties: {
+                        title: { type: 'string', description: 'Shown in the Examples window' },
+                        topic: {
+                            type: 'string',
+                            description: 'Groups examples: Basics, Sensors, Gyro, Missions…'
+                        },
+                        order: { type: 'number', description: 'Position within the topic' },
+                        summary: { type: 'string', description: 'One line under the title' },
+                        what: { type: 'string', description: 'What the program does' },
+                        why: { type: 'string', description: 'Why it is built this way' },
+                        try: {
+                            type: 'array',
+                            items: { type: 'string' },
+                            description: 'Things to try changing'
+                        },
+                        scene: { type: 'string', description: 'A field (.spk) to load with it' }
+                    },
+                    required: ['title']
+                },
+                replace: { type: 'boolean', description: 'Replace your own program with this name' }
+            },
+            ['name', 'content_base64']
+        )
+    },
+    {
+        name: 'delete_program',
+        description:
+            "Delete an example program your coach's assistant added, with its explanation, if no lesson or challenge uses it.",
+        inputSchema: object({ name: { type: 'string' } }, ['name']),
+        annotations: { destructiveHint: true }
     },
     {
         name: 'delete_field',
@@ -533,6 +577,16 @@ export function createMcp({
     // What uses a field or robot, so it isn't deleted from under them.
     async function usersOf(kind, name) {
         const library = await listLibrary();
+        if (kind === 'programs') {
+            return [
+                ...library.lessons
+                    .filter((e) => e.lesson?.program === name)
+                    .map((e) => `lesson ${e.name}`),
+                ...library.challenges
+                    .filter((e) => e.challenge?.example === name)
+                    .map((e) => `challenge ${e.name}`)
+            ];
+        }
         const key = kind === 'scenes' ? 'field' : 'robot';
         const users = [
             ...library.lessons
@@ -560,7 +614,7 @@ export function createMcp({
         const file = path.join(libraryDir, kind, name);
         if (!fs.existsSync(file)) return;
         const author = await authors.get(kind, name);
-        const what = kind === 'scenes' ? 'field' : 'robot';
+        const what = WHAT[kind];
         if (author !== who) {
             throw new ToolError(
                 `There is already a ${what} called ${name}. Save under another name; a coach can replace it on the coach page.`
@@ -573,6 +627,8 @@ export function createMcp({
         }
     }
 
+    const WHAT = { scenes: 'field', robots: 'robot', programs: 'program' };
+
     async function writeAsset(kind, name, data, who) {
         await fsp.mkdir(path.join(libraryDir, kind), { recursive: true });
         const file = path.join(libraryDir, kind, name);
@@ -583,17 +639,19 @@ export function createMcp({
     }
 
     // A safe file name: robots keep a given .mpd or .ldr, anything else
-    // becomes "<cleaned name>.spk" or ".mpd".
+    // becomes "<cleaned name>.spk", ".llsp3" or ".mpd".
     function assetName(kind, raw, fallbackTitle) {
         const given = String(raw || fallbackTitle || '').trim();
         let name = given;
         if (!(kind === 'robots' && /\.(mpd|ldr)$/i.test(given))) {
+            const ext = { scenes: '.spk', programs: '.llsp3', robots: '.mpd' }[kind];
+            const prefix = { scenes: 'Field ', programs: 'Program ', robots: 'Robot ' }[kind];
             name = given
-                .replace(/\.(spk|mpd|ldr)$/i, '')
+                .replace(/\.(spk|mpd|ldr|llsp3)$/i, '')
                 .replace(/[^\w .()+-]/g, '_')
                 .slice(0, 90);
-            if (!/^\w/.test(name)) name = (kind === 'scenes' ? 'Field ' : 'Robot ') + name;
-            name += kind === 'scenes' ? '.spk' : '.mpd';
+            if (!/^\w/.test(name)) name = prefix + name;
+            name += ext;
         }
         const safe = safeName(kind, name);
         if (!safe) throw new ToolError(`Can't use "${given}" as a file name`);
@@ -714,13 +772,86 @@ export function createMcp({
         };
     };
 
+    tools.upload_program = async ({ name, content_base64, card, replace }, who) => {
+        const data = decode(content_base64);
+        let files;
+        try {
+            files = readZip(data);
+        } catch {
+            throw new ToolError("That isn't a .llsp3 program (it isn't a zip file)");
+        }
+        let manifest;
+        try {
+            manifest = JSON.parse(files.get('manifest.json')?.toString('utf8') ?? '');
+        } catch {
+            throw new ToolError("That isn't a .llsp3 program: it has no readable manifest.json");
+        }
+        if (manifest?.type !== 'word-blocks' || !files.has('scratch.sb3')) {
+            throw new ToolError(
+                'Only word-block programs can be examples (a Python program, or one without scratch.sb3, will not open in the simulator)'
+            );
+        }
+        let cardJson;
+        const warnings = [];
+        if (card !== undefined && card !== null) {
+            if (typeof card !== 'object' || typeof card.title !== 'string' || !card.title.trim()) {
+                throw new ToolError('The card needs a title');
+            }
+            const text = (key) =>
+                typeof card[key] === 'string' && card[key].trim() ? card[key].trim() : undefined;
+            let scene;
+            if (text('scene')) {
+                scene = safeName('scenes', card.scene);
+                if (!scene || !fs.existsSync(path.join(libraryDir, 'scenes', scene))) {
+                    throw new ToolError(`There is no field called ${card.scene}`);
+                }
+            }
+            cardJson = {
+                title: card.title.trim(),
+                topic: text('topic') ?? 'Missions',
+                ...(typeof card.order === 'number' ? { order: card.order } : {}),
+                ...(text('summary') ? { summary: text('summary') } : {}),
+                ...(text('what') ? { what: text('what') } : {}),
+                ...(text('why') ? { why: text('why') } : {}),
+                ...(Array.isArray(card.try)
+                    ? {
+                          try: card.try
+                              .filter((x) => typeof x === 'string' && x.trim())
+                              .map((x) => x.trim())
+                      }
+                    : {}),
+                ...(scene ? { scene } : {})
+            };
+        } else {
+            warnings.push(
+                'No card: the program opens from the Examples window, but students see no explanation. Upload it again with a card and replace: true to add one.'
+            );
+        }
+        const file = assetName('programs', name, cardJson?.title);
+        await checkWrite('programs', file, replace, who);
+        await writeAsset('programs', file, data, who);
+        const cardFile = path.join(libraryDir, 'programs', file + '.json');
+        if (cardJson) {
+            await fsp.writeFile(cardFile + '.tmp', JSON.stringify(cardJson, null, 2));
+            await fsp.rename(cardFile + '.tmp', cardFile);
+        } else {
+            await fsp.rm(cardFile, { force: true });
+        }
+        return { saved: true, name: file, ...(cardJson ? { card: cardJson } : {}), warnings };
+    };
+
     for (const [kind, what] of [
         ['scenes', 'field'],
-        ['robots', 'robot']
+        ['robots', 'robot'],
+        ['programs', 'program']
     ]) {
         tools[`delete_${what}`] = async ({ name }, who) => {
             const file = safeName(kind, name);
-            if (!file || !fs.existsSync(path.join(libraryDir, kind, file))) {
+            if (
+                !file ||
+                (kind === 'programs' && !file.toLowerCase().endsWith('.llsp3')) ||
+                !fs.existsSync(path.join(libraryDir, kind, file))
+            ) {
                 throw new ToolError(`There is no ${what} called ${name}`);
             }
             if ((await authors.get(kind, file)) !== who) {
@@ -733,6 +864,9 @@ export function createMcp({
                 throw new ToolError(`${file} is used by ${users.join(', ')}. Change those first.`);
             }
             await fsp.rm(path.join(libraryDir, kind, file), { force: true });
+            if (kind === 'programs') {
+                await fsp.rm(path.join(libraryDir, kind, file + '.json'), { force: true });
+            }
             await authors.remove(kind, file);
             console.log(`${who} deleted ${kind}/${file} through MCP`);
             return { deleted: file };
