@@ -92,8 +92,24 @@ export function placeRobotAt(start: MissionStart) {
     });
 }
 
+// In words, such as "34 cm left and 40 cm down from the mat's center, facing up
+// (0°)". x grows to the right and z down the mat, as seen from above.
 export function startText(start: MissionStart) {
-    return `${Math.round(start.x / 10)} cm, ${Math.round(start.z / 10)} cm from the center, heading ${Math.round(start.heading)}°`;
+    const offsets = [
+        [start.x, 'right', 'left'],
+        [start.z, 'down', 'up']
+    ]
+        .map(([mm, plus, minus]) => {
+            const cm = Math.round(Math.abs(+mm) / 10);
+            return cm == 0 ? '' : `${cm} cm ${+mm > 0 ? plus : minus}`;
+        })
+        .filter(Boolean);
+    const where = offsets.length
+        ? `${offsets.join(' and ')} from the mat's center`
+        : "the mat's center";
+    const heading = Math.round(start.heading) % 360;
+    const facing = { 0: 'up', 90: 'right', 180: 'down', 270: 'left' }[heading];
+    return `${where}, facing ${facing ? `${facing} (${heading}°)` : `${heading}° right of up`}`;
 }
 
 export function missionLabel(mission: Pick<Mission, 'number' | 'title'>) {
@@ -182,6 +198,18 @@ export async function saveVersion(
     const result = await response.json();
     await refreshMissions();
     return result.version;
+}
+
+// Students set where the robot starts too; undefined goes back to the field's start.
+export async function saveStudentStart(mission: string, start: MissionStart | undefined) {
+    const response = await fetch(`api/student/missions/${encodeURIComponent(mission)}/start`, {
+        method: 'PUT',
+        headers: { ...studentHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start: start ?? null }),
+        cache: 'no-store'
+    });
+    if (!response.ok) throw new Error(await errorOf(response));
+    await refreshMissions();
 }
 
 // ---- Coaches -------------------------------------------------------------------

@@ -69,7 +69,12 @@ A reader-facing summary of everything the fork adds is in
     `docs/fields.md`; PNG inside `mat.jpg`, which browsers decode by content)
     into a `.spk` (`server/zip.mjs`). `upload_program` adds an example
     program (`.llsp3`, word blocks only) with its explanation card
-    (`<name>.llsp3.json`). Which robots, fields and programs an assistant
+    (`<name>.llsp3.json`). Files can go as `content_base64` or, better, through a
+    one-time upload link: `start_upload` makes `/api/upload/<token>`
+    (`server/uploads.mjs`; one PUT, 15 MB, 10 minutes, kept in memory until a
+    tool saves it), and the upload tools take its `upload_id` and return the
+    file's `sha256`. `/api/upload` must stay outside Cloudflare Access; the
+    random token is the key. Which robots, fields and programs an assistant
     added is in `LIBRARY_DIR/.assistant-files.json` (`server/authors.mjs`).
 -   Students (coach page, Students tab): paste names, each gets a random code
     (`WORD-WORD-NN`); print cut-out code cards, copy one
@@ -102,7 +107,7 @@ A reader-facing summary of everything the fork adds is in
     (`mission.json`, `versions.json`, `versions/<id>.llsp3`) by
     `server/missions.mjs`, served on `/api/student/missions` (needs a valid
     `X-Student-Code`) and `/api/admin/missions`. Versions are append-only for
-    students; coaches mark `current` ("Use at competition"; coaches signed in to the coach page also use the simulator's Missions window), download, and delete.
+    students, who may also set the robot start (`PUT /api/student/missions/<id>/start`); coaches mark `current` ("Use at competition"; coaches signed in to the coach page also use the simulator's Missions window), download, and delete.
     Removing a student relabels their versions "A former teammate". MCP tools:
     `list_missions`, `save_mission`, `add_mission_version`,
     `get_mission_version`. The robot model still doesn't match the team's real

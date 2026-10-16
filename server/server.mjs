@@ -12,6 +12,8 @@
 //   /api/student/...   student sign-in with a roster code (TEAM_DIR), and the
 //                      team's missions for signed-in students (server/missions.mjs)
 //   /mcp               MCP server for coaches' AI assistants (same sign-in as /api/admin)
+//   /api/upload/<token> one-time upload links made by the MCP start_upload tool
+//                      (server/uploads.mjs); the random link is the only key
 //   /api/lessons/...   lesson authoring guide, schema and checker (read-only)
 //   /api/challenges/... challenge schema and checker (read-only)
 //
@@ -35,6 +37,7 @@ import { createMissions } from './missions.mjs';
 import { challengeProblems, lessonProblems } from './lesson-rules.mjs';
 import { createLessonsApi } from './lessons-api.mjs';
 import { createMcp } from './mcp.mjs';
+import { createUploads } from './uploads.mjs';
 import { createAuthors } from './authors.mjs';
 import { writeZip } from './zip.mjs';
 import { createSettings } from './settings.mjs';
@@ -679,6 +682,10 @@ async function handle(req, res) {
         await mcp.handle(req, res);
         return;
     }
+    if (parts[0] === 'api' && parts[1] === 'upload' && parts.length === 3) {
+        await uploads.handle(req, res, parts[2]);
+        return;
+    }
     if (parts[0] === 'api' && parts[1] === 'challenges') {
         await lessonsApi.handleChallenges(req, res, parts.slice(2));
         return;
@@ -805,6 +812,11 @@ const missions = createMissions({
     send,
     readBody
 });
+const uploads = createUploads({
+    maxBytes: Math.min(15 * 1024 * 1024, MAX_UPLOAD),
+    sendJson,
+    readBody
+});
 const mcp = createMcp({
     libraryDir: LIBRARY_DIR,
     schemasDir: path.join(here, '..', 'schemas'),
@@ -817,6 +829,7 @@ const mcp = createMcp({
     homework,
     missions,
     authors,
+    uploads,
     readDefaults,
     sendJson,
     send,
