@@ -112,6 +112,14 @@ A reader-facing summary of everything the fork adds is in
     `list_missions`, `save_mission`, `add_mission_version`,
     `get_mission_version`. The robot model still doesn't match the team's real
     robot, so a version that works in the sim needs checking on the robot.
+-   Mission planning map (`MissionMapDialog.svelte`, `src/lib/plans.ts`,
+    `server/plans.mjs`; button at the bottom of the Missions window): pins and
+    trips in mm from the mat's center, stored as `TEAM_DIR/plans/<id>.json` on
+    `/api/student/plans` and `/api/admin/plans`. Anyone on the team can add,
+    change and delete maps. Print opens a new window with a 2600 px picture of
+    the map and a legend (`@page` landscape). A trip "visits" a pin when a point
+    is within 150 mm; clicking a pin while drawing a trip snaps to it. No MCP
+    tools yet; a later idea is drawing the path the simulated robot drove.
 -   Before going public (pre-release): `/api/admin` refuses writes whose
     `Origin` is another site (it compares with `Host` or `X-Forwarded-Host`, so
     the proxy must pass the original host); drafts are left out of the public

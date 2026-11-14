@@ -29,6 +29,8 @@
     import { AwardOutline, FlagOutline } from 'flowbite-svelte-icons';
     import MissionsDialog from '$components/MissionsDialog.svelte';
     import { missionsOpen } from '$lib/missions';
+    import MissionMapDialog from '$components/MissionMapDialog.svelte';
+    import { planMapOpen } from '$lib/plans';
     import * as Blockly from 'blockly/core';
     // Import the list of blocks so it gets loaded into blockly
     import 'blockly/blocks';
@@ -520,6 +522,7 @@
 <LessonsDialog bind:modalOpen={$lessonsOpen} on:setup={() => (simulatorOpen = true)} />
 <ChallengesDialog bind:modalOpen={$challengesOpen} on:started={() => (simulatorOpen = true)} />
 <MissionsDialog bind:modalOpen={$missionsOpen} on:setup={() => (simulatorOpen = true)} />
+<MissionMapDialog bind:modalOpen={$planMapOpen} />
 
 <div class="relative h-full w-full overflow-hidden flex flex-row">
     <!-- flex-col-reverse so that the buttons are higher in z order -->

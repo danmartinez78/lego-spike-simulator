@@ -68,6 +68,11 @@ assignments, and a coach page to run it all.
     version, improve it in the simulator and save a new version with a note;
     nothing is overwritten. They can also save where the robot starts, such as
     the team's launch area. See [missions.md](missions.md).
+-   **Mission planning map** (bottom of the Missions window): put numbered pins
+    on the missions on the field's mat, draw the robot's trips from the launch
+    area in different colors, add notes, and print one landscape page with a
+    legend. Maps are saved with the team data, so the whole team shares them.
+    See [missions.md](missions.md#mission-planning-map).
 
 ### Lessons
 
@@ -317,8 +322,8 @@ The settings are listed in the [README](../README.md#run-your-own-copy).
 -   Team settings control what AI assistants see and when shared computers sign
     out.
 -   Download backup saves the whole team and library as one zip.
--   Team mission programs are only served to coaches and signed-in students,
-    never through the public library.
+-   Team mission programs and planning maps are only served to coaches and
+    signed-in students, never through the public library.
 
 ## Content that ships with the fork
 

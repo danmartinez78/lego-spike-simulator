@@ -40,6 +40,7 @@
         type MissionVersion
     } from '$lib/missions';
     import { studentDialogOpen, studentStore } from '$lib/team';
+    import { planMapOpen } from '$lib/plans';
 
     export let modalOpen = false;
 
@@ -339,6 +340,23 @@
                         </div>
                     </button>
                 {/each}
+                <button
+                    class="mt-auto text-left rounded-lg px-3 py-2 border border-gray-300 bg-white hover:bg-gray-100 flex items-center gap-2"
+                    on:click={() => {
+                        modalOpen = false;
+                        planMapOpen.set(true);
+                    }}
+                >
+                    <MapPinAltOutline class="w-5 h-5 shrink-0 text-gray-700" />
+                    <span>
+                        <span class="block text-sm font-medium text-gray-900"
+                            >Mission planning map</span
+                        >
+                        <span class="block text-xs text-gray-500"
+                            >Pin the missions, draw the trips, print it</span
+                        >
+                    </span>
+                </button>
             </nav>
 
             <section class="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
