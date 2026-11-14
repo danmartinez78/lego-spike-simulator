@@ -52,6 +52,27 @@ Coaches' AI assistants can do the same through the MCP tools `list_missions`,
 `save_mission`, `add_mission_version` and `get_mission_version` (see
 [mcp.md](mcp.md)).
 
+## Mission planning map
+
+The **Mission planning map** button at the bottom of the Missions window opens
+a map of the field's mat for planning a match:
+
+-   **Add a mission pin**, then click each mission you plan to do. Pins are
+    numbered 1, 2, 3... and you can change a pin's number and give it a name
+    (the list suggests the team's missions). Drag a pin to move it.
+-   **Draw a trip**, then click from the launch area to each mission and back.
+    A trip is one time the robot leaves the launch area. Clicking a pin puts the
+    point right on it. **+ New trip** starts the next one in another color.
+    Drag a point to move it, double-click it to take it out, or press **Undo
+    point**. Each trip lists the pins it passes and has a notes line.
+-   **Save** keeps the map for the whole team; pick a saved map from **Map**.
+    Anyone signed in can change or delete a map.
+-   **Print** makes one landscape page: the mat with the pins and trips, then
+    the missions, the trips with lines to write on, and the notes.
+
+Maps are stored as `plans/<id>.json` in `TEAM_DIR` (in Download backup too),
+on `/api/student/plans` and `/api/admin/plans` (code in `server/plans.mjs`).
+
 ## Storage
 
 Missions live in `TEAM_DIR` (normally `/data/team`), next to the roster and

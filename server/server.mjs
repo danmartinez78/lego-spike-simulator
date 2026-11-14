@@ -11,6 +11,7 @@
 //   /api/admin/...     write operations (upload, delete, rename, set default, roster)
 //   /api/student/...   student sign-in with a roster code (TEAM_DIR), and the
 //                      team's missions for signed-in students (server/missions.mjs)
+//                      and mission planning maps (server/plans.mjs)
 //   /mcp               MCP server for coaches' AI assistants (same sign-in as /api/admin)
 //   /api/upload/<token> one-time upload links made by the MCP start_upload tool
 //                      (server/uploads.mjs); the random link is the only key
@@ -34,6 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { createTeam } from './team.mjs';
 import { createHomework } from './homework.mjs';
 import { createMissions } from './missions.mjs';
+import { createPlans } from './plans.mjs';
 import { challengeProblems, lessonProblems } from './lesson-rules.mjs';
 import { createLessonsApi } from './lessons-api.mjs';
 import { createMcp } from './mcp.mjs';
@@ -480,6 +482,10 @@ async function handleAdmin(req, res, parts) {
         await missions.handleAdmin(req, res, parts.slice(1), who);
         return;
     }
+    if (parts[0] === 'plans') {
+        await plans.handleAdmin(req, res, parts.slice(1), who);
+        return;
+    }
     if (parts[0] === 'homework' || parts[0] === 'progress') {
         await homework.handleAdmin(req, res, parts[0] === 'homework' ? parts.slice(1) : parts, who);
         return;
@@ -671,6 +677,10 @@ async function handle(req, res) {
             await missions.handleStudent(req, res, parts.slice(3), student);
             return;
         }
+        if (parts[2] === 'plans') {
+            await plans.handleStudent(req, res, parts.slice(3), student);
+            return;
+        }
         await homework.handleStudent(req, res, parts.slice(2), student);
         return;
     }
@@ -812,6 +822,7 @@ const missions = createMissions({
     send,
     readBody
 });
+const plans = createPlans({ teamDir: TEAM_DIR, sendJson, readBody });
 const uploads = createUploads({
     maxBytes: Math.min(15 * 1024 * 1024, MAX_UPLOAD),
     sendJson,
