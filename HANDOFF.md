@@ -200,11 +200,18 @@ A reader-facing summary of everything the fork adds is in
     both toolbars show text labels (`ToolButton.svelte`). Still open: the 3D mat
     rendering report (needs details of what looked wrong, and the LDraw library,
     which the cloud sandbox can't download).
--   Colour BIOGLOW mat: added as the preset `presets/scenes/BIOGLOW - colour mat.spk`
-    (seeded into the library on the next container start). It was cut from a
-    2200 x 1064 screenshot Pete sent, using the outer yellow dashed border as the
-    field edge and stretched to 2360 x 1140 mm, so it is low resolution and about
-    2% off in proportion. Swap in the real mat file if one arrives.
+-   Colour BIOGLOW mat: the preset `presets/scenes/BIOGLOW - colour mat.spk`,
+    cut from a screenshot Pete sent. The first version kept the dark table
+    strips at both ends, so its picture was squeezed sideways and planning map
+    pins didn't line up with the BIOGLOW wireframe. It is now cropped to the
+    inner yellow dashed lines (the field edge) and stretched to 2360 x 1140 mm,
+    checked against the wireframe (bars, launch arcs and mission squares line
+    up); the robot start moved to x = -928 to stay in the left launch area.
+    Still low resolution: swap in the real mat file if one arrives.
+-   Fixing a preset that already shipped: list the old file's sha256 under its
+    `kind/name` in `presets/replaced.json`. On start the server replaces the
+    library's copy only while it is still exactly that old file, so a coach's
+    own changes are kept (`refreshPreset` in `server/server.mjs`).
 -   Link sharing of programs was discussed and deferred.
 
 ## Testing notes

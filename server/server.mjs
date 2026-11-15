@@ -121,7 +121,11 @@ async function ensureLibrary() {
         if (!fs.existsSync(from)) continue;
         for (const name of await fsp.readdir(from)) {
             const key = `${kind}/${name}`;
-            if (!safeName(kind, name) || seeded.includes(key)) continue;
+            if (!safeName(kind, name)) continue;
+            if (seeded.includes(key)) {
+                await refreshPreset(path.join(from, name), path.join(LIBRARY_DIR, kind, name), key);
+                continue;
+            }
             const target = path.join(LIBRARY_DIR, kind, name);
             if (!fs.existsSync(target)) {
                 await fsp.copyFile(path.join(from, name), target);
@@ -134,6 +138,31 @@ async function ensureLibrary() {
     if (firstStart && fs.existsSync(seedDefaults)) {
         await fsp.copyFile(seedDefaults, defaultsFile);
     }
+}
+
+// A preset we fixed after shipping it replaces the library's copy, but only
+// while that copy is still byte for byte the old version (sha256 listed in
+// presets/replaced.json), so a coach's own edit is never overwritten.
+let replacedPresets;
+async function refreshPreset(from, target, key) {
+    if (replacedPresets === undefined) {
+        try {
+            replacedPresets = JSON.parse(
+                await fsp.readFile(path.join(SEED_DIR, 'replaced.json'), 'utf8')
+            );
+        } catch {
+            replacedPresets = {};
+        }
+    }
+    const old = replacedPresets[key];
+    if (!Array.isArray(old) || !fs.existsSync(target)) return;
+    const hash = crypto
+        .createHash('sha256')
+        .update(await fsp.readFile(target))
+        .digest('hex');
+    if (!old.includes(hash)) return;
+    await fsp.copyFile(from, target);
+    console.log(`Updated preset ${key} to the fixed version`);
 }
 
 function safeName(kind, name) {

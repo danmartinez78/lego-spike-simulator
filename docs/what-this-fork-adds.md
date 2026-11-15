@@ -72,6 +72,8 @@ assignments, and a coach page to run it all.
     on the missions on the field's mat, draw the robot's trips from the launch
     area in different colors, add notes, and print one landscape page with a
     legend. Maps are saved with the team data, so the whole team shares them.
+    Pins and trips are stored in millimeters on the mat, so a map lines up on
+    both BIOGLOW fields (the color mat and the wireframe).
     See [missions.md](missions.md#mission-planning-map).
 
 ### Lessons
